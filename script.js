@@ -39,7 +39,6 @@ class SoundEngine {
         osc.start();
         osc.stop(this.ctx.currentTime + duration);
     }
-
     click() {
         this.playTone(520, 'sine', 0.08, 0.12, 680);
     }
@@ -89,7 +88,6 @@ const CAREERS = [
     { id: 'ceo', title: 'CEO Multinacional', salary: 165000, reqEdu: 'master', reqInt: 85, reqFame: 55, stress: 40 },
     { id: 'star', title: 'Superestrela Mundial', salary: 320000, reqEdu: 'school', reqInt: 40, reqFame: 85, stress: 35 }
 ];
-
 const RANDOM_EVENTS = [
     {
         title: 'Achado na Rua!',
@@ -232,7 +230,6 @@ function updateScore() {
         localStorage.setItem('starLifeHighScore', highScore);
     }
 }
-
 function advanceYear() {
     sound.ageUp();
     player.age += 1;
@@ -431,7 +428,6 @@ function drawCharacterAvatar(cx, cy) {
     }
     ctx.stroke();
 }
-
 function addButton(x, y, w, h, label, sublabel, color, action, disabled = false) {
     buttons.push({ x, y, w, h, label, sublabel, color, action, disabled });
 }
@@ -510,7 +506,6 @@ function renderMenu() {
 
     drawButtons();
 }
-
 function drawStatBar(x, y, w, label, value, color) {
     ctx.textAlign = 'left';
     ctx.fillStyle = '#cbd5e1';
@@ -608,26 +603,30 @@ function renderPlaying() {
     }, player.age < 16);
 
     addButton(170, navY, navW, navH, 'CARREIRA', 'Empregos', '#7c3aed', () => {
-sound.click();
-currentState = GAME_STATE.MODAL_CAREER;
-selectedButtonIndex = 0;
-}, player.age < 18);
-addButton(324, navY, navW, navH, 'ATIVIDADES', 'Treinar & Fama', '#d97706', () => {
-sound.click();
-currentState = GAME_STATE.MODAL_ACTIVITIES;
-selectedButtonIndex = 0;
-}, player.age < 4);
-addButton(16, 726, 215, 44, sound.muted ? 'SOM: DESLIGADO' : 'SOM: LIGADO', null, '#334155', () => {
-sound.muted = !sound.muted;
-if (!sound.muted) sound.click();
-});
-addButton(249, 726, 215, 44, 'DESISTIR / MENU', null, '#475569', () => {
-sound.click();
-currentState = GAME_STATE.MENU;
-selectedButtonIndex = 0;
-});
-drawButtons();
-}```javascript
+        sound.click();
+        currentState = GAME_STATE.MODAL_CAREER;
+        selectedButtonIndex = 0;
+    }, player.age < 18);
+
+    addButton(324, navY, navW, navH, 'ATIVIDADES', 'Treinar & Fama', '#d97706', () => {
+        sound.click();
+        currentState = GAME_STATE.MODAL_ACTIVITIES;
+        selectedButtonIndex = 0;
+    }, player.age < 4);
+
+    addButton(16, 726, 215, 44, sound.muted ? 'SOM: DESLIGADO' : 'SOM: LIGADO', null, '#334155', () => {
+        sound.muted = !sound.muted;
+        if (!sound.muted) sound.click();
+    });
+
+    addButton(249, 726, 215, 44, 'DESISTIR / MENU', null, '#475569', () => {
+        sound.click();
+        currentState = GAME_STATE.MENU;
+        selectedButtonIndex = 0;
+    });
+
+    drawButtons();
+}
 function renderSchoolModal() {
     buttons = [];
     drawRoundRect(20, 40, LOGICAL_WIDTH - 40, LOGICAL_HEIGHT - 80, 18, '#1e293b', '#38bdf8', 2);
@@ -847,7 +846,6 @@ function renderActivitiesModal() {
 
     drawButtons();
 }
-
 function renderEventModal() {
     buttons = [];
     ctx.fillStyle = 'rgba(11, 15, 25, 0.85)';
@@ -913,46 +911,164 @@ function renderGameOver() {
     ctx.font = '900 42px sans-serif';
     ctx.fillText('FIM DA VIDA', LOGICAL_WIDTH / 2, 130);
 
-ctx.fillStyle = '#cbd5e1';
-ctx.font = '15px sans-serif';
-ctx.fillText(deathReason, LOGICAL_WIDTH / 2, 165);
-drawRoundRect(50, 195, LOGICAL_WIDTH - 100, 295, 16, '#0f172a', '#334155', 1.5);
-const summary = [
-{ label: 'Nome:', val: player.name },
-{ label: 'Idade Alcançada:', val: ${player.age} anos },
-{ label: 'Carreira Final:', val: player.career.title },
-{ label: 'Património Final:', val: €${player.money.toLocaleString('pt-PT')} },
-{ label: 'Fama Máxima:', val: ${player.fame}% }
-];
-summary.forEach((item, idx) => {
-const y = 235 + idx * 42;
-ctx.textAlign = 'left';
-ctx.fillStyle = '#94a3b8';
-ctx.font = '15px sans-serif';
-ctx.fillText(item.label, 72, y);
-ctx.textAlign = 'right';
-ctx.fillStyle = '#ffffff';
-ctx.font = 'bold 16px sans-serif';
-ctx.fillText(item.val, LOGICAL_WIDTH - 72, y);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '15px sans-serif';
+    ctx.fillText(deathReason, LOGICAL_WIDTH / 2, 165);
+
+    drawRoundRect(50, 195, LOGICAL_WIDTH - 100, 295, 16, '#0f172a', '#334155', 1.5);
+
+    const summary = [
+        { label: 'Nome:', val: player.name },
+        { label: 'Idade Alcançada:', val: `${player.age} anos` },
+        { label: 'Carreira Final:', val: player.career.title },
+        { label: 'Património Final:', val: `€${player.money.toLocaleString('pt-PT')}` },
+        { label: 'Fama Máxima:', val: `${player.fame}%` }
+    ];
+
+    summary.forEach((item, idx) => {
+        const y = 235 + idx * 42;
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '15px sans-serif';
+        ctx.fillText(item.label, 72, y);
+
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillText(item.val, LOGICAL_WIDTH - 72, y);
+    });
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('PONTUAÇÃO FINAL (SCORE)', LOGICAL_WIDTH / 2, 535);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 36px sans-serif';
+    ctx.fillText(`${player.score.toLocaleString('pt-PT')} PTS`, LOGICAL_WIDTH / 2, 575);
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(`RECORDE PESSOAL: ${highScore.toLocaleString('pt-PT')} PTS`, LOGICAL_WIDTH / 2, 605);
+
+    addButton(65, 640, LOGICAL_WIDTH - 130, 68, 'JOGAR NOVAMENTE', 'Reiniciar imediatamente', '#16a34a', () => {
+        sound.good();
+        resetPlayer();
+        currentState = GAME_STATE.PLAYING;
+        selectedButtonIndex = 0;
+    });
+
+    addButton(65, 722, LOGICAL_WIDTH - 130, 46, 'VOLTAR AO MENU INICIAL', null, '#475569', () => {
+        sound.click();
+        currentState = GAME_STATE.MENU;
+        selectedButtonIndex = 0;
+    });
+
+    drawButtons();
+}
+
+function updateAndDrawParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.12;
+        p.life -= 0.025;
+
+        if (p.life <= 0) {
+            particles.splice(i, 1);
+            continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+function gameLoop() {
+    animTime += 0.016;
+    ctx.clearRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+
+    ctx.fillStyle = '#131b2e';
+    ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
+
+    if (currentState === GAME_STATE.MENU) {
+        renderMenu();
+    } else if (currentState === GAME_STATE.PLAYING) {
+        renderPlaying();
+    } else if (currentState === GAME_STATE.MODAL_SCHOOL) {
+        renderPlaying();
+        renderSchoolModal();
+    } else if (currentState === GAME_STATE.MODAL_CAREER) {
+        renderPlaying();
+        renderCareerModal();
+    } else if (currentState === GAME_STATE.MODAL_ACTIVITIES) {
+        renderPlaying();
+        renderActivitiesModal();
+    } else if (currentState === GAME_STATE.MODAL_EVENT) {
+        renderPlaying();
+        renderEventModal();
+    } else if (currentState === GAME_STATE.GAMEOVER) {
+        renderGameOver();
+    }
+
+    updateAndDrawParticles();
+    requestAnimationFrame(gameLoop);
+}
+
+function handlePointerInput(clientX, clientY) {
+    sound.init();
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = LOGICAL_WIDTH / rect.width;
+    const scaleY = LOGICAL_HEIGHT / rect.height;
+
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+
+    for (let i = 0; i < buttons.length; i++) {
+        const b = buttons[i];
+        if (!b.disabled && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+            selectedButtonIndex = i;
+            b.action();
+            break;
+        }
+    }
+}
+
+canvas.addEventListener('mousedown', (e) => {
+    handlePointerInput(e.clientX, e.clientY);
 });
-ctx.textAlign = 'center';
-ctx.fillStyle = '#fbbf24';
-ctx.font = 'bold 15px sans-serif';
-ctx.fillText('PONTUAÇÃO FINAL (SCORE)', LOGICAL_WIDTH / 2, 535);
-ctx.fillStyle = '#ffffff';
-ctx.font = '900 36px sans-serif';
-ctx.fillText(${player.score.toLocaleString('pt-PT')} PTS, LOGICAL_WIDTH / 2, 575);
-ctx.fillStyle = '#38bdf8';
-ctx.font = 'bold 14px sans-serif';
-ctx.fillText(RECORDE PESSOAL: ${highScore.toLocaleString('pt-PT')} PTS, LOGICAL_WIDTH / 2, 605);
-addButton(65, 640, LOGICAL_WIDTH - 130, 68, 'JOGAR NOVAMENTE', 'Reiniciar imediatamente', '#16a34a', () => {
-sound.good();
-resetPlayer();
-currentState = GAME_STATE.PLAYING;
-selectedButtonIndex = 0;
+
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (e.touches.length > 0) {
+        handlePointerInput(e.touches[0].clientX, e.touches[0].clientY);
+    }
+}, { passive: false });
+
+window.addEventListener('keydown', (e) => {
+    if (buttons.length === 0) return;
+
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        selectedButtonIndex = (selectedButtonIndex + 1) % buttons.length;
+        sound.click();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        selectedButtonIndex = (selectedButtonIndex - 1 + buttons.length) % buttons.length;
+        sound.click();
+    } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const btn = buttons[selectedButtonIndex];
+        if (btn && !btn.disabled) {
+            btn.action();
+        }
+    }
 });
-addButton(65, 722, LOGICAL_WIDTH - 130, 46, 'VOLTAR AO MENU INICIAL', null, '#475569', () => {
-sound.click();
-currentState = GAME_STATE.MENU;
-selectedButtonIndex = 0;
-});
+
+requestAnimationFrame(gameLoop);

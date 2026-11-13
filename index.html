@@ -1,15 +1,133 @@
 <!DOCTYPE html>
 <html lang="pt-PT">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Star Life - Simulador Completo</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101522">
+  <title>StarLife — Simulador de Vida</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <main id="game-container">
-        <canvas id="gameCanvas"></canvas>
-    </main>
-    <script src="script.js"></script>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">S</span><div><strong>STARLIFE</strong><small>Your Life. Your Choices. Your World.</small></div></div>
+      <button class="ghost small" id="settingsBtn" type="button">⚙ Definições</button>
+    </header>
+
+    <section id="homeScreen" class="screen active">
+      <div class="hero">
+        <div class="eyebrow">O TEU MUNDO. A TUA HISTÓRIA.</div>
+        <h1>Uma vida.<br><span>Mil possibilidades.</span></h1>
+        <p>Cria a tua personagem, escolhe onde viver e define a família que fará parte da tua história.</p>
+        <div class="hero-actions">
+          <button class="primary" id="newGameBtn">＋ Criar nova vida</button>
+          <button class="secondary" id="continueBtn">Continuar jogo</button>
+        </div>
+        <p class="save-note" id="saveNote">O teu progresso fica guardado neste dispositivo.</p>
+      </div>
+      <div class="feature-grid">
+        <article><b>🌍</b><strong>Um mundo global</strong><span>Escolhe o país e a cidade onde queres começar.</span></article>
+        <article><b>👤</b><strong>A tua personagem</strong><span>Define nome, sexo e aparência.</span></article>
+        <article><b>👨‍👩‍👧</b><strong>A tua família</strong><span>Cria o teu pai, mãe e irmão ou irmã.</span></article>
+      </div>
+    </section>
+
+    <section id="creatorScreen" class="screen">
+      <div class="section-heading">
+        <button class="back" id="backHome">←</button>
+        <div><div class="eyebrow">NOVA VIDA · 01 / 02</div><h2>Cria a tua história</h2></div>
+      </div>
+      <div class="step-indicator"><span class="filled"></span><span></span></div>
+
+      <form id="creatorForm">
+        <section class="panel">
+          <div class="panel-title"><span>01</span><div><h3>A tua personagem</h3><p>Quem vais ser nesta vida?</p></div></div>
+          <div class="form-grid">
+            <label>Nome<input id="playerFirst" required maxlength="30" placeholder="Ex.: Alex"></label>
+            <label>Apelido<input id="playerLast" required maxlength="40" placeholder="Ex.: Cunha"></label>
+            <label>Sexo
+              <select id="playerGender"><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select>
+            </label>
+            <label>Idade inicial<input id="playerAge" type="number" min="0" max="100" value="18" required></label>
+            <label>Tom de pele<select id="skin"><option>Claro</option><option>Bege</option><option>Moreno</option><option>Escuro</option></select></label>
+            <label>Cor do cabelo<select id="hair"><option>Castanho</option><option>Preto</option><option>Louro</option><option>Ruivo</option><option>Grisalho</option><option>Branco</option></select></label>
+            <label class="wide">Penteado<select id="hairstyle"><option>Curto</option><option>Médio</option><option>Comprido</option><option>Rapado</option><option>Encaracolado</option></select></label>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><span>02</span><div><h3>Onde começa a tua vida?</h3><p>O país determina a moeda inicial.</p></div></div>
+          <div class="form-grid">
+            <label class="wide">País
+              <select id="country" required></select>
+            </label>
+            <label class="wide">Cidade<input id="city" required maxlength="60" placeholder="Escreve a cidade onde moras"></label>
+            <div class="currency-preview wide"><span>Moeda local</span><strong id="currencyPreview">—</strong></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><span>03</span><div><h3>A minha família</h3><p>Configura cada familiar individualmente. O sexo de cada um é independente.</p></div></div>
+          <div class="family-grid">
+            <div class="family-card">
+              <div class="family-icon">👨‍👩‍👧</div><h4>Pai</h4>
+              <label>Nome<input id="fatherName" placeholder="Nome do pai"></label>
+              <div class="form-grid two">
+                <label>Sexo<select id="fatherGender"><option>Masculino</option><option>Feminino</option></select></label>
+                <label>Idade<input id="fatherAge" type="number" min="0" max="120" value="45"></label>
+              </div>
+            </div>
+            <div class="family-card">
+              <div class="family-icon">🌷</div><h4>Mãe</h4>
+              <label>Nome<input id="motherName" placeholder="Nome da mãe"></label>
+              <div class="form-grid two">
+                <label>Sexo<select id="motherGender"><option>Feminino</option><option>Masculino</option></select></label>
+                <label>Idade<input id="motherAge" type="number" min="0" max="120" value="43"></label>
+              </div>
+            </div>
+            <div class="family-card">
+              <div class="family-icon">🧑‍🤝‍🧑</div><h4>Irmão / irmã</h4>
+              <label>Nome<input id="siblingName" placeholder="Nome do irmão ou irmã"></label>
+              <div class="form-grid two">
+                <label>Sexo<select id="siblingGender"><option>Masculino</option><option>Feminino</option></select></label>
+                <label>Idade<input id="siblingAge" type="number" min="0" max="120" value="15"></label>
+              </div>
+            </div>
+          </div>
+          <p class="hint">Podes deixar os nomes dos familiares em branco e preenchê-los mais tarde.</p>
+        </section>
+        <div class="form-footer">
+          <button class="secondary" type="button" id="cancelCreate">Cancelar</button>
+          <button class="primary" type="submit">Começar a minha vida →</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="gameScreen" class="screen">
+      <div class="game-welcome">
+        <div class="eyebrow">A TUA VIDA COMEÇOU</div>
+        <h2 id="welcomeName">Olá!</h2>
+        <p id="welcomeLocation"></p>
+      </div>
+      <div class="stats-grid">
+        <article><span>IDADE</span><strong id="gameAge">18</strong></article>
+        <article><span>DINHEIRO</span><strong id="gameMoney">0</strong></article>
+        <article><span>FELICIDADE</span><strong>100%</strong></article>
+      </div>
+      <section class="panel">
+        <div class="panel-title"><span>👨‍👩‍👧</span><div><h3>Família</h3><p>As pessoas que fazem parte da tua vida.</p></div></div>
+        <div id="familySummary" class="family-summary"></div>
+      </section>
+      <section class="panel">
+        <h3>O que queres fazer?</h3>
+        <p class="muted">Esta é a primeira versão jogável. As restantes mecânicas serão acrescentadas nas próximas versões.</p>
+        <button class="primary full" id="ageUpBtn">🎂 Avançar um ano</button>
+      </section>
+      <button class="ghost full" id="restartBtn">Voltar ao menu inicial</button>
+    </section>
+    <footer>STARLIFE <span>·</span> Protótipo em desenvolvimento</footer>
+  </main>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="script.js"></script>
 </body>
 </html>

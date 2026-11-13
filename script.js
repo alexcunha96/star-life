@@ -1,232 +1,730 @@
-const $ = id => document.getElementById(id);
-const SAVE_KEY = "starLifeSave_v2";
-const OLD_SAVE_KEY = "vidaGlobalSave_v1";
+"use strict";
 
-const countries = [
-["Portugal","PT","EUR","€"],["Brasil","BR","BRL","R$"],["Estados Unidos","US","USD","$"],["Canadá","CA","CAD","CA$"],["Reino Unido","GB","GBP","£"],["Alemanha","DE","EUR","€"],["França","FR","EUR","€"],["Espanha","ES","EUR","€"],["Itália","IT","EUR","€"],["Suíça","CH","CHF","CHF"],["Japão","JP","JPY","¥"],["China","CN","CNY","¥"],["Índia","IN","INR","₹"],["Austrália","AU","AUD","A$"],["Nova Zelândia","NZ","NZD","NZ$"],["México","MX","MXN","$"],["Argentina","AR","ARS","$"],["Chile","CL","CLP","$"],["Colômbia","CO","COP","$"],["África do Sul","ZA","ZAR","R"],["Angola","AO","AOA","Kz"],["Moçambique","MZ","MZN","MT"],["Cabo Verde","CV","CVE","$"],["Irlanda","IE","EUR","€"],["Países Baixos","NL","EUR","€"],["Bélgica","BE","EUR","€"],["Luxemburgo","LU","EUR","€"],["Suécia","SE","SEK","kr"],["Noruega","NO","NOK","kr"],["Dinamarca","DK","DKK","kr"],["Polónia","PL","PLN","zł"],["Turquia","TR","TRY","₺"],["Rússia","RU","RUB","₽"],["Coreia do Sul","KR","KRW","₩"],["Singapura","SG","SGD","S$"],["Emirados Árabes Unidos","AE","AED","د.إ"],["Arábia Saudita","SA","SAR","﷼"],["Egito","EG","EGP","£"],["Marrocos","MA","MAD","د.م."],["Tailândia","TH","THB","฿"],["Indonésia","ID","IDR","Rp"],["Filipinas","PH","PHP","₱"],["Ucrânia","UA","UAH","₴"],["Grécia","GR","EUR","€"],["Áustria","AT","EUR","€"],["Finlândia","FI","EUR","€"],["Islândia","IS","ISK","kr"],["Roménia","RO","RON","lei"],["Croácia","HR","EUR","€"],["Uruguai","UY","UYU","$"]
+const SAVE_KEY = "starlife_save_v3";
+const $ = id => document.getElementById(id);
+
+const COUNTRIES = [
+  ["Portugal", "PT", "EUR", "€"],
+  ["Brasil", "BR", "BRL", "R$"],
+  ["Estados Unidos", "US", "USD", "$"],
+  ["Reino Unido", "GB", "GBP", "£"],
+  ["Alemanha", "DE", "EUR", "€"],
+  ["França", "FR", "EUR", "€"],
+  ["Espanha", "ES", "EUR", "€"],
+  ["Canadá", "CA", "CAD", "CA$"],
+  ["Japão", "JP", "JPY", "¥"],
+  ["Suíça", "CH", "CHF", "CHF"],
+  ["Austrália", "AU", "AUD", "A$"],
+  ["Angola", "AO", "AOA", "Kz"],
+  ["Moçambique", "MZ", "MZN", "MT"]
+];
+
+const RELATIONS = [
+  "Pai", "Mãe", "Padrasto", "Madrasta",
+  "Irmão", "Irmã", "Meio-irmão", "Meia-irmã",
+  "Filho", "Filha", "Avô", "Avó",
+  "Tio", "Tia", "Primo", "Prima",
+  "Companheiro/a", "Outro"
 ];
 
 let game = null;
-let creatorFamily = defaultFamily();
+let initialPeople = [];
 
-function defaultFamily(){
+function id() {
+  return "p_" + Math.random().toString(36).slice(2, 11);
+}
+
+function safe(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;"
+  })[char]);
+}
+
+function newPerson(relation = "Irmão") {
   return {
-    father:{roleType:"Pai",name:"",gender:"Masculino",age:45,active:true},
-    mother:{roleType:"Mãe",name:"",gender:"Feminino",age:43,active:true},
-    siblingsEnabled:true,
-    siblings:[{id:makeId(),name:"",gender:"Masculino",age:15,relation:"full",active:true}]
+    id: id(),
+    name: "",
+    gender: "Masculino",
+    age: 0,
+    relation,
+    parents: [],
+    alive: true,
+    deathYear: null,
+    deathCause: null
   };
 }
-function makeId(){ return "sib_"+Math.random().toString(36).slice(2,10); }
-function normalizeFamily(f){
-  const d=defaultFamily();
-  if(!f) return d;
-  // Compatibilidade com as gravações da primeira versão.
-  if(Array.isArray(f)){
-    const father=f.find(p=>p.role==="Pai")||{};
-    const mother=f.find(p=>p.role==="Mãe")||{};
-    const sib=f.find(p=>String(p.role||"").includes("Irmão"))||{};
-    return {
-      father:{roleType:"Pai",name:father.name||"",gender:father.gender||"Masculino",age:Number(father.age??45),active:true},
-      mother:{roleType:"Mãe",name:mother.name||"",gender:mother.gender||"Feminino",age:Number(mother.age??43),active:true},
-      siblingsEnabled:true,
-      siblings:sib.name||sib.age!==undefined?[{id:makeId(),name:sib.name||"",gender:sib.gender||"Masculino",age:Number(sib.age??15),relation:"full",active:true}]:[]
-    };
-  }
-  return {
-    father:{...d.father,...(f.father||{})},
-    mother:{...d.mother,...(f.mother||{})},
-    siblingsEnabled:f.siblingsEnabled!==false,
-    siblings:Array.isArray(f.siblings)?f.siblings.map(s=>({id:s.id||makeId(),name:s.name||"",gender:s.gender||"Masculino",age:Number(s.age??0),relation:s.relation==="half"?"half":"full",active:s.active!==false})):d.siblings
-  };
-}
-function showScreen(name){
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  $(name).classList.add("active");
-  window.scrollTo({top:0,behavior:"smooth"});
-}
-function toast(msg){
-  const t=$("toast");t.textContent=msg;t.classList.add("show");
-  clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove("show"),2600);
-}
-function getCountry(){return countries.find(c=>c[1]===$("country").value)||countries[0];}
-function updateCurrency(){const c=getCountry();$("currencyPreview").textContent=`${c[2]} (${c[3]})`;}
-function fillCountries(){
-  $("country").innerHTML=countries.map(c=>`<option value="${c[1]}">${c[0]}</option>`).join("");
-  $("country").value="PT";updateCurrency();
-}
-function escapeHTML(str){
-  return String(str??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-}
-function personCard(key, title, data, parentKind){
-  const isFather=parentKind==="father";
-  const options=isFather
-    ? `<option value="Pai" ${data.roleType==="Pai"?"selected":""}>Pai</option><option value="Padrasto" ${data.roleType==="Padrasto"?"selected":""}>Padrasto</option>`
-    : `<option value="Mãe" ${data.roleType==="Mãe"?"selected":""}>Mãe</option><option value="Madrasta" ${data.roleType==="Madrasta"?"selected":""}>Madrasta</option>`;
-  return `<article class="family-card parent-card">
-    <div class="family-card-head"><div class="family-icon">${isFather?"👨":"👩"}</div><h4>${title}</h4></div>
-    <label>Relação<select data-parent="${key}" data-field="roleType">${options}</select></label>
-    <label>Nome<input data-parent="${key}" data-field="name" maxlength="40" value="${escapeHTML(data.name)}" placeholder="Nome"></label>
-    <div class="form-grid two">
-      <label>Sexo<select data-parent="${key}" data-field="gender"><option ${data.gender==="Masculino"?"selected":""}>Masculino</option><option ${data.gender==="Feminino"?"selected":""}>Feminino</option></select></label>
-      <label>Idade<input data-parent="${key}" data-field="age" type="number" min="0" max="120" value="${Number(data.age)||0}"></label>
-    </div>
-  </article>`;
-}
-function siblingCard(s,index){
-  const kin=s.relation==="half"?(s.gender==="Feminino"?"Meia-irmã":"Meio-irmão"):(s.gender==="Feminino"?"Irmã":"Irmão");
-  return `<article class="family-card sibling-card" data-sibling-card="${s.id}">
-    <div class="family-card-head"><div class="family-icon">🧑‍🤝‍🧑</div><h4>${kin} ${index+1}</h4><button class="remove-sibling" type="button" data-remove-sibling="${s.id}" aria-label="Remover familiar">×</button></div>
-    <label>Tipo de relação<select data-sibling="${s.id}" data-field="relation"><option value="full" ${s.relation!=="half"?"selected":""}>Irmão / irmã</option><option value="half" ${s.relation==="half"?"selected":""}>Meio-irmão / meia-irmã</option></select></label>
-    <label>Nome<input data-sibling="${s.id}" data-field="name" maxlength="40" value="${escapeHTML(s.name)}" placeholder="Nome"></label>
-    <div class="form-grid two">
-      <label>Sexo<select data-sibling="${s.id}" data-field="gender"><option ${s.gender==="Masculino"?"selected":""}>Masculino</option><option ${s.gender==="Feminino"?"selected":""}>Feminino</option></select></label>
-      <label>Idade<input data-sibling="${s.id}" data-field="age" type="number" min="0" max="120" value="${Number(s.age)||0}"></label>
-    </div>
-  </article>`;
-}
-function renderFamilyEditor(targetId,family){
-  const target=$(targetId);
-  target.innerHTML=`
-    <div class="family-grid">
-      ${personCard("father","Figura paterna",family.father,"father")}
-      ${personCard("mother","Figura materna",family.mother,"mother")}
-    </div>
-    <div class="siblings-section">
-      <div class="siblings-heading">
-        <div><h4>Irmãos e irmãs</h4><p>Podes adicionar quantos quiseres.</p></div>
-        <button class="add-sibling" type="button" data-add-sibling>＋ Adicionar</button>
-      </div>
-      <label class="toggle-row"><input type="checkbox" data-siblings-enabled ${family.siblingsEnabled?"checked":""}><span class="toggle-ui"></span><span><b>Ter irmãos na minha história</b><small>Desativa para retirar os irmãos do jogo sem apagar os dados guardados.</small></span></label>
-      <div class="siblings-grid ${family.siblingsEnabled?"":"is-disabled"}" data-siblings-list>
-        ${family.siblings.map(siblingCard).join("")}
-        ${family.siblings.length===0?'<p class="empty-siblings">Ainda não adicionaste irmãos. Usa o botão + para começar.</p>':""}
-      </div>
-    </div>`;
-  target.querySelectorAll("[data-add-sibling]").forEach(btn=>btn.addEventListener("click",()=>{
-    const next=readFamilyEditor(targetId,family);
-    next.siblings.push({id:makeId(),name:"",gender:"Masculino",age:0,relation:"full",active:true});
-    renderFamilyEditor(targetId,next);
-  }));
-  target.querySelectorAll("[data-remove-sibling]").forEach(btn=>btn.addEventListener("click",()=>{
-    const next=readFamilyEditor(targetId,family);
-    next.siblings=next.siblings.filter(s=>s.id!==btn.dataset.removeSibling);
-    renderFamilyEditor(targetId,next);
-  }));
-  const toggle=target.querySelector("[data-siblings-enabled]");
-  toggle.addEventListener("change",()=>{
-    const next=readFamilyEditor(targetId,family);next.siblingsEnabled=toggle.checked;
-    renderFamilyEditor(targetId,next);
+
+function showScreen(screenId) {
+  document.querySelectorAll(".screen").forEach(screen => {
+    screen.classList.remove("active");
   });
-  target.querySelectorAll("[data-sibling][data-field='gender'],[data-sibling][data-field='relation']").forEach(el=>el.addEventListener("change",()=>{
-    const next=readFamilyEditor(targetId,family);renderFamilyEditor(targetId,next);
-  }));
+  $(screenId).classList.add("active");
+  window.scrollTo(0, 0);
 }
-function readFamilyEditor(targetId,previous){
-  const target=$(targetId);
-  const result=JSON.parse(JSON.stringify(previous));
-  ["father","mother"].forEach(key=>{
-    target.querySelectorAll(`[data-parent="${key}"]`).forEach(el=>{
-      const field=el.dataset.field;result[key][field]=field==="age"?Number(el.value||0):el.value;
+
+function toast(message) {
+  $("toast").textContent = message;
+  $("toast").classList.add("show");
+  setTimeout(() => $("toast").classList.remove("show"), 2400);
+}
+
+function saveGame() {
+  if (!game) return;
+  localStorage.setItem(SAVE_KEY, JSON.stringify(game));
+}
+
+function notify(message, type = "normal") {
+  game.notifications = game.notifications || [];
+
+  game.notifications.unshift({
+    id: id(),
+    year: game.year,
+    message,
+    type,
+    date: new Date().toISOString()
+  });
+
+  game.notifications = game.notifications.slice(0, 150);
+}
+
+function renderNotifications() {
+  const notifications = game.notifications || [];
+
+  $("notificationCount").textContent = notifications.length;
+
+  if (!notifications.length) {
+    $("notifications").innerHTML =
+      '<p class="muted">Ainda não existem acontecimentos.</p>';
+    return;
+  }
+
+  $("notifications").innerHTML = notifications.slice(0, 25).map(item => `
+    <div class="notice">
+      <span class="date">${item.year}</span>
+      · ${safe(item.message)}
+    </div>
+  `).join("");
+}
+
+function currencyFormat(value) {
+  try {
+    return new Intl.NumberFormat("pt-PT", {
+      style: "currency",
+      currency: game.currency || "EUR",
+      maximumFractionDigits: 0
+    }).format(value || 0);
+  } catch {
+    return `${value || 0} ${game.currency || "EUR"}`;
+  }
+}
+
+function getPersonName(person) {
+  return person.name.trim() || person.relation || "Pessoa sem nome";
+}
+
+/* --------------------------------
+   FAMÍLIA E ÁRVORE GENEALÓGICA
+--------------------------------- */
+
+function parentOptions(person, people) {
+  return people
+    .filter(other => other.id !== person.id)
+    .map(other => `
+      <option value="${other.id}"
+        ${(person.parents || []).includes(other.id) ? "selected" : ""}>
+        ${safe(getPersonName(other))}
+      </option>
+    `).join("");
+}
+
+function renderFamilyEditor(containerId, people) {
+  const container = $(containerId);
+
+  if (!people.length) {
+    container.innerHTML = '<p class="muted">Ainda não existem familiares.</p>';
+    return;
+  }
+
+  container.innerHTML = people.map(person => `
+    <div class="person-card ${person.alive ? "" : "dead"}">
+      <div class="person-name">${safe(getPersonName(person))}</div>
+      <div class="person-meta">
+        ${safe(person.relation)} · ${person.age} anos ·
+        ${person.alive ? "Vivo/a" : "Falecido/a"}
+      </div>
+
+      <div class="person-fields">
+        <label>Nome
+          <input data-person="${person.id}" data-field="name"
+            value="${safe(person.name)}">
+        </label>
+
+        <label>Parentesco
+          <select data-person="${person.id}" data-field="relation">
+            ${RELATIONS.map(relation => `
+              <option ${person.relation === relation ? "selected" : ""}>
+                ${relation}
+              </option>
+            `).join("")}
+          </select>
+        </label>
+
+        <label>Sexo
+          <select data-person="${person.id}" data-field="gender">
+            <option ${person.gender === "Masculino" ? "selected" : ""}>
+              Masculino
+            </option>
+            <option ${person.gender === "Feminino" ? "selected" : ""}>
+              Feminino
+            </option>
+          </select>
+        </label>
+
+        <label>Idade
+          <input type="number" min="0" max="120"
+            data-person="${person.id}" data-field="age"
+            value="${person.age}">
+        </label>
+
+        <label class="parent-label">
+          Pais biológicos / ligações de descendência
+          <select multiple size="3"
+            data-person="${person.id}" data-field="parents">
+            ${parentOptions(person, people)}
+          </select>
+        </label>
+      </div>
+
+      ${person.alive ? `
+        <button class="remove-person"
+          data-delete="${person.id}">Remover pessoa</button>
+      ` : `
+        <button class="remove-person"
+          data-delete="${person.id}">Remover registo</button>
+      `}
+    </div>
+  `).join("");
+
+  container.querySelectorAll("[data-person]").forEach(control => {
+    control.addEventListener("change", () => {
+      const person = people.find(p => p.id === control.dataset.person);
+      if (!person) return;
+
+      const field = control.dataset.field;
+
+      if (field === "age") {
+        person.age = Math.max(0, Math.min(120, Number(control.value)));
+      } else if (field === "parents") {
+        person.parents = Array.from(control.selectedOptions)
+          .map(option => option.value);
+      } else {
+        person[field] = control.value;
+      }
+
+      if (field === "name" || field === "relation" || field === "parents") {
+        renderFamilyEditor(containerId, people);
+      }
     });
   });
-  const enabled=target.querySelector("[data-siblings-enabled]");
-  if(enabled) result.siblingsEnabled=enabled.checked;
-  const byId=new Map(result.siblings.map(s=>[s.id,s]));
-  target.querySelectorAll("[data-sibling][data-field]").forEach(el=>{
-    const s=byId.get(el.dataset.sibling);if(!s)return;
-    const field=el.dataset.field;s[field]=field==="age"?Number(el.value||0):el.value;
+
+  container.querySelectorAll("[data-delete]").forEach(button => {
+    button.addEventListener("click", () => {
+      const deletedId = button.dataset.delete;
+
+      const index = people.findIndex(p => p.id === deletedId);
+      if (index < 0) return;
+
+      people.splice(index, 1);
+
+      people.forEach(person => {
+        person.parents = (person.parents || [])
+          .filter(parentId => parentId !== deletedId);
+      });
+
+      renderFamilyEditor(containerId, people);
+    });
   });
-  return result;
 }
-function collectCreatorFamily(){
-  creatorFamily=readFamilyEditor("creatorFamilyEditor",creatorFamily);
-  return JSON.parse(JSON.stringify(creatorFamily));
+
+function addFamilyMember(people, containerId) {
+  people.push(newPerson());
+  renderFamilyEditor(containerId, people);
 }
-function startGame(e){
-  e.preventDefault();
-  const c=getCountry();
-  game={
-    player:{
-      firstName:$("playerFirst").value.trim(),lastName:$("playerLast").value.trim(),
-      gender:$("playerGender").value,age:Number($("playerAge").value),
-      appearance:{skin:$("skin").value,hair:$("hair").value,hairstyle:$("hairstyle").value}
-    },
-    location:{country:c[0],code:c[1],currency:c[2],symbol:c[3],city:$("city").value.trim()},
-    family:collectCreatorFamily(),money:0,year:new Date().getFullYear(),createdAt:new Date().toISOString()
+
+/* --------------------------------
+   CRIAÇÃO DE PERSONAGEM
+--------------------------------- */
+
+function setupCountries() {
+  const select = $("country");
+
+  COUNTRIES.forEach(country => {
+    select.add(new Option(country[0], country[1]));
+  });
+
+  select.value = "PT";
+
+  select.addEventListener("change", updateCurrency);
+  updateCurrency();
+}
+
+function updateCurrency() {
+  const selected = COUNTRIES.find(c => c[1] === $("country").value);
+  if (!selected) return;
+
+  $("currencyPreview").textContent =
+    `${selected[2]} (${selected[3]})`;
+}
+
+function startNewGame() {
+  const firstName = $("firstName").value.trim();
+  const city = $("city").value.trim();
+
+  if (!firstName || !city) {
+    toast("Preenche o nome e a cidade.");
+    return;
+  }
+
+  const country = COUNTRIES.find(c => c[1] === $("country").value)
+    || COUNTRIES[0];
+
+  game = {
+    firstName,
+    lastName: $("lastName").value.trim(),
+    gender: $("gender").value,
+    age: Number($("initialAge").value),
+    city,
+    country: country[0],
+    currency: country[2],
+    currencySymbol: country[3],
+    money: 0,
+    year: new Date().getFullYear(),
+    people: initialPeople.map(person => ({
+      ...person,
+      parents: [...(person.parents || [])]
+    })),
+    notifications: [],
+    alive: true,
+    deathYear: null,
+    deathCause: null
   };
-  saveGame();renderGame();showScreen("gameScreen");toast("A tua nova vida começou!");
-}
-function saveGame(){if(game)localStorage.setItem(SAVE_KEY,JSON.stringify(game));}
-function loadGame(){
-  try{
-    let saved=JSON.parse(localStorage.getItem(SAVE_KEY)||"null");
-    if(!saved){saved=JSON.parse(localStorage.getItem(OLD_SAVE_KEY)||"null");if(saved){saved.family=normalizeFamily(saved.family);game=saved;saveGame();}}
-    if(saved)saved.family=normalizeFamily(saved.family);
-    return saved;
-  }catch{return null}
-}
-function formatMoney(amount){
-  if(!game)return "—";
-  try{return new Intl.NumberFormat("pt-PT",{style:"currency",currency:game.location.currency,maximumFractionDigits:0}).format(amount)}
-  catch{return `${game.location.symbol}${Math.round(amount)}`}
-}
-function renderGame(){
-  $("welcomeName").textContent=`Olá, ${game.player.firstName}!`;
-  $("welcomeLocation").textContent=`${game.location.city}, ${game.location.country} · ${game.location.currency} (${game.location.symbol})`;
-  $("gameAge").textContent=game.player.age;$("gameMoney").textContent=formatMoney(game.money);
-  const f=normalizeFamily(game.family);game.family=f;
-  const people=[];
-  if(f.father.active!==false)people.push({role:f.father.roleType,name:f.father.name,gender:f.father.gender,age:f.father.age});
-  if(f.mother.active!==false)people.push({role:f.mother.roleType,name:f.mother.name,gender:f.mother.gender,age:f.mother.age});
-  if(f.siblingsEnabled)f.siblings.forEach(s=>people.push({role:s.relation==="half"?(s.gender==="Feminino"?"Meia-irmã":"Meio-irmão"):(s.gender==="Feminino"?"Irmã":"Irmão"),name:s.name,gender:s.gender,age:s.age}));
-  $("familySummary").innerHTML=people.length?people.map(p=>`<div class="family-person"><b>${escapeHTML(p.role)}</b><span>${escapeHTML(p.name||"Por definir")}</span><span>${escapeHTML(p.gender)} · ${p.age} anos</span></div>`).join(""):'<p class="empty-siblings">Ainda não há familiares ativos nesta história.</p>';
-}
-function continueGame(){
-  const saved=loadGame();if(!saved){toast("Ainda não existe nenhum jogo guardado.");return}
-  game=saved;renderGame();showScreen("gameScreen");
-}
-function ageUp(){
-  game.player.age++;game.year++;
-  const f=normalizeFamily(game.family);
-  if(f.father.active!==false)f.father.age++;
-  if(f.mother.active!==false)f.mother.age++;
-  f.siblings.forEach(s=>s.age++);
-  game.family=f;saveGame();renderGame();toast(`Avançaste para os ${game.player.age} anos.`);
-}
-function openFamilyModal(){
-  game.family=normalizeFamily(game.family);
-  renderFamilyEditor("gameFamilyEditor",JSON.parse(JSON.stringify(game.family)));
-  $("familyModal").classList.add("open");$("familyModal").setAttribute("aria-hidden","false");
-}
-function closeFamilyModal(){
-  $("familyModal").classList.remove("open");$("familyModal").setAttribute("aria-hidden","true");
-}
-function saveFamilyModal(){
-  game.family=readFamilyEditor("gameFamilyEditor",game.family);
-  saveGame();renderGame();closeFamilyModal();toast("Família atualizada e guardada!");
-}
-function resetForm(){
-  $("creatorForm").reset();$("country").value="PT";updateCurrency();
-  creatorFamily=defaultFamily();renderFamilyEditor("creatorFamilyEditor",creatorFamily);
+
+  notify("A tua vida começou. Uma nova história está à tua espera.");
+
+  saveGame();
+  renderGame();
+  showScreen("gameScreen");
 }
 
-$("newGameBtn").addEventListener("click",()=>{resetForm();showScreen("creatorScreen")});
-$("continueBtn").addEventListener("click",continueGame);
-$("backHome").addEventListener("click",()=>showScreen("homeScreen"));
-$("cancelCreate").addEventListener("click",()=>showScreen("homeScreen"));
-$("creatorForm").addEventListener("submit",startGame);
-$("country").addEventListener("change",updateCurrency);
-$("ageUpBtn").addEventListener("click",ageUp);
-$("restartBtn").addEventListener("click",()=>showScreen("homeScreen"));
-$("settingsBtn").addEventListener("click",()=>toast("As definições serão adicionadas numa próxima versão."));
-$("editFamilyBtn").addEventListener("click",openFamilyModal);
-$("closeFamilyModal").addEventListener("click",closeFamilyModal);
-$("cancelFamilyEdit").addEventListener("click",closeFamilyModal);
-$("saveFamilyEdit").addEventListener("click",saveFamilyModal);
-$("familyModal").addEventListener("click",e=>{if(e.target===$("familyModal"))closeFamilyModal();});
+/* --------------------------------
+   CARREGAR E ATUALIZAR GRAVAÇÕES
+--------------------------------- */
 
-fillCountries();
-renderFamilyEditor("creatorFamilyEditor",creatorFamily);
-if(loadGame()){$("continueBtn").disabled=false;$("saveNote").textContent="Encontrámos um jogo guardado neste dispositivo."}
-else{$("continueBtn").disabled=true;$("continueBtn").style.opacity=".55"}
+function normalizeGame() {
+  game.people = Array.isArray(game.people) ? game.people : [];
+  game.notifications = Array.isArray(game.notifications)
+    ? game.notifications : [];
+
+  game.people.forEach(person => {
+    person.id = person.id || id();
+    person.name = person.name || "";
+    person.relation = person.relation || "Outro";
+    person.gender = person.gender || "Masculino";
+    person.age = Number(person.age) || 0;
+    person.parents = Array.isArray(person.parents) ? person.parents : [];
+    person.alive = person.alive !== false;
+  });
+
+  game.age = Number(game.age) || 18;
+  game.year = Number(game.year) || new Date().getFullYear();
+  game.money = Number(game.money) || 0;
+  game.alive = game.alive !== false;
+
+  if (!game.currency) game.currency = "EUR";
+  if (!game.country) game.country = "Portugal";
+  if (!game.city) game.city = "Cidade não definida";
+
+  // Corrige ligações para pessoas que já não existem.
+  const validIds = new Set(game.people.map(p => p.id));
+
+  game.people.forEach(person => {
+    person.parents = person.parents.filter(parentId =>
+      validIds.has(parentId) && parentId !== person.id
+    );
+  });
+
+  // Importação da estrutura familiar simples da versão anterior.
+  if (!game.people.length && game.family) {
+    const family = game.family;
+
+    if (family.father) {
+      game.people.push({
+        ...newPerson("Pai"),
+        ...family.father,
+        id: id(),
+        relation: "Pai"
+      });
+    }
+
+    if (family.mother) {
+      game.people.push({
+        ...newPerson("Mãe"),
+        ...family.mother,
+        id: id(),
+        relation: "Mãe"
+      });
+    }
+
+    if (Array.isArray(family.siblings)) {
+      family.siblings.forEach(sibling => {
+        game.people.push({
+          ...newPerson("Irmão"),
+          ...sibling,
+          id: id(),
+          relation: sibling.relation || "Irmão"
+        });
+      });
+    }
+  }
+}
+
+function continueGame() {
+  const stored = localStorage.getItem(SAVE_KEY);
+
+  if (!stored) {
+    toast("Não existe uma gravação StarLife v3 neste dispositivo.");
+    return;
+  }
+
+  try {
+    game = JSON.parse(stored);
+    normalizeGame();
+    saveGame();
+    renderGame();
+    showScreen("gameScreen");
+  } catch (error) {
+    console.error(error);
+    toast("Não foi possível abrir a gravação.");
+  }
+}
+
+/* --------------------------------
+   ENVELHECIMENTO E MORTE
+--------------------------------- */
+
+function mortalityRisk(age) {
+  if (age < 1) return 0.003;
+  if (age < 15) return 0.0004;
+  if (age < 40) return 0.001;
+  if (age < 60) return 0.003;
+  if (age < 70) return 0.008;
+  if (age < 80) return 0.018;
+  if (age < 90) return 0.055;
+  if (age < 100) return 0.13;
+  if (age < 110) return 0.30;
+  return 0.55;
+}
+
+function deathCauseFor(person) {
+  const age = person.age;
+  const roll = Math.random();
+
+  if (age >= 85 && roll < 0.65) return "velhice";
+  if (roll < 0.55) return "doença";
+  return "acidente";
+}
+
+function die(person, cause) {
+  person.alive = false;
+  person.deathYear = game.year;
+  person.deathCause = cause;
+
+  const name = getPersonName(person);
+
+  notify(
+    `${name} faleceu aos ${person.age} anos. Causa: ${cause}.`,
+    "death"
+  );
+
+  if (person.isPlayer) {
+    game.alive = false;
+    game.deathYear = game.year;
+    game.deathCause = cause;
+    notify("A tua vida terminou. A tua história ficou registada.", "death");
+  }
+}
+
+function advanceYear() {
+  if (!game || !game.alive) return;
+
+  game.year += 1;
+  game.age += 1;
+
+  // O jogador também está sujeito ao envelhecimento e à mortalidade.
+  const playerRisk = mortalityRisk(game.age);
+
+  if (Math.random() < playerRisk) {
+    const player = {
+      name: `${game.firstName} ${game.lastName}`.trim(),
+      age: game.age,
+      isPlayer: true
+    };
+
+    die(player, deathCauseFor(player));
+  }
+
+  // Cada pessoa tem um registo independente.
+  game.people.forEach(person => {
+    if (!person.alive) return;
+
+    person.age += 1;
+
+    let risk = mortalityRisk(person.age);
+
+    // Risco adicional aleatório de doença ou acidente.
+    if (Math.random() < 0.003) risk += 0.012;
+    if (Math.random() < 0.0015) risk += 0.018;
+
+    if (Math.random() < Math.min(risk, 0.95)) {
+      die(person, deathCauseFor(person));
+    }
+  });
+
+  if (game.alive) {
+    notify(`Completaste ${game.age} anos. Começou o ano ${game.year}.`);
+  }
+
+  saveGame();
+  renderGame();
+
+  if (!game.alive) {
+    $("lifeStatus").textContent =
+      "A tua vida terminou. Podes consultar o percurso e a família.";
+    $("ageButton").disabled = true;
+    $("ageButton").textContent = "Vida terminada";
+  }
+}
+
+/* --------------------------------
+   ÁRVORE GENEALÓGICA
+--------------------------------- */
+
+function renderFamilyTree() {
+  if (!game.people.length) {
+    return '<p class="muted">Ainda não tens familiares registados.</p>';
+  }
+
+  return game.people.map(person => {
+    const parents = (person.parents || [])
+      .map(parentId => game.people.find(p => p.id === parentId))
+      .filter(Boolean);
+
+    const parentText = parents.length
+      ? parents.map(getPersonName).join(" e ")
+      : "Ligação parental não definida";
+
+    return `
+      <div class="tree-node ${person.alive ? "" : "dead"}">
+        <strong>${safe(getPersonName(person))}</strong>
+        <small>${safe(person.relation)} · ${person.age} anos</small>
+        <small>${safe(parentText)}</small>
+        <small>${person.alive ? "Vivo/a" :
+          `Falecido/a em ${person.deathYear} · ${safe(person.deathCause)}`}</small>
+      </div>
+    `;
+  }).join("");
+}
+
+/* --------------------------------
+   NAVEGAÇÃO INFERIOR
+--------------------------------- */
+
+function renderTab(tab) {
+  document.querySelectorAll(".nav-btn").forEach(button => {
+    button.classList.toggle("active", button.dataset.tab === tab);
+  });
+
+  const titles = {
+    home: "Início",
+    money: "Dinheiro",
+    career: "Carreira",
+    business: "Negócios",
+    people: "Pessoas",
+    shop: "Loja",
+    profile: "Perfil"
+  };
+
+  $("tabTitle").textContent = titles[tab] || "Início";
+
+  const content = {
+    home: `
+      <p>Bem-vindo/a, <strong>${safe(game.firstName)}</strong>.</p>
+      <p>A tua vida está a decorrer em ${safe(game.city)}, ${safe(game.country)}.</p>
+      <p>Consulta as notificações para acompanhares os acontecimentos.</p>
+    `,
+
+    money: `
+      <h3>Património atual</h3>
+      <p class="large-value">${currencyFormat(game.money)}</p>
+      <p class="muted">O sistema de salários, despesas, impostos, bancos e investimentos será desenvolvido nas próximas fases.</p>
+    `,
+
+    career: `
+      <h3>Educação e carreira</h3>
+      <p>Esta área será utilizada para estudar, procurar emprego, receber propostas e construir uma carreira profissional.</p>
+      <p class="muted">Sistema de carreira ainda em desenvolvimento.</p>
+    `,
+
+    business: `
+      <h3>Os teus negócios</h3>
+      <p>Criação de empresas, contratação de funcionários e gestão empresarial.</p>
+      <p class="muted">Sistema de negócios ainda em desenvolvimento.</p>
+    `,
+
+    people: `
+      <h3>Árvore genealógica</h3>
+      <p class="muted">Cada pessoa é um personagem independente.</p>
+      ${renderFamilyTree()}
+      <button class="secondary wide" id="openFamilyFromPeople">Editar família nas definições</button>
+    `,
+
+    shop: `
+      <h3>Loja</h3>
+      <p>Objetos pessoais, roupa, veículos, casas e outras compras.</p>
+      <p class="muted">Loja ainda em desenvolvimento.</p>
+    `,
+
+    profile: `
+      <h3>${safe(game.firstName)} ${safe(game.lastName)}</h3>
+      <p>${game.age} anos · ${safe(game.gender)}</p>
+      <p>${safe(game.city)}, ${safe(game.country)}</p>
+      <p>Estado: ${game.alive ? "Vivo/a" : "Falecido/a"}</p>
+    `
+  };
+
+  $("tabContent").innerHTML = content[tab] || content.home;
+
+  $("openFamilyFromPeople")?.addEventListener("click", openSettings);
+}
+
+function renderGame() {
+  $("playerName").textContent =
+    `${game.firstName} ${game.lastName}`.trim();
+
+  $("playerLocation").textContent =
+    `${game.city}, ${game.country}`;
+
+  $("playerAge").textContent = game.age;
+  $("playerMoney").textContent = currencyFormat(game.money);
+  $("currentYear").textContent = game.year;
+
+  renderNotifications();
+  renderTab("home");
+
+  $("ageButton").disabled = !game.alive;
+  $("ageButton").textContent =
+    game.alive ? "🎂 Avançar um ano" : "Vida terminada";
+
+  $("lifeStatus").textContent = game.alive
+    ? "A tua história continua."
+    : `Faleceste em ${game.deathYear}. Causa: ${game.deathCause}.`;
+}
+
+/* --------------------------------
+   DEFINIÇÕES
+--------------------------------- */
+
+function openSettings() {
+  if (!game) return;
+
+  renderFamilyEditor("familyEditor", game.people);
+  $("settingsModal").classList.add("open");
+}
+
+function closeSettings() {
+  $("settingsModal").classList.remove("open");
+}
+
+function exportSave() {
+  if (!game) return;
+
+  const file = new Blob(
+    [JSON.stringify(game, null, 2)],
+    { type: "application/json" }
+  );
+
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = "StarLife_gravacao.json";
+  link.click();
+
+  URL.revokeObjectURL(url);
+  toast("Gravação preparada para exportação.");
+}
+
+/* --------------------------------
+   INICIALIZAÇÃO
+--------------------------------- */
+
+function init() {
+  setupCountries();
+
+  initialPeople = [
+    newPerson("Pai"),
+    newPerson("Mãe"),
+    newPerson("Irmão")
+  ];
+
+  renderFamilyEditor("initialFamily", initialPeople);
+
+  $("newGameBtn").addEventListener("click", () => {
+    showScreen("createScreen");
+  });
+
+  $("continueBtn").addEventListener("click", continueGame);
+
+  $("addInitialPerson").addEventListener("click", () => {
+    addFamilyMember(initialPeople, "initialFamily");
+  });
+
+  $("startGameBtn").addEventListener("click", startNewGame);
+
+  $("ageButton").addEventListener("click", advanceYear);
+
+  $("settingsBtn").addEventListener("click", openSettings);
+  $("closeSettings").addEventListener("click", closeSettings);
+
+  $("addFamilyPerson").addEventListener("click", () => {
+    addFamilyMember(game.people, "familyEditor");
+  });
+
+  $("saveFamily").addEventListener("click", () => {
+    saveGame();
+    renderGame();
+    closeSettings();
+    toast("Árvore genealógica guardada.");
+  });
+
+  $("saveGame").addEventListener("click", () => {
+    saveGame();
+    toast("Jogo guardado.");
+  });
+
+  $("exportGame").addEventListener("click", exportSave);
+
+  document.querySelectorAll(".nav-btn").forEach(button => {
+    button.addEventListener("click", () => {
+      renderTab(button.dataset.tab);
+    });
+  });
+
+  if (localStorage.getItem(SAVE_KEY)) {
+    $("saveMessage").textContent =
+      "Existe uma gravação StarLife neste dispositivo.";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", init);

@@ -1,127 +1,338 @@
+
 <!DOCTYPE html>
 <html lang="pt-PT">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#792c50">
+  <meta name="theme-color" content="#10131d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>StarLife</title>
   <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">S</div>
-      <div><strong>STARLIFE</strong><small>Your Life. Your Choices. Your World.</small></div>
-    </div>
-    <button id="settingsBtn" class="icon-btn" aria-label="Definições">⚙</button>
-  </header>
-
-  <main>
-<section id="startScreen" class="screen active">
-      <div class="hero">
-        <span class="eyebrow">A TUA VIDA COMEÇA AQUI</span>
-        <h1>Uma vida.<br><span>Mil possibilidades.</span></h1>
-        <p>Cria a tua personagem e constrói a tua própria história.</p>
-        <button id="newGameBtn" class="primary">Criar nova vida</button>
-        <button id="continueBtn" class="secondary">Continuar jogo</button>
-        <p id="saveMessage" class="muted"></p>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <div class="logo">✦ StarLife</div>
+        <div class="subtitle" id="headerSubtitle">A tua vida começa aqui</div>
       </div>
-    </section>
+      <div class="header-right">
+        <span class="year-pill" id="yearPill">Nova vida</span>
+        <button class="icon-button" id="saveButton" type="button" aria-label="Guardar">▣</button>
+      </div>
+    </header>
 
-    <section id="createScreen" class="screen">
-      <h1>Criar personagem</h1>
-      <div class="panel">
-        <h2>Dados pessoais</h2>
-        <div class="form-grid">
-          <label>Nome<input id="firstName" required></label>
-          <label>Apelido<input id="lastName"></label>
-          <label>Sexo
-            <select id="gender">
-              <option>Masculino</option>
-              <option>Feminino</option>
-            </select>
+    <main>
+      <!-- CRIAÇÃO DA PERSONAGEM -->
+      <section id="creationScreen" class="screen active">
+        <div class="hero">
+          <div class="hero-icon">✦</div>
+          <p class="eyebrow">O teu mundo. As tuas escolhas.</p>
+          <h1>Começa a tua<br><span>StarLife</span></h1>
+          <p class="muted">Cria a tua personagem e constrói uma vida à tua maneira.</p>
+        </div>
+
+        <div class="panel">
+          <h2>A tua personagem</h2>
+          <div class="form-grid">
+            <label>Nome *
+              <input id="firstName" type="text" maxlength="30" autocomplete="given-name" placeholder="O teu nome">
+            </label>
+            <label>Apelido *
+              <input id="lastName" type="text" maxlength="40" autocomplete="family-name" placeholder="O teu apelido">
+            </label>
+            <label>Sexo *
+              <select id="playerSex">
+                <option value="">Selecionar</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Feminino">Feminino</option>
+                <option value="Outro">Outro</option>
+              </select>
+            </label>
+            <label>Idade inicial *
+              <input id="playerAge" type="number" min="0" max="100" value="18">
+            </label>
+            <label>País *
+              <input id="playerCountry" type="text" value="Portugal" maxlength="50">
+            </label>
+            <label>Cidade *
+              <input id="playerCity" type="text" maxlength="50" placeholder="Ex.: Lisboa">
+            </label>
+          </div>
+          <p class="form-hint">* Campos obrigatórios para iniciar o jogo.</p>
+        </div>
+
+        <div class="panel">
+          <div class="section-heading">
+            <div>
+              <h2>A tua família</h2>
+              <p class="muted small">Podes criar os familiares que quiseres.</p>
+            </div>
+            <button class="small-button" id="addInitialRelative" type="button">＋ Adicionar</button>
+          </div>
+          <div id="initialFamilyList" class="family-list">
+            <p class="empty-state">Ainda não adicionaste familiares.</p>
+          </div>
+        </div>
+
+        <div id="creationErrors" class="error-box" role="alert" hidden></div>
+        <button id="startGameButton" class="primary-button full" type="button" disabled>
+          Preenche os campos obrigatórios
+        </button>
+        <p class="center muted tiny">A tua vida será guardada automaticamente neste dispositivo.</p>
+      </section>
+
+      <!-- JOGO -->
+      <section id="gameScreen" class="screen">
+        <div class="welcome-card">
+          <div>
+            <p class="eyebrow">A tua história</p>
+            <h1 id="playerHeading">Olá!</h1>
+            <p class="muted" id="playerDescription"></p>
+          </div>
+          <div class="avatar" id="playerAvatar">✦</div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card"><span>🎂 Idade</span><strong id="ageStat">18</strong></div>
+          <div class="stat-card"><span>❤️ Saúde</span><strong id="healthStat">100%</strong></div>
+          <div class="stat-card"><span>😊 Felicidade</span><strong id="happinessStat">100%</strong></div>
+          <div class="stat-card"><span>💶 Saldo</span><strong id="moneyStat">0 €</strong></div>
+        </div>
+
+        <div class="panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Calendário</p>
+              <h2 id="dateHeading">2026</h2>
+            </div>
+            <span class="status-pill" id="lifeStatus">Ativo</span>
+          </div>
+          <p class="muted small">Cada avanço representa um ano da tua vida.</p>
+          <button id="nextYearButton" class="primary-button full" type="button">⏩ Avançar um ano</button>
+        </div>
+
+        <div class="panel">
+          <div class="section-heading">
+            <h2>O que se passa?</h2>
+            <span class="muted tiny">Notificações</span>
+          </div>
+          <div id="notifications" class="notifications">
+            <p class="empty-state">Ainda não há acontecimentos.</p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Resumo da vida</h2>
+          <div id="lifeSummary" class="summary-list"></div>
+        </div>
+      </section>
+
+      <!-- PATRIMÓNIO -->
+      <section id="tab-patrimonio" class="screen tab-screen">
+        <div class="page-heading"><p class="eyebrow">Gestão financeira</p><h1>Património</h1><p class="muted">Controla o teu dinheiro e constrói o teu futuro.</p></div>
+        <div class="balance-card">
+          <span>Saldo disponível</span>
+          <strong id="wealthBalance">0 €</strong>
+          <small id="wealthNetWorth">Património líquido: 0 €</small>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><span>📥 Rendimentos</span><strong id="incomeStat">0 €</strong></div>
+          <div class="stat-card"><span>📤 Despesas</span><strong id="expenseStat">0 €</strong></div>
+        </div>
+        <div class="panel">
+          <h2>Movimentos</h2>
+          <div class="form-grid">
+            <label>Descrição<input id="transactionDescription" type="text" maxlength="50" placeholder="Ex.: Trabalho"></label>
+            <label>Valor (€)<input id="transactionAmount" type="number" min="0.01" step="0.01" placeholder="0,00"></label>
+            <label>Tipo<select id="transactionType"><option value="income">Rendimento</option><option value="expense">Despesa</option></select></label>
+          </div>
+          <button id="addTransactionButton" class="primary-button full" type="button">Adicionar movimento</button>
+          <div id="transactionList" class="item-list"></div>
+        </div>
+      </section>
+
+      <!-- CARREIRA -->
+      <section id="tab-carreira" class="screen tab-screen">
+        <div class="page-heading"><p class="eyebrow">Trabalho e formação</p><h1>Carreira</h1><p class="muted">Escolhe o teu caminho profissional.</p></div>
+        <div class="panel">
+          <h2>Situação profissional</h2>
+          <div class="info-row"><span>Profissão</span><strong id="careerJob">Desempregado</strong></div>
+          <div class="info-row"><span>Salário anual</span><strong id="careerSalary">0 €</strong></div>
+          <div class="info-row"><span>Escolaridade</span><strong id="careerEducation">Básica</strong></div>
+        </div>
+        <div class="panel">
+          <h2>Procurar emprego</h2>
+          <p class="muted small">Escolhe uma oportunidade. O salário é recebido quando avanças um ano.</p>
+          <div id="jobOptions" class="option-list"></div>
+        </div>
+        <div class="panel">
+          <h2>Formação</h2>
+          <div id="educationOptions" class="option-list"></div>
+        </div>
+      </section>
+
+      <!-- NEGÓCIOS -->
+      <section id="tab-negocios" class="screen tab-screen">
+        <div class="page-heading"><p class="eyebrow">Empreendedorismo</p><h1>Negócios</h1><p class="muted">Cria projetos e gere as tuas empresas.</p></div>
+        <div class="panel">
+          <h2>Criar negócio</h2>
+          <label>Nome do negócio<input id="businessName" type="text" maxlength="40" placeholder="Nome da empresa"></label>
+          <label>Investimento inicial (€)<input id="businessInvestment" type="number" min="100" step="50" placeholder="1000"></label>
+          <button id="createBusinessButton" class="primary-button full" type="button">Criar negócio</button>
+        </div>
+        <div class="panel">
+          <h2>Os meus negócios</h2>
+          <div id="businessList" class="item-list"></div>
+        </div>
+      </section>
+
+      <!-- PESSOAS -->
+      <section id="tab-pessoas" class="screen tab-screen">
+        <div class="page-heading"><p class="eyebrow">Relações e família</p><h1>Pessoas</h1><p class="muted">As pessoas que fazem parte da tua história.</p></div>
+        <div class="panel">
+          <h2>Família</h2>
+          <div id="peopleFamilyList" class="family-list"></div>
+        </div>
+        <div class="panel">
+          <h2>Relações</h2>
+          <p class="muted small">A tua rede familiar será desenvolvida à medida que a tua vida evolui.</p>
+          <div id="relationshipSummary" class="summary-list"></div>
+        </div>
+      </section>
+
+      <!-- LOJA -->
+      <section id="tab-loja" class="screen tab-screen">
+        <div class="page-heading"><p class="eyebrow">Personalização</p><h1>Loja</h1><p class="muted">Pequenos extras para a tua vida.</p></div>
+        <div class="panel">
+          <h2>Artigos disponíveis</h2>
+          <div class="shop-item">
+            <div><strong>Roupa nova</strong><p class="muted small">Um novo visual para a tua personagem.</p></div>
+            <button class="small-button" data-buy="clothes" type="button">Comprar · 100 €</button>
+          </div>
+          <div class="shop-item">
+            <div><strong>Dia de descanso</strong><p class="muted small">Melhora a tua felicidade.</p></div>
+            <button class="small-button" data-buy="rest" type="button">Comprar · 50 €</button>
+          </div>
+          <div class="shop-item">
+            <div><strong>Consulta médica</strong><p class="muted small">Cuida da tua saúde.</p></div>
+            <button class="small-button" data-buy="doctor" type="button">Comprar · 80 €</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- PERFIL -->
+      <section id="tab-perfil" class="screen tab-screen">
+        <div class="page-heading"><p class="eyebrow">A tua identidade</p><h1>Perfil</h1></div>
+        <div class="panel profile-panel">
+          <div class="avatar large" id="profileAvatar">✦</div>
+          <h2 id="profileName">Personagem</h2>
+          <p class="muted" id="profileDetails"></p>
+          <div class="info-row"><span>País</span><strong id="profileCountry"></strong></div>
+          <div class="info-row"><span>Cidade</span><strong id="profileCity"></strong></div>
+          <div class="info-row"><span>Data de nascimento</span><strong id="profileBirth"></strong></div>
+          <div class="info-row"><span>Estado</span><strong id="profileStatus"></strong></div>
+        </div>
+      </section>
+
+      <!-- DEFINIÇÕES -->
+      <section id="tab-definicoes" class="screen tab-screen">
+        <div class="page-heading"><p class="eyebrow">Personalização</p><h1>Definições</h1><p class="muted">Organiza e gere a tua experiência.</p></div>
+        <div class="settings-menu panel">
+          <button id="openFamilySettings" class="settings-link" type="button">
+            <span><strong>👨‍👩‍👧 Editar Família</strong><small>Adicionar, editar e remover familiares</small></span><b>›</b>
+          </button>
+          <div class="divider"></div>
+          <button id="exportSaveButton" class="settings-link" type="button">
+            <span><strong>⬇️ Exportar gravação</strong><small>Guardar uma cópia da tua vida</small></span><b>›</b>
+          </button>
+          <label class="import-label">
+            <span><strong>⬆️ Importar gravação</strong><small>Carregar uma vida guardada</small></span>
+            <input id="importSaveInput" type="file" accept=".json,application/json">
           </label>
-          <label>Idade inicial<input id="initialAge" type="number" min="0" max="100" value="18"></label>
-          <label>País<select id="country"></select></label>
-          <label>Cidade<input id="city" placeholder="Ex.: Lisboa"></label>
+          <div class="divider"></div>
+          <button id="newLifeButton" class="settings-link danger-text" type="button">
+            <span><strong>＋ Começar nova vida</strong><small>Apaga a vida atual deste dispositivo</small></span><b>›</b>
+          </button>
         </div>
-        <p class="muted">Moeda local: <strong id="currencyPreview">EUR (€)</strong></p>
-      </div>
-
-      <div class="panel">
-        <h2>Família inicial</h2>
-        <p class="muted">Podes adicionar todas as pessoas que quiseres. As ligações familiares podem ser editadas depois nas definições.</p>
-        <div id="initialFamily"></div>
-        <button id="addInitialPerson" class="secondary">＋ Adicionar familiar</button>
-      </div>
-      <button id="startGameBtn" class="primary wide">Começar a minha vida</button>
-    </section>
-
-    <section id="gameScreen" class="screen">
-      <div class="welcome">
-        <span class="eyebrow">A TUA HISTÓRIA</span>
-        <h1 id="playerName"></h1>
-        <p id="playerLocation"></p>
-      </div>
-
-      <div class="stats">
-        <article><small>IDADE</small><strong id="playerAge">18</strong></article>
-        <article><small>PATRIMÓNIO</small><strong id="playerMoney">0 €</strong></article>
-        <article><small>ANO</small><strong id="currentYear">2026</strong></article>
-      </div>
-
-      <section class="panel notification-panel">
-        <div class="section-heading">
-          <div><h2>Notificações</h2><small>Os acontecimentos da tua vida</small></div>
-          <span id="notificationCount" class="counter">0</span>
+        <div id="familySettingsPanel" class="panel" hidden>
+          <div class="section-heading">
+            <div><h2>Editar Família</h2><p class="muted small">Gere todos os teus familiares.</p></div>
+            <button id="closeFamilySettings" class="small-button" type="button">Fechar</button>
+          </div>
+          <div id="settingsFamilyList" class="family-list"></div>
+          <button id="addSettingsRelative" class="secondary-button full" type="button">＋ Adicionar familiar</button>
         </div>
-        <div id="notifications" class="notifications">
-          <p class="muted">Ainda não existem acontecimentos.</p>
+        <div class="panel">
+          <h2>Sobre o StarLife</h2>
+          <p class="muted small">Versão de desenvolvimento. A tua gravação fica guardada localmente neste dispositivo.</p>
         </div>
       </section>
+    </main>
 
-      <section class="panel content-panel">
-        <h2 id="tabTitle">Início</h2>
-        <div id="tabContent"></div>
-      </section>
-
-      <button id="ageButton" class="primary wide">🎂 Avançar um ano</button>
-      <p id="lifeStatus" class="muted center"></p>
-
-      <nav class="bottom-nav">
-        <button class="nav-btn active" data-tab="home"><span>⌂</span>Início</button>
-        <button class="nav-btn" data-tab="money"><span>▱</span>Dinheiro</button>
-        <button class="nav-btn" data-tab="career"><span>♧</span>Carreira</button>
-        <button class="nav-btn" data-tab="business"><span>▣</span>Negócios</button>
-        <button class="nav-btn" data-tab="people"><span>♙</span>Pessoas</button>
-        <button class="nav-btn" data-tab="shop"><span>▤</span>Loja</button>
-        <button class="nav-btn" data-tab="profile"><span>◎</span>Perfil</button>
-      </nav>
-    </section>
-  </main>
-
-  <div id="settingsModal" class="modal">
-    <div class="modal-card">
-      <div class="section-heading">
-        <h2>Definições</h2>
-        <button id="closeSettings" class="secondary">Fechar</button>
-      </div>
-      <div class="settings-section">
-        <h3>Família e árvore genealógica</h3>
-        <p class="muted">Adiciona, edita e liga familiares. Cada pessoa tem a sua própria identidade e relações.</p>
-        <div id="familyEditor"></div>
-        <button id="addFamilyPerson" class="secondary">＋ Adicionar pessoa</button>
-        <button id="saveFamily" class="primary wide">Guardar alterações</button>
-      </div>
-      <div class="settings-section">
-        <h3>Gravação</h3>
-        <button id="saveGame" class="secondary wide">Guardar jogo agora</button>
-        <button id="exportGame" class="secondary wide">Exportar gravação</button>
-      </div>
-    </div>
+    <nav id="bottomNav" class="bottom-nav" aria-label="Navegação principal" hidden>
+      <button class="nav-item active" data-tab="inicio" type="button"><span>⌂</span><small>Início</small></button>
+      <button class="nav-item" data-tab="patrimonio" type="button"><span>€</span><small>Património</small></button>
+      <button class="nav-item" data-tab="carreira" type="button"><span>▣</span><small>Carreira</small></button>
+      <button class="nav-item" data-tab="negocios" type="button"><span>◆</span><small>Negócios</small></button>
+      <button class="nav-item" data-tab="pessoas" type="button"><span>♧</span><small>Pessoas</small></button>
+      <button class="nav-item" data-tab="loja" type="button"><span>◇</span><small>Loja</small></button>
+      <button class="nav-item" data-tab="perfil" type="button"><span>◉</span><small>Perfil</small></button>
+      <button class="nav-item" data-tab="definicoes" type="button"><span>⚙</span><small>Definições</small></button>
+    </nav>
   </div>
 
-  <div id="toast" role="status"></div>
-  <script src="script.js"></script>
+  <dialog id="relativeDialog">
+    <form id="relativeForm" method="dialog">
+      <div class="dialog-heading">
+        <h2 id="relativeDialogTitle">Adicionar familiar</h2>
+        <button class="icon-button" id="closeRelativeDialog" type="button" aria-label="Fechar">✕</button>
+      </div>
+      <input id="relativeId" type="hidden">
+      <label>Nome completo *
+        <input id="relativeName" type="text" maxlength="70" placeholder="Nome do familiar" required>
+      </label>
+      <label>Sexo *
+        <select id="relativeSex" required>
+          <option value="">Selecionar</option>
+          <option>Masculino</option>
+          <option>Feminino</option>
+          <option>Outro</option>
+        </select>
+      </label>
+      <label>Parentesco *
+        <input id="relativeRelation" type="text" maxlength="40" list="relationSuggestions" placeholder="Ex.: Pai biológico, avó, primo..." required>
+        <datalist id="relationSuggestions">
+          <option value="Pai biológico"><option value="Mãe biológica">
+          <option value="Pai adotivo"><option value="Mãe adotiva">
+          <option value="Padrasto"><option value="Madrasta">
+          <option value="Irmão"><option value="Irmã">
+          <option value="Meio-irmão"><option value="Meia-irmã">
+          <option value="Avô"><option value="Avó">
+          <option value="Filho"><option value="Filha">
+          <option value="Primo"><option value="Prima">
+          <option value="Tio"><option value="Tia">
+          <option value="Cônjuge"><option value="Outro familiar">
+        </datalist>
+      </label>
+      <label>Idade
+        <input id="relativeAge" type="number" min="0" max="120" placeholder="Idade">
+      </label>
+      <label>Ligação de descendência
+        <select id="relativeParent">
+          <option value="">Não especificar</option>
+        </select>
+      </label>
+      <p class="muted tiny">Podes indicar de quem esta pessoa é filha. Assim a árvore familiar pode representar famílias recompostas.</p>
+      <div class="dialog-actions">
+        <button id="cancelRelative" class="secondary-button" type="button">Cancelar</button>
+        <button class="primary-button" type="submit">Guardar familiar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

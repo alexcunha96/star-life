@@ -1,3 +1,4 @@
+
 "use strict";
 
 /* =========================================
@@ -14,6 +15,10 @@ const $ = (id) => document.getElementById(id);
 
 function createId() {
   return "person_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+}
+
+function randomFrom(list) {
+  return list[Math.floor(Math.random() * list.length)];
 }
 
 function money(value) {
@@ -138,25 +143,48 @@ function relationIsFather(relation) {
 }
 
 function createAutomaticFamily() {
+  const femaleNames = [
+    "Maria", "Ana", "Beatriz", "Inês", "Sofia",
+    "Matilde", "Leonor", "Carolina", "Mariana",
+    "Margarida", "Catarina", "Joana", "Rita",
+    "Francisca", "Marta", "Laura", "Alice",
+    "Diana", "Cláudia", "Raquel", "Teresa",
+    "Isabel", "Helena", "Andreia", "Patrícia"
+  ];
+
+  const maleNames = [
+    "João", "Pedro", "Miguel", "Francisco", "Tiago",
+    "Diogo", "André", "Rafael", "Gonçalo",
+    "Martim", "Afonso", "Tomás", "Duarte",
+    "Bruno", "Ricardo", "Daniel", "António",
+    "Manuel", "Luís", "Gabriel", "David",
+    "Nuno", "Hugo", "Filipe", "Eduardo"
+  ];
+
+  const motherAge = Math.floor(Math.random() * (45 - 18 + 1)) + 18;
+  const fatherAge = Math.floor(Math.random() * (50 - 18 + 1)) + 18;
+
   const mother = createFamilyMember({
-    name: "Mãe",
+    name: randomFrom(femaleNames),
     surname: game.player.surname,
     relation: "Mãe",
-    age: 28,
+    age: motherAge,
     sex: "Feminino"
   });
 
   const father = createFamilyMember({
-    name: "Pai",
+    name: randomFrom(maleNames),
     surname: game.player.surname,
     relation: "Pai",
-    age: 30,
+    age: fatherAge,
     sex: "Masculino"
   });
 
   game.family.push(mother, father);
 
   game.player.biologicalParentIds = [mother.id, father.id];
+
+  return { mother, father };
 }
 
 function connectInitialParents() {
@@ -513,8 +541,11 @@ function startGame() {
   };
 
   if (initialFamily.length === 0) {
-    createAutomaticFamily();
-    addEvent("Nasceste! A tua mãe tem 28 anos e o teu pai tem 30 anos.");
+    const parents = createAutomaticFamily();
+
+    addEvent(
+      `Nasceste! A tua mãe, ${getPersonFullName(parents.mother)}, tem ${parents.mother.age} anos e o teu pai, ${getPersonFullName(parents.father)}, tem ${parents.father.age} anos.`
+    );
   } else {
     game.family = initialFamily.map(person => ({
       ...person,

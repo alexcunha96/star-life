@@ -49,6 +49,8 @@ function escapeHTML(value) {
 
 function showToast(message) {
   const toast = $("toast");
+  if (!toast) return;
+
   toast.textContent = message;
   toast.classList.add("show");
 
@@ -90,7 +92,9 @@ function loadGame() {
 
 function updateContinuePanel() {
   const saved = loadGame();
-  $("continuePanel").classList.toggle("hidden", !saved);
+  if ($("continuePanel")) {
+    $("continuePanel").classList.toggle("hidden", !saved);
+  }
 }
 
 function addEvent(message, type = "neutral") {
@@ -1123,7 +1127,6 @@ function processSocialLife() {
       return;
     }
 
-    // Relações entre personagens independentes.
     if (
       person.partnerId &&
       person.partnerId !== game.player.id
@@ -1144,7 +1147,6 @@ function processSocialLife() {
     }
   });
 
-  // Atualiza o estado amoroso do jogador se o parceiro morreu.
   const partner = getPlayerPartner();
 
   if (partner && !partner.alive) {
@@ -1204,13 +1206,20 @@ function installRelationshipsUI() {
   const nav = $("bottomNav");
   const profileTab = $("profileTab");
 
+  if (!nav || !profileTab) return;
+
   const navButton = document.createElement("button");
   navButton.className = "nav-btn";
   navButton.dataset.tab = "relationshipsTab";
   navButton.innerHTML = "❤️<span>Relações</span>";
 
   const profileButton = nav.querySelector('[data-tab="profileTab"]');
-  nav.insertBefore(navButton, profileButton);
+
+  if (profileButton) {
+    nav.insertBefore(navButton, profileButton);
+  } else {
+    nav.appendChild(navButton);
+  }
 
   const section = document.createElement("section");
   section.id = "relationshipsTab";
@@ -1272,6 +1281,8 @@ function renderRelationships() {
   const currentPanel = $("currentRelationshipPanel");
   const peopleContainer = $("socialPeopleList");
   const familySummary = $("relationshipFamilySummary");
+
+  if (!currentPanel || !peopleContainer || !familySummary) return;
 
   if (partner && partner.alive) {
     const isMarried = player.relationshipStatus === "Casado/a";
@@ -1346,7 +1357,6 @@ function renderRelationships() {
     const card = document.createElement("div");
     card.className = "person-card";
 
-    const isFriend = person.friendship >= 60;
     const canDate = player.age >= 14 &&
       person.age >= 14 &&
       ageDifferenceAllowed(person) &&
@@ -1556,15 +1566,12 @@ function advanceYear() {
 
   processFamilyLife();
 
-  // Evolução das personagens conhecidas.
   processSocialLife();
   updateSocialJobs();
 
-  // Saúde e felicidade.
   player.health = clamp(player.health + (Math.random() * 4 - 2));
   player.happiness = clamp(player.happiness + (Math.random() * 6 - 3));
 
-  // Escolaridade.
   if (player.age === 3) {
     addEvent("Começaste a descobrir o mundo e a desenvolver novas capacidades.");
   }
@@ -1594,10 +1601,8 @@ function advanceYear() {
     addEvent("A partir de agora podes casar, criar um negócio e tomar decisões de adulto/a.");
   }
 
-  // Geração de pessoas novas ao longo da vida.
   ensureSocialPeople();
 
-  // Relação amorosa.
   const partner = getPlayerPartner();
 
   if (partner && partner.alive) {
@@ -1613,7 +1618,6 @@ function advanceYear() {
     }
   }
 
-  // Rendimentos e despesas.
   let income = player.salary || 0;
 
   game.businesses.forEach(business => {
@@ -2269,10 +2273,17 @@ function boot() {
     event.target.value = "";
   });
 
-  document.querySelectorAll(".nav-btn").forEach(button => {
-    button.addEventListener("click", () => {
-      showTab(button.dataset.tab);
-    });
+  /*
+    CORREÇÃO DA NAVEGAÇÃO:
+    Utiliza delegação de eventos para que os botões
+    criados dinamicamente também funcionem.
+  */
+  $("bottomNav").addEventListener("click", event => {
+    const button = event.target.closest(".nav-btn");
+
+    if (!button || !button.dataset.tab) return;
+
+    showTab(button.dataset.tab);
   });
 
   updateContinuePanel();

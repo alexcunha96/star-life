@@ -1,1243 +1,1292 @@
-
 "use strict";
 
-/* =========================
-   STARLIFE - FASE 2
-   Família e árvore genealógica
-========================= */
+/* =========================================
+   STARLIFE - SISTEMA PRINCIPAL
+========================================= */
 
-const SAVE_KEY = "starlife_save_v2";
+const SAVE_KEY = "starlife_save_v1";
 
 let game = null;
-let activeTab = "home";
-let editingFamilyId = null;
 let initialFamily = [];
+let toastTimer = null;
 
 const $ = (id) => document.getElementById(id);
 
-const money = (value) => new Intl.NumberFormat("pt-PT", {
-  style: "currency",
-  currency: game?.currency || "EUR",
-  maximumFractionDigits: 0
-}).format(value || 0);
+function createId() {
+  return "person_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+}
 
-const makeId = () => "p_" + Date.now().toString(36) + "_" +
-  Math.random().toString(36).slice(2, 8);
+function money(value) {
+  return new Intl.NumberFormat("pt-PT", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0
+  }).format(Number(value) || 0);
+}
+
+function clamp(value, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, value));
+}
 
 function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, char => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;",
-    '"': "&quot;", "'": "&#39;"
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
   })[char]);
+}
+
+function showToast(message) {
+  const toast = $("toast");
+  toast.textContent = message;
+  toast.classList.add("show");
+
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2600);
 }
 
 function saveGame() {
   if (!game) return;
-  localStorage.setItem(SAVE_KEY, JSON.stringify(game));
+
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(game));
+    updateContinuePanel();
+  } catch (error) {
+    console.error("Erro ao guardar o jogo:", error);
+    showToast("Não foi possível guardar o jogo.");
+  }
 }
 
 function loadGame() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (!data.player || !Array.isArray(data.family)) return null;
+    const saved = localStorage.getItem(SAVE_KEY);
+    if (!saved) return null;
 
-    data.family = data.family.map(person => ({
-      ...person,
-      biologicalParentIds: Array.isArray(person.biologicalParentIds)
-        ? person.biologicalParentIds : [],
-      adoptiveParentIds: Array.isArray(person.adoptiveParentIds)
-        ? person.adoptiveParentIds : [],
-      socialParentIds: Array.isArray(person.socialParentIds)
-        ? person.socialParentIds : []
-    }));
+    const loaded = JSON.parse(saved);
 
-    data.notifications ||= [];
-    data.businesses ||= [];
-    data.year ||= new Date().getFullYear();
-    data.player.money ??= 1000;
-    data.player.health ??= 100;
-    data.player.happiness ??= 80;
-    data.player.age ??= 18;
-    data.player.job ||= "Desempregado";
-    data.player.salary ??= 0;
-    data.player.education ||= "Ensino básico";
-    data.player.firstName ||= "";
-    data.player.lastName ||= "";
-    data.player.id ||= "player";
-    return data;
+    if (!loaded || !loaded.player || !Array.isArray(loaded.family)) {
+      return null;
+    }
+
+    return loaded;
   } catch (error) {
     console.error("Erro ao carregar gravação:", error);
     return null;
   }
 }
 
-function notify(message) {
+function updateContinuePanel() {
+  const saved = loadGame();
+  $("continuePanel").classList.toggle("hidden", !saved);
+}
+
+function addEvent(message, type = "neutral") {
   if (!game) return;
-  game.notifications.unshift({
-    id: makeId(),
-    year: game.year,
-    message
+
+  game.events.unshift({
+    message,
+    type,
+    age: game.player.age
   });
-  game.notifications = game.notifications.slice(0, 40);
+
+  game.events = game.events.slice(0, 40);
+}
+
+function addFinanceEvent(message) {
+  if (!game) return;
+
+  game.financeHistory.unshift({
+    message,
+    age: game.player.age
+  });
+
+  game.financeHistory = game.financeHistory.slice(0, 30);
+}
+
+/* =========================================
+   FAMÍLIA
+========================================= */
+
+function createFamilyMember(data) {
+  return {
+    id: createId(),
+    name: data.name || "Sem nome",
+    surname: data.surname || "",
+    relation: data.relation || "Outro",
+    age: Number(data.age) || 0,
+    sex: data.sex || "Outro",
+    alive: true,
+    job: "",
+    salary: 0,
+    biologicalParentIds: [],
+    adoptiveParentIds: [],
+    socialParentIds: [],
+    relationship: 70
+  };
+}
+
+function relationIsMother(relation) {
+  return ["mãe", "mae"].includes(String(relation).toLowerCase());
+}
+
+function relationIsFather(relation) {
+  return String(relation).toLowerCase() === "pai";
+}
+
+function createAutomaticFamily() {
+  const mother = createFamilyMember({
+    name: "Mãe",
+    surname: game.player.surname,
+    relation: "Mãe",
+    age: 28,
+    sex: "Feminino"
+  });
+
+  const father = createFamilyMember({
+    name: "Pai",
+    surname: game.player.surname,
+    relation: "Pai",
+    age: 30,
+    sex: "Masculino"
+  });
+
+  game.family.push(mother, father);
+
+  game.player.biologicalParentIds = [mother.id, father.id];
+}
+
+function connectInitialParents() {
+  const mother = game.family.find(person => relationIsMother(person.relation));
+  const father = game.family.find(person => relationIsFather(person.relation));
+
+  game.player.biologicalParentIds = [];
+
+  if (mother) {
+    game.player.biologicalParentIds.push(mother.id);
+  }
+
+  if (father) {
+    game.player.biologicalParentIds.push(father.id);
+  }
+}
+
+function getPersonFullName(person) {
+  return `${person.name} ${person.surname || ""}`.trim();
+}
+
+function getRelationLabel(person) {
+  return person.relation || "Familiar";
+}
+
+function getParentNames(person) {
+  const ids = [
+    ...(person.biologicalParentIds || []),
+    ...(person.adoptiveParentIds || []),
+    ...(person.socialParentIds || [])
+  ];
+
+  const names = ids
+    .map(id => game.family.find(member => member.id === id))
+    .filter(Boolean)
+    .map(getPersonFullName);
+
+  return names.length ? names.join(", ") : "Não definido";
+}
+
+function addFamilyMember(data, linkType = "biological") {
+  if (!game) return;
+
+  const person = createFamilyMember(data);
+
+  if (linkType === "biological") {
+    person.biologicalParentIds = [];
+  } else if (linkType === "adoptive") {
+    person.adoptiveParentIds = [];
+  } else {
+    person.socialParentIds = [];
+  }
+
+  game.family.push(person);
+
+  // Se for filho ou filha, a personagem atual é considerada progenitor.
+  if (["Filho", "Filha"].includes(person.relation)) {
+    person.biologicalParentIds = [game.player.id];
+  }
+
+  addEvent(`${getPersonFullName(person)} passou a fazer parte da tua família.`);
   saveGame();
+  renderGame();
+  renderFamilyEditor();
 }
 
-function allPeople() {
-  if (!game) return [];
-  return [{
-    id: game.player.id,
-    name: `${game.player.firstName} ${game.player.lastName}`.trim(),
-    sex: game.player.sex,
-    age: game.player.age,
-    relation: "Jogador",
-    isPlayer: true,
-    biologicalParentIds: game.player.biologicalParentIds || [],
-    adoptiveParentIds: game.player.adoptiveParentIds || [],
-    socialParentIds: game.player.socialParentIds || []
-  }, ...game.family];
-}
+function removeFamilyMember(id) {
+  const person = game.family.find(member => member.id === id);
+  if (!person) return;
 
-function getPerson(id) {
-  return allPeople().find(person => person.id === id);
-}
+  if (!confirm(`Queres mesmo remover ${getPersonFullName(person)} da família?`)) {
+    return;
+  }
 
-function personName(id) {
-  const person = getPerson(id);
-  return person ? person.name : "Pessoa desconhecida";
-}
+  game.family = game.family.filter(member => member.id !== id);
 
-function relationLabel(person) {
-  const labels = {
-    father: "Pai",
-    mother: "Mãe",
-    brother: "Irmão",
-    sister: "Irmã",
-    halfSibling: "Meio-irmão / meia-irmã",
-    stepfather: "Padrasto",
-    stepmother: "Madrasta",
-    son: "Filho",
-    daughter: "Filha",
-    grandfather: "Avô",
-    grandmother: "Avó",
-    uncle: "Tio",
-    aunt: "Tia",
-    cousin: "Primo / prima",
-    partner: "Companheiro(a)",
-    friend: "Amigo(a)",
-    other: "Outro familiar"
-  };
-  return labels[person.relation] || person.customRelation || "Familiar";
-}
+  // Retira ligações a familiares que já não existem.
+  const remainingIds = new Set(game.family.map(member => member.id));
 
-function sexEmoji(sex) {
-  if (sex === "Feminino") return "👩";
-  if (sex === "Masculino") return "👨";
-  return "🧑";
-}
+  game.player.biologicalParentIds =
+    (game.player.biologicalParentIds || []).filter(id => remainingIds.has(id));
 
-/* =========================
-   CRIAÇÃO DE PERSONAGEM
-========================= */
+  game.family.forEach(member => {
+    member.biologicalParentIds =
+      (member.biologicalParentIds || []).filter(id => remainingIds.has(id));
 
-function validateStart() {
-  const first = $("playerFirstName").value.trim();
-  const last = $("playerLastName").value.trim();
-  const sex = $("playerSex").value;
-  const age = Number($("playerAge").value);
-  const country = $("playerCountry").value.trim();
-  const city = $("playerCity").value.trim();
+    member.adoptiveParentIds =
+      (member.adoptiveParentIds || []).filter(id => remainingIds.has(id));
 
-  const valid = first && last && sex && Number.isInteger(age) &&
-    age >= 0 && age <= 100 && country && city;
-
-  $("startButton").disabled = !valid;
-  $("startError").textContent = valid
-    ? ""
-    : "Preenche todos os campos obrigatórios para começares a tua vida.";
-}
-
-["playerFirstName", "playerLastName", "playerSex", "playerAge",
-  "playerCountry", "playerCity"].forEach(id => {
-  $(id).addEventListener("input", validateStart);
-  $(id).addEventListener("change", validateStart);
-});
-
-function startGame() {
-  validateStart();
-  if ($("startButton").disabled) return;
-
-  const currentYear = new Date().getFullYear();
-  const playerAge = Number($("playerAge").value);
-
-  game = {
-    version: 2,
-    year: currentYear,
-    currency: "EUR",
-    player: {
-      id: "player",
-      firstName: $("playerFirstName").value.trim(),
-      lastName: $("playerLastName").value.trim(),
-      sex: $("playerSex").value,
-      age: playerAge,
-      country: $("playerCountry").value.trim(),
-      city: $("playerCity").value.trim(),
-      money: 1000,
-      health: 100,
-      happiness: 80,
-      job: "Desempregado",
-      salary: 0,
-      education: "Ensino básico",
-      biologicalParentIds: [],
-      adoptiveParentIds: [],
-      socialParentIds: []
-    },
-    family: initialFamily,
-    businesses: [],
-    notifications: [],
-    createdAt: Date.now()
-  };
-
-  initialFamily.forEach(person => {
-    person.biologicalParentIds ||= [];
-    person.adoptiveParentIds ||= [];
-    person.socialParentIds ||= [];
+    member.socialParentIds =
+      (member.socialParentIds || []).filter(id => remainingIds.has(id));
   });
 
-  $("startScreen").classList.add("hidden");
-  $("gameScreen").classList.remove("hidden");
-  $("bottomNav").classList.remove("hidden");
-
-  notify("A tua história no StarLife começou!");
-  activeTab = "home";
-  render();
+  addEvent(`${getPersonFullName(person)} deixou de fazer parte da tua família.`);
+  saveGame();
+  renderGame();
+  renderFamilyEditor();
 }
 
-$("startButton").addEventListener("click", startGame);
+function editFamilyMember(id) {
+  const person = game.family.find(member => member.id === id);
+  if (!person) return;
 
-/* =========================
-   MODAL
-========================= */
+  const newName = prompt("Nome:", person.name);
+  if (newName === null) return;
 
-function openModal(title, content) {
-  $("modalTitle").textContent = title;
-  $("modalBody").innerHTML = content;
-  $("modal").classList.remove("hidden");
+  const newSurname = prompt("Apelido:", person.surname || "");
+  if (newSurname === null) return;
+
+  const newAge = prompt("Idade:", String(person.age));
+  if (newAge === null) return;
+
+  const age = Number(newAge);
+
+  if (!newName.trim() || !Number.isFinite(age) || age < 0 || age > 110) {
+    showToast("Verifica o nome e a idade.");
+    return;
+  }
+
+  const newRelation = prompt("Parentesco:", person.relation);
+  if (newRelation === null) return;
+
+  person.name = newName.trim();
+  person.surname = newSurname.trim();
+  person.age = Math.floor(age);
+  person.relation = newRelation.trim() || "Outro";
+
+  addEvent(`Atualizaste os dados de ${getPersonFullName(person)}.`);
+  saveGame();
+  renderGame();
+  renderFamilyEditor();
 }
 
-function closeModal() {
-  $("modal").classList.add("hidden");
-  editingFamilyId = null;
-}
+function renderPeople() {
+  const container = $("peopleList");
+  container.innerHTML = "";
 
-$("closeModal").addEventListener("click", closeModal);
-document.querySelector("[data-close-modal]").addEventListener("click", closeModal);
+  if (!game.family.length) {
+    container.innerHTML = "<p class='muted'>Ainda não tens familiares registados.</p>";
+    return;
+  }
 
-function parentOptions(selected = []) {
-  return allPeople()
-    .filter(person => !person.isPlayer || !game.player.isDeceased)
-    .map(person => `
-      <option value="${escapeHTML(person.id)}"
-        ${selected.includes(person.id) ? "selected" : ""}>
-        ${escapeHTML(person.name)}
-      </option>
-    `).join("");
-}
+  game.family.forEach(person => {
+    const card = document.createElement("div");
+    card.className = "person-card";
 
-/* =========================
-   ADICIONAR / EDITAR FAMILIA
-========================= */
-
-function familyForm(person = null) {
-  const editing = !!person;
-  const biological = person?.biologicalParentIds || [];
-  const adoptive = person?.adoptiveParentIds || [];
-  const social = person?.socialParentIds || [];
-
-  return `
-    <form id="familyForm">
-      <label>Nome completo
-        <input id="familyName" maxlength="60" required
-          value="${escapeHTML(person?.name || "")}" placeholder="Nome do familiar">
-      </label>
-
-      <label>Sexo
-        <select id="familySex" required>
-          <option value="">Selecionar</option>
-          <option ${person?.sex === "Masculino" ? "selected" : ""}>Masculino</option>
-          <option ${person?.sex === "Feminino" ? "selected" : ""}>Feminino</option>
-          <option ${person?.sex === "Outro" ? "selected" : ""}>Outro</option>
-        </select>
-      </label>
-
-      <label>Parentesco
-        <select id="familyRelation" required>
-          ${[
-            ["father", "Pai"], ["mother", "Mãe"],
-            ["brother", "Irmão"], ["sister", "Irmã"],
-            ["halfSibling", "Meio-irmão / meia-irmã"],
-            ["stepfather", "Padrasto"], ["stepmother", "Madrasta"],
-            ["son", "Filho"], ["daughter", "Filha"],
-            ["grandfather", "Avô"], ["grandmother", "Avó"],
-            ["uncle", "Tio"], ["aunt", "Tia"],
-            ["cousin", "Primo / prima"],
-            ["partner", "Companheiro(a)"],
-            ["friend", "Amigo(a)"], ["other", "Outro"]
-          ].map(([value, label]) => `
-            <option value="${value}"
-              ${person?.relation === value ? "selected" : ""}>
-              ${label}
-            </option>
-          `).join("")}
-        </select>
-      </label>
-
-      <label>Ou especifica o parentesco
-        <input id="customRelation" maxlength="40"
-          value="${escapeHTML(person?.customRelation || "")}"
-          placeholder="Ex.: bisavó, sobrinho, cunhado...">
-      </label>
-
-      <label>Idade
-        <input id="familyAge" type="number" min="0" max="120"
-          required value="${person?.age ?? 30}">
-      </label>
-
-      <label>Relação biológica — progenitores
-        <select id="biologicalParents" multiple size="4">
-          ${parentOptions(biological)}
-        </select>
-        <small class="muted">Podes selecionar até duas pessoas. No iPhone, mantém o toque para selecionar várias.</small>
-      </label>
-
-      <label>Relação adotiva — progenitores
-        <select id="adoptiveParents" multiple size="4">
-          ${parentOptions(adoptive)}
-        </select>
-      </label>
-
-      <label>Relação social — padrasto, madrasta ou figura parental
-        <select id="socialParents" multiple size="4">
-          ${parentOptions(social)}
-        </select>
-      </label>
-
-      <div class="form-actions">
-        <button type="button" id="cancelFamily">Cancelar</button>
-        <button type="submit" class="primary">${editing ? "Guardar alterações" : "Adicionar familiar"}</button>
+    card.innerHTML = `
+      <div class="person-info">
+        <strong>${escapeHTML(getPersonFullName(person))}</strong>
+        <small>
+          ${escapeHTML(getRelationLabel(person))} ·
+          ${person.age} anos ·
+          ${person.alive ? "Vivo/a" : "Falecido/a"}
+        </small>
+        <small>Relação: ${person.relationship ?? 70}%</small>
       </div>
-    </form>
-  `;
+    `;
+
+    container.appendChild(card);
+  });
 }
 
-function selectedValues(selectId) {
-  return Array.from($(selectId).selectedOptions).map(option => option.value);
+function renderFamilyEditor() {
+  const container = $("familyEditorList");
+  if (!container || !game) return;
+
+  container.innerHTML = "";
+
+  if (!game.family.length) {
+    container.innerHTML = "<p class='muted'>Ainda não tens familiares. Podes adicionar abaixo.</p>";
+    return;
+  }
+
+  game.family.forEach(person => {
+    const card = document.createElement("div");
+    card.className = "person-card";
+
+    card.innerHTML = `
+      <div class="person-info">
+        <strong>${escapeHTML(getPersonFullName(person))}</strong>
+        <small>${escapeHTML(person.relation)} · ${person.age} anos</small>
+        <small>Progenitores: ${escapeHTML(getParentNames(person))}</small>
+      </div>
+      <div class="person-actions">
+        <button class="small-btn" data-edit-person="${person.id}">Editar</button>
+        <button class="small-btn" data-remove-person="${person.id}">Remover</button>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+
+  container.querySelectorAll("[data-edit-person]").forEach(button => {
+    button.addEventListener("click", () => {
+      editFamilyMember(button.dataset.editPerson);
+    });
+  });
+
+  container.querySelectorAll("[data-remove-person]").forEach(button => {
+    button.addEventListener("click", () => {
+      removeFamilyMember(button.dataset.removePerson);
+    });
+  });
 }
 
-function wouldCreateCycle(personId, proposedParents) {
-  function reaches(startId, targetId, visited = new Set()) {
-    if (startId === targetId) return true;
-    if (visited.has(startId)) return false;
-    visited.add(startId);
+function renderFamilyTree() {
+  const container = $("familyTree");
+  container.innerHTML = "";
 
-    const person = getPerson(startId);
-    if (!person) return false;
+  const parents = game.family.filter(person =>
+    (game.player.biologicalParentIds || []).includes(person.id) ||
+    (game.player.adoptiveParentIds || []).includes(person.id) ||
+    (game.player.socialParentIds || []).includes(person.id)
+  );
 
-    const parents = [
+  const children = game.family.filter(person =>
+    [
+      ...(person.biologicalParentIds || []),
+      ...(person.adoptiveParentIds || []),
+      ...(person.socialParentIds || [])
+    ].includes(game.player.id)
+  );
+
+  const siblings = game.family.filter(person => {
+    const personParents = [
       ...(person.biologicalParentIds || []),
       ...(person.adoptiveParentIds || []),
       ...(person.socialParentIds || [])
     ];
 
-    return parents.some(id => reaches(id, targetId, visited));
-  }
-
-  return proposedParents.some(parentId =>
-    parentId === personId || reaches(parentId, personId)
-  );
-}
-
-function showFamilyForm(person = null) {
-  editingFamilyId = person?.id || null;
-  openModal(person ? "Editar familiar" : "Adicionar familiar", familyForm(person));
-
-  $("cancelFamily").addEventListener("click", closeModal);
-
-  $("familyForm").addEventListener("submit", event => {
-    event.preventDefault();
-
-    const name = $("familyName").value.trim();
-    const sex = $("familySex").value;
-    const relation = $("familyRelation").value;
-    const customRelation = $("customRelation").value.trim();
-    const age = Number($("familyAge").value);
-
-    if (!name || !sex || !Number.isInteger(age) || age < 0 || age > 120) {
-      alert("Confirma o nome, sexo e idade.");
-      return;
-    }
-
-    const biologicalParentIds = selectedValues("biologicalParents");
-    const adoptiveParentIds = selectedValues("adoptiveParents");
-    const socialParentIds = selectedValues("socialParents");
-
-    if (biologicalParentIds.length > 2) {
-      alert("Uma pessoa pode ter no máximo dois progenitores biológicos.");
-      return;
-    }
-
-    const allParents = [
-      ...biologicalParentIds,
-      ...adoptiveParentIds,
-      ...socialParentIds
+    const playerParents = [
+      ...(game.player.biologicalParentIds || []),
+      ...(game.player.adoptiveParentIds || []),
+      ...(game.player.socialParentIds || [])
     ];
 
-    if (new Set(allParents).size !== allParents.length) {
-      alert("A mesma pessoa não pode estar repetida em diferentes tipos de ligação parental.");
-      return;
-    }
-
-    const id = person?.id || makeId();
-
-    if (wouldCreateCycle(id, allParents)) {
-      alert("Esta ligação criaria um ciclo na árvore genealógica. Verifica os progenitores selecionados.");
-      return;
-    }
-
-    const updated = {
-      id,
-      name,
-      sex,
-      age,
-      relation,
-      customRelation,
-      biologicalParentIds,
-      adoptiveParentIds,
-      socialParentIds
-    };
-
-    if (person) {
-      const index = game.family.findIndex(item => item.id === id);
-      if (index !== -1) game.family[index] = updated;
-      notify(`${name} foi atualizado(a) na tua família.`);
-    } else {
-      game.family.push(updated);
-      notify(`${name} foi adicionado(a) à tua família.`);
-    }
-
-    saveGame();
-    closeModal();
-    render();
+    return personParents.some(id => playerParents.includes(id)) &&
+      !children.some(child => child.id === person.id);
   });
+
+  function personBox(person, current = false) {
+    return `
+      <div class="tree-person ${current ? "current" : ""}">
+        <strong>${escapeHTML(getPersonFullName(person))}</strong>
+        <small>${current ? "Tu" : escapeHTML(person.relation)}</small>
+        <small>${person.age} anos</small>
+      </div>
+    `;
+  }
+
+  if (parents.length) {
+    const parentSection = document.createElement("div");
+    parentSection.innerHTML = `
+      <div class="tree-generation">
+        ${parents.map(person => personBox(person)).join("")}
+      </div>
+      <div class="tree-connector">↓</div>
+    `;
+    container.appendChild(parentSection);
+  }
+
+  const currentSection = document.createElement("div");
+  currentSection.innerHTML = `
+    <div class="tree-generation">
+      ${personBox(game.player, true)}
+    </div>
+  `;
+  container.appendChild(currentSection);
+
+  if (siblings.length) {
+    const siblingSection = document.createElement("div");
+    siblingSection.innerHTML = `
+      <div class="tree-connector">↔</div>
+      <div class="tree-generation">
+        ${siblings.map(person => personBox(person)).join("")}
+      </div>
+    `;
+    container.appendChild(siblingSection);
+  }
+
+  if (children.length) {
+    const childrenSection = document.createElement("div");
+    childrenSection.innerHTML = `
+      <div class="tree-connector">↓</div>
+      <div class="tree-generation">
+        ${children.map(person => personBox(person)).join("")}
+      </div>
+    `;
+    container.appendChild(childrenSection);
+  }
+
+  if (!parents.length && !siblings.length && !children.length) {
+    container.innerHTML = "<p class='muted'>A tua árvore genealógica começa contigo. Adiciona familiares nas Definições.</p>";
+  }
 }
 
-function removeFamilyMember(id) {
-  const person = game.family.find(item => item.id === id);
-  if (!person) return;
+/* =========================================
+   CRIAR E INICIAR JOGO
+========================================= */
 
-  if (!confirm(`Queres mesmo remover ${person.name} da tua família?`)) return;
+function validateStart() {
+  const name = $("playerName").value.trim();
+  const surname = $("playerSurname").value.trim();
+  const sex = $("playerSex").value;
+  const country = $("playerCountry").value.trim();
+  const city = $("playerCity").value.trim();
 
-  game.family = game.family.filter(item => item.id !== id);
+  if (!name || !surname || !sex || !country || !city) {
+    showToast("Preenche todos os campos para começares a jogar.");
+    return false;
+  }
 
-  // Limpa as ligações que apontavam para a pessoa removida.
-  game.family.forEach(item => {
-    item.biologicalParentIds = item.biologicalParentIds.filter(parent => parent !== id);
-    item.adoptiveParentIds = item.adoptiveParentIds.filter(parent => parent !== id);
-    item.socialParentIds = item.socialParentIds.filter(parent => parent !== id);
-  });
+  return true;
+}
 
-  ["biologicalParentIds", "adoptiveParentIds", "socialParentIds"].forEach(key => {
-    game.player[key] = (game.player[key] || []).filter(parent => parent !== id);
-  });
+function startGame() {
+  if (!validateStart()) return;
 
-  notify(`${person.name} foi removido(a) da árvore familiar.`);
+  const player = {
+    id: createId(),
+    name: $("playerName").value.trim(),
+    surname: $("playerSurname").value.trim(),
+    sex: $("playerSex").value,
+    country: $("playerCountry").value.trim(),
+    city: $("playerCity").value.trim(),
+
+    // Todas as personagens começam como recém-nascidas.
+    age: 0,
+
+    alive: true,
+    health: 100,
+    happiness: 80,
+    education: "Sem escolaridade",
+    educationLevel: 0,
+    job: "",
+    salary: 0,
+    bank: 1000,
+    debt: 0,
+    expenses: 0,
+
+    biologicalParentIds: [],
+    adoptiveParentIds: [],
+    socialParentIds: []
+  };
+
+  game = {
+    player,
+    family: [],
+    events: [],
+    financeHistory: [],
+    businesses: [],
+    year: new Date().getFullYear(),
+    started: true
+  };
+
+  if (initialFamily.length === 0) {
+    createAutomaticFamily();
+    addEvent("Nasceste! A tua mãe tem 28 anos e o teu pai tem 30 anos.");
+  } else {
+    game.family = initialFamily.map(person => ({
+      ...person,
+      id: createId()
+    }));
+
+    connectInitialParents();
+
+    addEvent("Nasceste! A tua família foi criada com os familiares que adicionaste.");
+  }
+
+  addFinanceEvent(`Começaste a vida com ${money(player.bank)} na conta bancária.`);
+
   saveGame();
-  render();
+  showGame();
+  renderGame();
+  showToast("A tua vida no StarLife começou!");
 }
 
-/* =========================
-   FAMÍLIA ANTES DO JOGO
-========================= */
+function showGame() {
+  $("setupScreen").classList.add("hidden");
+  $("gameScreen").classList.remove("hidden");
+  $("bottomNav").classList.remove("hidden");
+  $("gameStatus").textContent = "Em jogo";
+  showTab("homeTab");
+}
 
-function renderInitialFamily() {
-  const container = $("initialFamilyList");
+function showSetup() {
+  $("gameScreen").classList.add("hidden");
+  $("bottomNav").classList.add("hidden");
+  $("setupScreen").classList.remove("hidden");
+  $("gameStatus").textContent = "Nova vida";
+  updateContinuePanel();
+}
 
-  if (!initialFamily.length) {
-    container.innerHTML = `<div class="empty">Ainda não adicionaste familiares.</div>`;
+/* =========================================
+   PASSAGEM DO TEMPO
+========================================= */
+
+function advanceYear() {
+  if (!game || !game.player.alive) return;
+
+  const player = game.player;
+
+  player.age += 1;
+  game.year += 1;
+
+  // Envelhecimento dos familiares vivos.
+  game.family.forEach(person => {
+    if (person.alive) {
+      person.age += 1;
+      person.relationship = clamp(
+        (person.relationship ?? 70) + (Math.random() < 0.5 ? 1 : -1)
+      );
+
+      // Possibilidade simplificada de falecimento.
+      const risk = person.age < 60
+        ? 0.001
+        : person.age < 75
+          ? 0.008
+          : person.age < 85
+            ? 0.025
+            : person.age < 95
+              ? 0.07
+              : 0.16;
+
+      if (Math.random() < risk) {
+        person.alive = false;
+        addEvent(`${getPersonFullName(person)} faleceu aos ${person.age} anos.`, "negative");
+        player.happiness = clamp(player.happiness - 12);
+      }
+    }
+  });
+
+  // Saúde e felicidade variam ligeiramente com a idade.
+  player.health = clamp(player.health + (Math.random() * 4 - 2));
+  player.happiness = clamp(player.happiness + (Math.random() * 6 - 3));
+
+  // Infância e escolaridade.
+  if (player.age === 3) {
+    addEvent("Começaste a descobrir o mundo e a desenvolver novas capacidades.");
+  }
+
+  if (player.age === 6) {
+    player.education = "Ensino básico";
+    player.educationLevel = 1;
+    addEvent("Começaste a escola primária! 🎒");
+  }
+
+  if (player.age === 10) {
+    addEvent("Estás a crescer e a aprender cada vez mais.");
+  }
+
+  if (player.age === 15) {
+    addEvent("Estás a aproximar-te de uma nova fase da tua vida.");
+  }
+
+  if (player.age === 18) {
+    player.education = "Ensino secundário";
+    player.educationLevel = Math.max(player.educationLevel, 2);
+    addEvent("Fizeste 18 anos! Entraste na idade adulta. 🎉");
+  }
+
+  if (player.age === 16) {
+    addEvent("Já tens idade para procurar algumas oportunidades de trabalho.");
+  }
+
+  // Rendimentos e despesas.
+  let income = player.salary || 0;
+
+  game.businesses.forEach(business => {
+    income += business.yearlyProfit || 0;
+  });
+
+  if (player.age >= 18) {
+    const livingCosts = 1200 + (player.age * 15);
+    player.expenses = livingCosts;
+
+    const balance = income - livingCosts;
+    player.bank += balance;
+
+    if (balance >= 0) {
+      addFinanceEvent(`Recebeste ${money(income)} e gastaste ${money(livingCosts)}. Saldo positivo: ${money(balance)}.`);
+    } else {
+      addFinanceEvent(`Recebeste ${money(income)} e gastaste ${money(livingCosts)}. Saldo negativo: ${money(balance)}.`);
+    }
+
+    if (player.bank < 0) {
+      player.debt += Math.abs(player.bank);
+      player.bank = 0;
+      addEvent("Ficaste sem dinheiro e começaste a acumular dívidas.", "negative");
+    }
+  } else {
+    player.expenses = 0;
+  }
+
+  // Eventos gerais.
+  if (player.age === 1) {
+    addEvent("Completaste o teu primeiro ano de vida! 🎂");
+  } else if (player.age > 1 && player.age % 5 === 0) {
+    addEvent(`Fizeste ${player.age} anos. Mais um capítulo da tua história! 🎂`);
+  }
+
+  if (player.age >= 110) {
+    player.alive = false;
+    addEvent("A tua vida chegou ao fim. A tua história ficará para sempre registada.", "negative");
+    showToast("A tua personagem faleceu.");
+  }
+
+  saveGame();
+  renderGame();
+}
+
+/* =========================================
+   CARREIRA E EDUCAÇÃO
+========================================= */
+
+const jobs = [
+  {
+    name: "Empregado de supermercado",
+    minimumAge: 16,
+    salary: 950,
+    education: 0
+  },
+  {
+    name: "Assistente de loja",
+    minimumAge: 16,
+    salary: 1000,
+    education: 0
+  },
+  {
+    name: "Barbeiro",
+    minimumAge: 18,
+    salary: 14000,
+    education: 1
+  },
+  {
+    name: "Cozinheiro",
+    minimumAge: 18,
+    salary: 15000,
+    education: 1
+  },
+  {
+    name: "Técnico especializado",
+    minimumAge: 20,
+    salary: 22000,
+    education: 2
+  },
+  {
+    name: "Professor",
+    minimumAge: 22,
+    salary: 26000,
+    education: 3
+  }
+];
+
+function applyForJob(index) {
+  const job = jobs[index];
+  const player = game.player;
+
+  if (player.age < job.minimumAge) {
+    showToast(`Precisas de ter pelo menos ${job.minimumAge} anos.`);
     return;
   }
 
-  container.innerHTML = initialFamily.map(person => `
-    <div class="person-row">
-      <div class="person-main">
-        <div class="avatar">${sexEmoji(person.sex)}</div>
-        <div>
-          <div class="person-name">${escapeHTML(person.name)}</div>
-          <div class="person-sub">${escapeHTML(relationLabel(person))} · ${person.age} anos</div>
-        </div>
-      </div>
-      <div class="row-actions">
-        <button data-edit-initial="${person.id}">Editar</button>
-        <button class="danger-button" data-remove-initial="${person.id}">✕</button>
-      </div>
-    </div>
-  `).join("");
+  if (player.educationLevel < job.education) {
+    showToast("Ainda não tens a escolaridade necessária.");
+    return;
+  }
 
-  container.querySelectorAll("[data-edit-initial]").forEach(button => {
+  player.job = job.name;
+  player.salary = job.salary;
+
+  addEvent(`Conseguiste um emprego como ${job.name}!`);
+  addFinanceEvent(`Começaste a trabalhar como ${job.name}, com um salário anual de ${money(job.salary)}.`);
+
+  saveGame();
+  renderGame();
+  showToast("Conseguiste um novo emprego!");
+}
+
+function startEducation(level, name, minimumAge) {
+  const player = game.player;
+
+  if (player.age < minimumAge) {
+    showToast(`Esta opção está disponível a partir dos ${minimumAge} anos.`);
+    return;
+  }
+
+  if (player.educationLevel >= level) {
+    showToast("Já tens este nível de escolaridade ou superior.");
+    return;
+  }
+
+  player.education = name;
+  player.educationLevel = level;
+
+  addEvent(`Concluíste uma etapa de educação: ${name}.`);
+
+  saveGame();
+  renderGame();
+  showToast("Educação atualizada!");
+}
+
+function renderCareer() {
+  const player = game.player;
+
+  $("careerJob").textContent = player.job || "Nenhuma";
+  $("careerSalary").textContent = money(player.salary || 0);
+  $("careerEducation").textContent = player.education;
+
+  $("careerDescription").textContent = player.job
+    ? `Trabalhas como ${player.job}. Continua a desenvolver a tua carreira.`
+    : "Ainda não tens uma profissão. Podes procurar oportunidades quando tiveres idade.";
+
+  const jobContainer = $("jobOptions");
+  jobContainer.innerHTML = "";
+
+  jobs.forEach((job, index) => {
+    const button = document.createElement("button");
+    button.className = "secondary-btn";
+    button.textContent = `${job.name} · ${money(job.salary)}/ano · ${job.minimumAge}+`;
+    button.disabled = player.age < job.minimumAge ||
+      player.educationLevel < job.education;
+
+    button.addEventListener("click", () => applyForJob(index));
+    jobContainer.appendChild(button);
+  });
+
+  const educationContainer = $("educationOptions");
+  educationContainer.innerHTML = "";
+
+  const educationChoices = [
+    { level: 1, name: "Ensino básico", age: 6 },
+    { level: 2, name: "Ensino secundário", age: 15 },
+    { level: 3, name: "Ensino superior", age: 18 }
+  ];
+
+  educationChoices.forEach(choice => {
+    const button = document.createElement("button");
+    button.className = "secondary-btn";
+    button.textContent = `${choice.name} · ${choice.age}+ anos`;
+    button.disabled = player.age < choice.age ||
+      player.educationLevel >= choice.level;
+
     button.addEventListener("click", () => {
-      const person = initialFamily.find(item => item.id === button.dataset.editInitial);
-      showInitialFamilyForm(person);
+      startEducation(choice.level, choice.name, choice.age);
     });
+
+    educationContainer.appendChild(button);
+  });
+}
+
+/* =========================================
+   NEGÓCIOS
+========================================= */
+
+function createBusiness() {
+  if (game.player.age < 18) {
+    showToast("Tens de ter pelo menos 18 anos para criar um negócio.");
+    return;
+  }
+
+  const name = prompt("Qual será o nome do teu negócio?");
+  if (!name || !name.trim()) return;
+
+  const investmentText = prompt("Quanto queres investir inicialmente? (mínimo 500 €)");
+  if (investmentText === null) return;
+
+  const investment = Number(investmentText);
+
+  if (!Number.isFinite(investment) || investment < 500) {
+    showToast("O investimento mínimo é de 500 €.");
+    return;
+  }
+
+  if (game.player.bank < investment) {
+    showToast("Não tens dinheiro suficiente na conta bancária.");
+    return;
+  }
+
+  game.player.bank -= investment;
+
+  const business = {
+    id: createId(),
+    name: name.trim(),
+    investment,
+    yearlyProfit: Math.round(investment * 0.15),
+    createdAtAge: game.player.age
+  };
+
+  game.businesses.push(business);
+
+  addEvent(`Abriste o negócio "${business.name}"!`);
+  addFinanceEvent(`Investiste ${money(investment)} na criação de "${business.name}".`);
+
+  saveGame();
+  renderGame();
+  showToast("Negócio criado!");
+}
+
+function renderBusinesses() {
+  const container = $("businessList");
+  container.innerHTML = "";
+
+  if (!game.businesses.length) {
+    container.innerHTML = "<p class='muted'>Ainda não tens negócios. Cria o teu primeiro negócio!</p>";
+    return;
+  }
+
+  game.businesses.forEach(business => {
+    const card = document.createElement("div");
+    card.className = "business-card";
+
+    card.innerHTML = `
+      <strong>${escapeHTML(business.name)}</strong>
+      <p>Investimento inicial: ${money(business.investment)}</p>
+      <p>Lucro anual estimado: <strong>${money(business.yearlyProfit)}</strong></p>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+/* =========================================
+   PATRIMÓNIO E PERFIL
+========================================= */
+
+function calculateWealth() {
+  const businessValue = game.businesses.reduce(
+    (total, business) => total + business.investment,
+    0
+  );
+
+  return game.player.bank + businessValue - game.player.debt;
+}
+
+function renderPatrimony() {
+  const player = game.player;
+
+  $("totalWealth").textContent = money(calculateWealth());
+  $("bankBalance").textContent = money(player.bank);
+  $("annualSalary").textContent = money(player.salary);
+  $("annualExpenses").textContent = money(player.expenses);
+  $("debtValue").textContent = money(player.debt);
+
+  const container = $("financeHistory");
+  container.innerHTML = "";
+
+  if (!game.financeHistory.length) {
+    container.innerHTML = "<p class='muted'>Ainda não existem movimentos financeiros.</p>";
+    return;
+  }
+
+  game.financeHistory.forEach(item => {
+    const element = document.createElement("div");
+    element.className = "event-item neutral";
+    element.innerHTML = `
+      ${escapeHTML(item.message)}
+      <small>Idade: ${item.age} anos</small>
+    `;
+    container.appendChild(element);
+  });
+}
+
+function renderProfile() {
+  const player = game.player;
+
+  $("profileDetails").innerHTML = `
+    <div class="info-row"><span>Nome</span><strong>${escapeHTML(getPersonFullName(player))}</strong></div>
+    <div class="info-row"><span>Sexo</span><strong>${escapeHTML(player.sex)}</strong></div>
+    <div class="info-row"><span>Idade</span><strong>${player.age} anos</strong></div>
+    <div class="info-row"><span>País</span><strong>${escapeHTML(player.country)}</strong></div>
+    <div class="info-row"><span>Cidade</span><strong>${escapeHTML(player.city)}</strong></div>
+    <div class="info-row"><span>Estado</span><strong>${player.alive ? "Vivo/a" : "Falecido/a"}</strong></div>
+    <div class="info-row"><span>Profissão</span><strong>${escapeHTML(player.job || "Nenhuma")}</strong></div>
+    <div class="info-row"><span>Património</span><strong>${money(calculateWealth())}</strong></div>
+  `;
+}
+
+/* =========================================
+   ECRÃ INICIAL E ACONTECIMENTOS
+========================================= */
+
+function renderHome() {
+  const player = game.player;
+
+  $("homePlayerName").textContent = getPersonFullName(player);
+  $("homePlayerLocation").textContent = `${player.city}, ${player.country}`;
+  $("homeAge").textContent = player.age;
+
+  $("healthValue").textContent = `${Math.round(player.health)}%`;
+  $("happinessValue").textContent = `${Math.round(player.happiness)}%`;
+
+  $("healthBar").style.width = `${player.health}%`;
+  $("happinessBar").style.width = `${player.happiness}%`;
+
+  $("educationValue").textContent = player.education;
+  $("jobValue").textContent = player.job || "Sem profissão";
+
+  if (!player.alive) {
+    $("lifeSummary").textContent = "A tua personagem já faleceu. Podes consultar a história e começar uma nova vida nas Definições.";
+    $("advanceYearBtn").disabled = true;
+  } else {
+    $("advanceYearBtn").disabled = false;
+
+    if (player.age === 0) {
+      $("lifeSummary").textContent = "Acabaste de nascer. A tua aventura começa agora!";
+    } else if (player.age < 6) {
+      $("lifeSummary").textContent = "Estás a viver os primeiros anos da tua infância.";
+    } else if (player.age < 13) {
+      $("lifeSummary").textContent = "Estás na infância, a crescer e a descobrir o mundo.";
+    } else if (player.age < 18) {
+      $("lifeSummary").textContent = "Estás na adolescência. Muitas decisões importantes aproximam-se.";
+    } else if (player.age < 30) {
+      $("lifeSummary").textContent = "És adulto/a e estás a construir o teu próprio caminho.";
+    } else {
+      $("lifeSummary").textContent = "A tua vida continua a evoluir. Cada decisão pode mudar o teu futuro.";
+    }
+  }
+
+  const eventsContainer = $("recentEvents");
+  eventsContainer.innerHTML = "";
+
+  if (!game.events.length) {
+    eventsContainer.innerHTML = "<p class='muted'>Ainda não existem acontecimentos.</p>";
+  } else {
+    game.events.slice(0, 8).forEach(event => {
+      const element = document.createElement("div");
+      element.className = `event-item ${event.type || "neutral"}`;
+      element.innerHTML = `
+        ${escapeHTML(event.message)}
+        <small>Idade: ${event.age} anos</small>
+      `;
+      eventsContainer.appendChild(element);
+    });
+  }
+}
+
+/* =========================================
+   RENDERIZAÇÃO GERAL
+========================================= */
+
+function renderGame() {
+  if (!game) return;
+
+  renderHome();
+  renderPatrimony();
+  renderCareer();
+  renderBusinesses();
+  renderPeople();
+  renderFamilyTree();
+  renderProfile();
+  renderFamilyEditor();
+
+  $("gameStatus").textContent = game.player.alive
+    ? `${game.player.age} anos`
+    : "Vida terminada";
+}
+
+/* =========================================
+   NAVEGAÇÃO
+========================================= */
+
+function showTab(tabId) {
+  document.querySelectorAll(".tab-content").forEach(tab => {
+    tab.classList.add("hidden");
+  });
+
+  const selected = $(tabId);
+  if (selected) selected.classList.remove("hidden");
+
+  document.querySelectorAll(".nav-btn").forEach(button => {
+    button.classList.toggle("active", button.dataset.tab === tabId);
+  });
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* =========================================
+   FAMÍLIA INICIAL
+========================================= */
+
+function addInitialFamilyMember() {
+  const name = $("initialFamilyName").value.trim();
+  const relation = $("initialFamilyRelation").value;
+  const ageText = $("initialFamilyAge").value;
+  const sex = $("initialFamilySex").value;
+
+  if (!name || ageText === "") {
+    showToast("Indica o nome e a idade do familiar.");
+    return;
+  }
+
+  const age = Number(ageText);
+
+  if (!Number.isFinite(age) || age < 0 || age > 110) {
+    showToast("A idade tem de estar entre 0 e 110 anos.");
+    return;
+  }
+
+  initialFamily.push({
+    name,
+    surname: "",
+    relation,
+    age: Math.floor(age),
+    sex
+  });
+
+  $("initialFamilyName").value = "";
+  $("initialFamilyAge").value = "";
+
+  renderInitialFamily();
+  showToast("Familiar adicionado!");
+}
+
+function renderInitialFamily() {
+  const container = $("initialFamilyList");
+  container.innerHTML = "";
+
+  initialFamily.forEach((person, index) => {
+    const item = document.createElement("div");
+    item.className = "family-item";
+
+    item.innerHTML = `
+      <div>
+        <strong>${escapeHTML(person.name)}</strong>
+        <small>${escapeHTML(person.relation)} · ${person.age} anos</small>
+      </div>
+      <button class="small-btn" data-remove-initial="${index}">Remover</button>
+    `;
+
+    container.appendChild(item);
   });
 
   container.querySelectorAll("[data-remove-initial]").forEach(button => {
     button.addEventListener("click", () => {
-      initialFamily = initialFamily.filter(item => item.id !== button.dataset.removeInitial);
+      initialFamily.splice(Number(button.dataset.removeInitial), 1);
       renderInitialFamily();
     });
   });
 }
 
-function showInitialFamilyForm(person = null) {
-  openModal(person ? "Editar familiar" : "Adicionar familiar", `
-    <form id="initialForm">
-      <label>Nome completo
-        <input id="initialName" required maxlength="60"
-          value="${escapeHTML(person?.name || "")}">
-      </label>
-      <label>Sexo
-        <select id="initialSex" required>
-          <option value="">Selecionar</option>
-          <option ${person?.sex === "Masculino" ? "selected" : ""}>Masculino</option>
-          <option ${person?.sex === "Feminino" ? "selected" : ""}>Feminino</option>
-          <option ${person?.sex === "Outro" ? "selected" : ""}>Outro</option>
-        </select>
-      </label>
-      <label>Parentesco
-        <input id="initialRelation" required placeholder="Ex.: Pai, irmã, avó..."
-          value="${escapeHTML(person?.customRelation || "")}">
-      </label>
-      <label>Idade
-        <input id="initialAge" type="number" min="0" max="120" required
-          value="${person?.age ?? 30}">
-      </label>
-      <div class="form-actions">
-        <button type="button" id="cancelInitial">Cancelar</button>
-        <button type="submit" class="primary">Guardar</button>
-      </div>
-    </form>
-  `);
+/* =========================================
+   DEFINIÇÕES E GRAVAÇÕES
+========================================= */
 
-  $("cancelInitial").addEventListener("click", closeModal);
-
-  $("initialForm").addEventListener("submit", event => {
-    event.preventDefault();
-    const name = $("initialName").value.trim();
-    const sex = $("initialSex").value;
-    const customRelation = $("initialRelation").value.trim();
-    const age = Number($("initialAge").value);
-
-    if (!name || !sex || !customRelation || !Number.isInteger(age) || age < 0 || age > 120) {
-      alert("Preenche todos os campos corretamente.");
-      return;
-    }
-
-    const entry = {
-      id: person?.id || makeId(),
-      name, sex, age,
-      relation: "other",
-      customRelation,
-      biologicalParentIds: [],
-      adoptiveParentIds: [],
-      socialParentIds: []
-    };
-
-    if (person) {
-      const index = initialFamily.findIndex(item => item.id === person.id);
-      if (index !== -1) initialFamily[index] = entry;
-    } else {
-      initialFamily.push(entry);
-    }
-
-    closeModal();
-    renderInitialFamily();
-  });
+function openFamilyEditor() {
+  $("familyEditor").classList.remove("hidden");
+  renderFamilyEditor();
+  $("familyEditor").scrollIntoView({ behavior: "smooth" });
 }
 
-$("addInitialFamily").addEventListener("click", () => showInitialFamilyForm());
-
-/* =========================
-   NAVEGAÇÃO E RENDERIZAÇÃO
-========================= */
-
-document.querySelectorAll(".nav-item").forEach(button => {
-  button.addEventListener("click", () => {
-    activeTab = button.dataset.tab;
-    render();
-  });
-});
-
-function render() {
-  if (!game) return;
-
-  $("yearLabel").textContent = game.year;
-
-  document.querySelectorAll(".nav-item").forEach(button => {
-    button.classList.toggle("active", button.dataset.tab === activeTab);
-  });
-
-  const pages = {
-    home: renderHome,
-    wealth: renderWealth,
-    career: renderCareer,
-    business: renderBusiness,
-    people: renderPeople,
-    shop: renderShop,
-    profile: renderProfile,
-    settings: renderSettings
-  };
-
-  $("tabContent").innerHTML = (pages[activeTab] || renderHome)();
-  attachPageEvents();
-}
-
-/* =========================
-   INÍCIO
-========================= */
-
-function renderHome() {
-  const player = game.player;
-  const latest = game.notifications.slice(0, 5);
-
-  return `
-    <h2 class="page-title">A tua vida</h2>
-
-    <div class="panel">
-      <div class="person-main">
-        <div class="avatar" style="width:54px;height:54px;font-size:25px">
-          ${sexEmoji(player.sex)}
-        </div>
-        <div>
-          <strong>${escapeHTML(player.firstName)} ${escapeHTML(player.lastName)}</strong>
-          <div class="person-sub">${player.age} anos · ${escapeHTML(player.city)}, ${escapeHTML(player.country)}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="stat-grid">
-      <div class="stat-card"><small>Património disponível</small><strong>${money(player.money)}</strong></div>
-      <div class="stat-card"><small>Saúde</small><strong>${player.health}%</strong></div>
-      <div class="stat-card"><small>Felicidade</small><strong>${player.happiness}%</strong></div>
-      <div class="stat-card"><small>Profissão</small><strong>${escapeHTML(player.job)}</strong></div>
-    </div>
-
-    <div class="panel" style="margin-top:15px">
-      <h3>Avançar no tempo</h3>
-      <p class="muted">Cada ano traz mudanças à tua vida e à vida dos teus familiares.</p>
-      <button class="primary" data-action="advance">Avançar um ano →</button>
-    </div>
-
-    <div class="panel">
-      <h3>Últimos acontecimentos</h3>
-      ${latest.length ? latest.map(item => `
-        <div class="event-row">
-          <div>
-            <div>${escapeHTML(item.message)}</div>
-            <div class="person-sub">Ano ${item.year}</div>
-          </div>
-        </div>
-      `).join("") : `<div class="empty">Ainda não existem acontecimentos.</div>`}
-    </div>
-  `;
-}
-
-/* =========================
-   PATRIMÓNIO
-========================= */
-
-function renderWealth() {
-  const player = game.player;
-  const businessValue = game.businesses.reduce((sum, item) => sum + item.value, 0);
-
-  return `
-    <h2 class="page-title">Património</h2>
-    <div class="stat-grid">
-      <div class="stat-card"><small>Dinheiro disponível</small><strong>${money(player.money)}</strong></div>
-      <div class="stat-card"><small>Negócios</small><strong>${money(businessValue)}</strong></div>
-      <div class="stat-card"><small>Salário anual</small><strong>${money(player.salary)}</strong></div>
-      <div class="stat-card"><small>Património estimado</small><strong>${money(player.money + businessValue)}</strong></div>
-    </div>
-    <div class="panel" style="margin-top:15px">
-      <h3>Resumo financeiro</h3>
-      <div class="stat-row"><span>Profissão</span><strong>${escapeHTML(player.job)}</strong></div>
-      <div class="stat-row"><span>Rendimento anual</span><strong>${money(player.salary)}</strong></div>
-      <div class="stat-row"><span>Negócios ativos</span><strong>${game.businesses.length}</strong></div>
-      <p class="muted">Os sistemas avançados de despesas, impostos, crédito e investimentos serão desenvolvidos nas próximas fases.</p>
-    </div>
-  `;
-}
-
-/* =========================
-   CARREIRA
-========================= */
-
-function renderCareer() {
-  return `
-    <h2 class="page-title">Carreira</h2>
-    <div class="panel">
-      <h3>O teu percurso profissional</h3>
-      <div class="stat-row"><span>Profissão atual</span><strong>${escapeHTML(game.player.job)}</strong></div>
-      <div class="stat-row"><span>Salário anual</span><strong>${money(game.player.salary)}</strong></div>
-      <div class="stat-row"><span>Educação</span><strong>${escapeHTML(game.player.education)}</strong></div>
-    </div>
-    <div class="panel">
-      <h3>Oportunidades de emprego</h3>
-      ${[
-        ["Comércio", 12000], ["Restauração", 11000],
-        ["Barbeiro", 15000], ["Programador", 26000],
-        ["Professor", 19000], ["Gestor", 30000]
-      ].map(([job, salary]) => `
-        <div class="person-row">
-          <div>
-            <div class="person-name">${job}</div>
-            <div class="person-sub">${money(salary)} por ano</div>
-          </div>
-          <button data-job="${job}" data-salary="${salary}">Candidatar</button>
-        </div>
-      `).join("")}
-    </div>
-  `;
-}
-
-/* =========================
-   NEGÓCIOS
-========================= */
-
-function renderBusiness() {
-  return `
-    <h2 class="page-title">Negócios</h2>
-    <div class="panel">
-      <h3>Criar um negócio</h3>
-      <p class="muted">Investe dinheiro para começar uma atividade empresarial.</p>
-      <button class="primary" data-action="createBusiness">＋ Abrir negócio (5.000 €)</button>
-    </div>
-    <div class="panel">
-      <h3>Os teus negócios</h3>
-      ${game.businesses.length ? game.businesses.map(item => `
-        <div class="person-row">
-          <div>
-            <div class="person-name">${escapeHTML(item.name)}</div>
-            <div class="person-sub">Valor: ${money(item.value)} · Lucro anual: ${money(item.profit)}</div>
-          </div>
-        </div>
-      `).join("") : `<div class="empty">Ainda não tens negócios.</div>`}
-    </div>
-  `;
-}
-
-/* =========================
-   PESSOAS E ÁRVORE
-========================= */
-
-function renderPeople() {
-  const family = game.family;
-
-  return `
-    <h2 class="page-title">Pessoas</h2>
-    <div class="panel">
-      <div class="panel-heading">
-        <h3>A tua família</h3>
-        <span class="muted">${family.length} pessoas</span>
-      </div>
-      ${family.length ? family.map(person => `
-        <div class="person-row">
-          <div class="person-main">
-            <div class="avatar">${sexEmoji(person.sex)}</div>
-            <div>
-              <div class="person-name">${escapeHTML(person.name)}</div>
-              <div class="person-sub">${escapeHTML(relationLabel(person))} · ${person.age} anos</div>
-            </div>
-          </div>
-        </div>
-      `).join("") : `<div class="empty">Ainda não adicionaste familiares. Podes fazê-lo nas Definições.</div>`}
-    </div>
-
-    <div class="panel">
-      <h3>Árvore genealógica</h3>
-      <p class="muted">Consulta as ligações familiares. Desliza horizontalmente se a árvore for maior do que o ecrã.</p>
-      ${renderFamilyTree()}
-    </div>
-  `;
-}
-
-function renderFamilyTree() {
-  const people = allPeople();
-  const player = people.find(person => person.isPlayer);
-
-  if (people.length === 1) {
-    return `<div class="empty">Adiciona familiares para começares a construir a tua árvore.</div>`;
-  }
-
-  const generations = new Map();
-  const visiting = new Set();
-
-  function getGeneration(person, depth = 0) {
-    if (depth > 12 || visiting.has(person.id)) return 0;
-    visiting.add(person.id);
-
-    const parents = [
-      ...(person.biologicalParentIds || []),
-      ...(person.adoptiveParentIds || [])
-    ].map(id => people.find(p => p.id === id)).filter(Boolean);
-
-    let result = 0;
-    if (parents.length) {
-      result = Math.max(...parents.map(parent => getGeneration(parent, depth + 1))) + 1;
-    }
-
-    visiting.delete(person.id);
-    return result;
-  }
-
-  people.forEach(person => {
-    const generation = getGeneration(person);
-    if (!generations.has(generation)) generations.set(generation, []);
-    generations.get(generation).push(person);
-  });
-
-  const ordered = [...generations.entries()].sort((a, b) => a[0] - b[0]);
-
-  return `
-    <div class="tree-wrap">
-      <div class="tree">
-        ${ordered.map(([generation, members]) => `
-          <div>
-            <div class="muted" style="text-align:center;margin-bottom:8px">
-              ${generation === 0 ? "Geração dos descendentes" :
-                generation === 1 ? "Geração dos progenitores" :
-                `Geração ${generation + 1}`}
-            </div>
-            <div class="tree-generation">
-              ${members.map(person => `
-                <div class="tree-node ${person.isPlayer ? "player-node" : ""}">
-                  <strong>${sexEmoji(person.sex)} ${escapeHTML(person.name)}</strong>
-                  <small>${person.isPlayer ? "Personagem principal" : escapeHTML(relationLabel(person))}</small>
-                  <small>${person.age} anos</small>
-                </div>
-              `).join("")}
-            </div>
-          </div>
-          ${generation !== ordered[ordered.length - 1][0] ? `<div class="tree-connector">↓</div>` : ""}
-        `).join("")}
-      </div>
-    </div>
-    <p class="muted">As gerações são organizadas pelas ligações de progenitores registadas. Esta primeira apresentação é simplificada: ainda não desenha linhas individuais entre cada casal e cada filho.</p>
-  `;
-}
-
-/* =========================
-   LOJA
-========================= */
-
-function renderShop() {
-  const items = [
-    ["Telemóvel", 800],
-    ["Computador", 1200],
-    ["Bicicleta", 500],
-    ["Relógio", 300]
-  ];
-
-  return `
-    <h2 class="page-title">Loja</h2>
-    <div class="panel">
-      <h3>Artigos disponíveis</h3>
-      ${items.map(([name, price]) => `
-        <div class="person-row">
-          <div>
-            <div class="person-name">${name}</div>
-            <div class="person-sub">${money(price)}</div>
-          </div>
-          <button data-buy="${name}" data-price="${price}">Comprar</button>
-        </div>
-      `).join("")}
-    </div>
-  `;
-}
-
-/* =========================
-   PERFIL
-========================= */
-
-function renderProfile() {
-  const player = game.player;
-
-  return `
-    <h2 class="page-title">Perfil</h2>
-    <div class="panel">
-      <div class="person-main">
-        <div class="avatar" style="width:55px;height:55px;font-size:25px">${sexEmoji(player.sex)}</div>
-        <div>
-          <strong>${escapeHTML(player.firstName)} ${escapeHTML(player.lastName)}</strong>
-          <div class="person-sub">${player.age} anos</div>
-        </div>
-      </div>
-      <div class="stat-row"><span>Sexo</span><strong>${escapeHTML(player.sex)}</strong></div>
-      <div class="stat-row"><span>País</span><strong>${escapeHTML(player.country)}</strong></div>
-      <div class="stat-row"><span>Cidade</span><strong>${escapeHTML(player.city)}</strong></div>
-      <div class="stat-row"><span>Educação</span><strong>${escapeHTML(player.education)}</strong></div>
-      <div class="stat-row"><span>Profissão</span><strong>${escapeHTML(player.job)}</strong></div>
-    </div>
-  `;
-}
-
-/* =========================
-   DEFINIÇÕES
-========================= */
-
-function renderSettings() {
-  return `
-    <h2 class="page-title">Definições</h2>
-
-    <div class="panel">
-      <h3>Gestão do jogo</h3>
-      <div class="setting-row">
-        <div>
-          <strong>Editar família</strong>
-          <div class="person-sub">Adicionar, editar e remover familiares.</div>
-        </div>
-        <button data-action="editFamily">Abrir</button>
-      </div>
-      <div class="setting-row">
-        <div>
-          <strong>Guardar jogo</strong>
-          <div class="person-sub">Gravar o progresso neste dispositivo.</div>
-        </div>
-        <button data-action="save">Guardar</button>
-      </div>
-      <div class="setting-row">
-        <div>
-          <strong>Exportar gravação</strong>
-          <div class="person-sub">Descarregar uma cópia dos teus dados.</div>
-        </div>
-        <button data-action="export">Exportar</button>
-      </div>
-      <div class="setting-row">
-        <div>
-          <strong>Importar gravação</strong>
-          <div class="person-sub">Carregar uma cópia anterior.</div>
-        </div>
-        <button data-action="import">Importar</button>
-      </div>
-      <div class="setting-row">
-        <div>
-          <strong>Nova vida</strong>
-          <div class="person-sub">Começar uma nova personagem.</div>
-        </div>
-        <button class="danger-button" data-action="newGame">Recomeçar</button>
-      </div>
-    </div>
-
-    <div class="panel">
-      <h3>Sobre o StarLife</h3>
-      <p class="muted">Versão de desenvolvimento · Fase 2 — Família e árvore genealógica.</p>
-    </div>
-  `;
-}
-
-function renderFamilyManagement() {
-  const list = game.family.map(person => `
-    <div class="person-row">
-      <div class="person-main">
-        <div class="avatar">${sexEmoji(person.sex)}</div>
-        <div>
-          <div class="person-name">${escapeHTML(person.name)}</div>
-          <div class="person-sub">${escapeHTML(relationLabel(person))} · ${person.age} anos</div>
-        </div>
-      </div>
-      <div class="row-actions">
-        <button data-edit-family="${person.id}">Editar</button>
-        <button class="danger-button" data-delete-family="${person.id}">✕</button>
-      </div>
-    </div>
-  `).join("");
-
-  openModal("Editar família", `
-    <p class="muted">Aqui podes gerir todas as pessoas da tua família.</p>
-    ${list || `<div class="empty">Ainda não existem familiares.</div>`}
-    <button class="primary" id="addFamilyFromSettings">＋ Adicionar familiar</button>
-  `);
-
-  $("addFamilyFromSettings").addEventListener("click", () => showFamilyForm());
-
-  document.querySelectorAll("[data-edit-family]").forEach(button => {
-    button.addEventListener("click", () => {
-      const person = game.family.find(item => item.id === button.dataset.editFamily);
-      if (person) showFamilyForm(person);
-    });
-  });
-
-  document.querySelectorAll("[data-delete-family]").forEach(button => {
-    button.addEventListener("click", () => removeFamilyMember(button.dataset.deleteFamily));
-  });
-}
-
-/* =========================
-   AÇÕES DAS PÁGINAS
-========================= */
-
-function attachPageEvents() {
-  document.querySelectorAll("[data-action]").forEach(button => {
-    button.addEventListener("click", () => {
-      const action = button.dataset.action;
-
-      if (action === "advance") advanceYear();
-      if (action === "editFamily") renderFamilyManagement();
-      if (action === "save") {
-        saveGame();
-        alert("Jogo guardado!");
-      }
-      if (action === "export") exportSave();
-      if (action === "import") importSave();
-      if (action === "newGame") newGame();
-      if (action === "createBusiness") createBusiness();
-    });
-  });
-
-  document.querySelectorAll("[data-job]").forEach(button => {
-    button.addEventListener("click", () => {
-      const salary = Number(button.dataset.salary);
-      const job = button.dataset.job;
-
-      if (!confirm(`Queres candidatar-te a ${job}?`)) return;
-
-      game.player.job = job;
-      game.player.salary = salary;
-      notify(`Conseguiste um emprego como ${job}.`);
-      saveGame();
-      render();
-    });
-  });
-
-  document.querySelectorAll("[data-buy]").forEach(button => {
-    button.addEventListener("click", () => {
-      const price = Number(button.dataset.price);
-      const name = button.dataset.buy;
-
-      if (game.player.money < price) {
-        alert("Não tens dinheiro suficiente.");
-        return;
-      }
-
-      game.player.money -= price;
-      notify(`Compraste: ${name}.`);
-      saveGame();
-      render();
-    });
-  });
-}
-
-/* =========================
-   AVANÇAR UM ANO
-========================= */
-
-function advanceYear() {
-  if (game.player.isDeceased) {
-    alert("A tua personagem já faleceu. Terás de iniciar uma nova vida.");
+function newLife() {
+  if (!confirm("Tens a certeza de que queres começar uma nova vida? A gravação atual será substituída.")) {
     return;
   }
 
-  game.year++;
-  game.player.age++;
+  game = null;
+  initialFamily = [];
 
-  if (game.player.salary > 0) {
-    game.player.money += game.player.salary;
-  }
+  localStorage.removeItem(SAVE_KEY);
 
-  game.player.happiness = Math.max(0, Math.min(100,
-    game.player.happiness + Math.floor(Math.random() * 7) - 3));
+  $("startForm").reset();
+  $("playerCountry").value = "Portugal";
+  $("initialFamilyList").innerHTML = "";
+  $("familyEditor").classList.add("hidden");
 
-  // Envelhecimento simples dos familiares.
-  game.family.forEach(person => {
-    person.age++;
-
-    // Mortalidade simplificada: não representa ainda um modelo médico realista.
-    const risk = person.age < 60 ? 0.001 :
-      person.age < 75 ? 0.008 :
-      person.age < 85 ? 0.025 :
-      person.age < 95 ? 0.07 : 0.18;
-
-    if (!person.isDeceased && Math.random() < risk) {
-      person.isDeceased = true;
-      notify(`${person.name} faleceu aos ${person.age} anos.`);
-    }
-  });
-
-  game.businesses.forEach(business => {
-    game.player.money += business.profit;
-    business.value = Math.max(0, business.value + business.profit * 0.2);
-  });
-
-  const playerRisk = game.player.age < 60 ? 0.001 :
-    game.player.age < 75 ? 0.008 :
-    game.player.age < 85 ? 0.025 :
-    game.player.age < 95 ? 0.07 : 0.18;
-
-  if (Math.random() < playerRisk) {
-    game.player.isDeceased = true;
-    notify("A tua personagem faleceu. A tua história chegou ao fim.");
-  } else {
-    notify(`Fizeste ${game.player.age} anos. Um novo ano começou.`);
-  }
-
-  saveGame();
-  render();
+  showSetup();
+  showToast("Podes criar uma nova personagem.");
 }
-
-/* =========================
-   NEGÓCIO
-========================= */
-
-function createBusiness() {
-  const cost = 5000;
-
-  if (game.player.money < cost) {
-    alert("Precisas de 5.000 € para abrir um negócio.");
-    return;
-  }
-
-  const name = prompt("Que nome queres dar ao teu negócio?");
-  if (!name || !name.trim()) return;
-
-  game.player.money -= cost;
-  game.businesses.push({
-    id: makeId(),
-    name: name.trim(),
-    value: cost,
-    profit: 1000
-  });
-
-  notify(`Abriste o negócio ${name.trim()}.`);
-  saveGame();
-  render();
-}
-
-/* =========================
-   EXPORTAR / IMPORTAR
-========================= */
 
 function exportSave() {
-  const blob = new Blob([JSON.stringify(game, null, 2)], {
-    type: "application/json"
-  });
+  if (!game) return;
 
+  const data = JSON.stringify(game, null, 2);
+  const blob = new Blob([data], { type: "application/json" });
   const url = URL.createObjectURL(blob);
+
   const link = document.createElement("a");
   link.href = url;
   link.download = "starlife-gravacao.json";
   link.click();
+
   URL.revokeObjectURL(url);
+  showToast("Gravação exportada!");
 }
 
-function importSave() {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = ".json,application/json";
+function importSave(file) {
+  if (!file) return;
 
-  input.addEventListener("change", () => {
-    const file = input.files?.[0];
-    if (!file) return;
+  const reader = new FileReader();
 
-    const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const imported = JSON.parse(reader.result);
 
-    reader.onload = () => {
-      try {
-        const imported = JSON.parse(reader.result);
-
-        if (!imported.player || !Array.isArray(imported.family)) {
-          throw new Error("Formato inválido");
-        }
-
-        game = imported;
-        game.player.id ||= "player";
-        game.family = game.family.map(person => ({
-          ...person,
-          biologicalParentIds: person.biologicalParentIds || [],
-          adoptiveParentIds: person.adoptiveParentIds || [],
-          socialParentIds: person.socialParentIds || []
-        }));
-
-        game.player.biologicalParentIds ||= [];
-        game.player.adoptiveParentIds ||= [];
-        game.player.socialParentIds ||= [];
-        game.notifications ||= [];
-        game.businesses ||= [];
-        game.year ||= new Date().getFullYear();
-
-        saveGame();
-        closeModal();
-        $("startScreen").classList.add("hidden");
-        $("gameScreen").classList.remove("hidden");
-        $("bottomNav").classList.remove("hidden");
-        activeTab = "home";
-        render();
-        alert("Gravação importada com sucesso!");
-      } catch (error) {
-        alert("Não foi possível importar este ficheiro. Confirma se é uma gravação StarLife válida.");
+      if (!imported.player || !Array.isArray(imported.family)) {
+        throw new Error("Ficheiro inválido");
       }
-    };
 
-    reader.readAsText(file);
-  });
+      game = imported;
 
-  input.click();
+      // Garante que os campos essenciais existem em gravações antigas.
+      game.player.health ??= 100;
+      game.player.happiness ??= 80;
+      game.player.bank ??= 0;
+      game.player.debt ??= 0;
+      game.player.salary ??= 0;
+      game.player.expenses ??= 0;
+      game.player.education ??= "Sem escolaridade";
+      game.player.educationLevel ??= 0;
+      game.player.biologicalParentIds ??= [];
+      game.player.adoptiveParentIds ??= [];
+      game.player.socialParentIds ??= [];
+
+      game.events ??= [];
+      game.financeHistory ??= [];
+      game.businesses ??= [];
+
+      game.family.forEach(person => {
+        person.biologicalParentIds ??= [];
+        person.adoptiveParentIds ??= [];
+        person.socialParentIds ??= [];
+        person.relationship ??= 70;
+        person.alive ??= true;
+      });
+
+      saveGame();
+      showGame();
+      renderGame();
+      showToast("Gravação importada com sucesso!");
+    } catch (error) {
+      console.error(error);
+      showToast("Não foi possível importar este ficheiro.");
+    }
+  };
+
+  reader.readAsText(file);
 }
 
-/* =========================
-   NOVA VIDA
-========================= */
-
-function newGame() {
-  if (!confirm("Tens a certeza? A gravação atual será substituída por uma nova vida.")) return;
-
-  localStorage.removeItem(SAVE_KEY);
-  game = null;
-  initialFamily = [];
-  activeTab = "home";
-
-  $("gameScreen").classList.add("hidden");
-  $("bottomNav").classList.add("hidden");
-  $("startScreen").classList.remove("hidden");
-
-  $("playerFirstName").value = "";
-  $("playerLastName").value = "";
-  $("playerSex").value = "";
-  $("playerAge").value = "18";
-  $("playerCountry").value = "Portugal";
-  $("playerCity").value = "";
-
-  renderInitialFamily();
-  validateStart();
-}
-
-/* =========================
-   ARRANQUE
-========================= */
+/* =========================================
+   EVENTOS E INICIALIZAÇÃO
+========================================= */
 
 function boot() {
-  $("playerCountry").value = "Portugal";
-  renderInitialFamily();
-  validateStart();
+  $("startForm").addEventListener("submit", event => {
+    event.preventDefault();
+    startGame();
+  });
+
+  $("addInitialFamilyBtn").addEventListener("click", addInitialFamilyMember);
+
+  $("continueGameBtn").addEventListener("click", () => {
+    const saved = loadGame();
+
+    if (!saved) {
+      showToast("Não existe nenhuma gravação válida.");
+      return;
+    }
+
+    game = saved;
+    showGame();
+    renderGame();
+  });
+
+  $("deleteSaveBtn").addEventListener("click", () => {
+    if (!confirm("Queres apagar a gravação guardada?")) return;
+
+    localStorage.removeItem(SAVE_KEY);
+    updateContinuePanel();
+    showToast("Gravação apagada.");
+  });
+
+  $("advanceYearBtn").addEventListener("click", advanceYear);
+
+  $("createBusinessBtn").addEventListener("click", createBusiness);
+
+  $("showFamilyEditorBtn").addEventListener("click", openFamilyEditor);
+
+  $("closeFamilyEditorBtn").addEventListener("click", () => {
+    $("familyEditor").classList.add("hidden");
+  });
+
+  $("familyForm").addEventListener("submit", event => {
+    event.preventDefault();
+
+    const name = $("familyName").value.trim();
+    const surname = $("familySurname").value.trim();
+    const relation = $("familyRelation").value;
+    const age = Number($("familyAge").value);
+    const sex = $("familySex").value;
+    const linkType = $("familyLinkType").value;
+
+    if (!name || !Number.isFinite(age) || age < 0 || age > 110) {
+      showToast("Preenche corretamente os dados do familiar.");
+      return;
+    }
+
+    addFamilyMember({
+      name,
+      surname,
+      relation,
+      age,
+      sex
+    }, linkType);
+
+    $("familyForm").reset();
+  });
+
+  $("newLifeBtn").addEventListener("click", newLife);
+
+  $("exportSaveBtn").addEventListener("click", exportSave);
+
+  $("importSaveInput").addEventListener("change", event => {
+    importSave(event.target.files[0]);
+    event.target.value = "";
+  });
+
+  document.querySelectorAll(".nav-btn").forEach(button => {
+    button.addEventListener("click", () => {
+      showTab(button.dataset.tab);
+    });
+  });
+
+  updateContinuePanel();
 
   const saved = loadGame();
 
   if (saved) {
-    game = saved;
-    $("startScreen").classList.add("hidden");
-    $("gameScreen").classList.remove("hidden");
-    $("bottomNav").classList.remove("hidden");
-    render();
+    $("continuePanel").classList.remove("hidden");
   }
 }
 
-boot();
+document.addEventListener("DOMContentLoaded", boot);

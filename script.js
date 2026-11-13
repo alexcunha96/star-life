@@ -14,11 +14,15 @@ let toastTimer = null;
 const $ = (id) => document.getElementById(id);
 
 function createId() {
-  return "person_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+  return "person_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
 }
 
 function randomFrom(list) {
   return list[Math.floor(Math.random() * list.length)];
+}
+
+function randomNumber(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 function money(value) {
@@ -34,7 +38,7 @@ function clamp(value, min = 0, max = 100) {
 }
 
 function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -113,7 +117,7 @@ function addFinanceEvent(message) {
 }
 
 /* =========================================
-   NOMES E DADOS DOS FAMILIARES
+   NOMES E DADOS
 ========================================= */
 
 const femaleNames = [
@@ -136,6 +140,28 @@ const maleNames = [
   "José", "Rodrigo", "Vasco", "Guilherme"
 ];
 
+const surnames = [
+  "Silva", "Santos", "Ferreira", "Pereira",
+  "Oliveira", "Costa", "Rodrigues", "Martins",
+  "Sousa", "Gomes", "Lopes", "Almeida",
+  "Ribeiro", "Carvalho", "Moreira", "Mendes",
+  "Teixeira", "Nunes", "Correia", "Monteiro"
+];
+
+const personalities = [
+  "Carinhoso/a", "Aventureiro/a", "Tímido/a",
+  "Extrovertido/a", "Ambicioso/a", "Calmo/a",
+  "Ciumento/a", "Divertido/a", "Romântico/a",
+  "Independente", "Sensível", "Confiante"
+];
+
+const interests = [
+  "Desporto", "Música", "Cinema", "Viagens",
+  "Animais", "Tecnologia", "Natureza",
+  "Jogos", "Culinária", "Leitura", "Moda",
+  "Carros", "Arte", "Dança"
+];
+
 const familyJobs = [
   { name: "Empregado/a de supermercado", salary: 11500 },
   { name: "Assistente de loja", salary: 12000 },
@@ -156,14 +182,8 @@ const familyJobs = [
 ];
 
 function generateName(sex) {
-  if (sex === "Feminino") {
-    return randomFrom(femaleNames);
-  }
-
-  if (sex === "Masculino") {
-    return randomFrom(maleNames);
-  }
-
+  if (sex === "Feminino") return randomFrom(femaleNames);
+  if (sex === "Masculino") return randomFrom(maleNames);
   return randomFrom([...femaleNames, ...maleNames]);
 }
 
@@ -182,12 +202,38 @@ function createFamilyMember(data) {
     adoptiveParentIds: [],
     socialParentIds: [],
     relationship: 70,
-
-    // Novos dados de vida familiar.
     partnerId: null,
     relationshipStatus: "Solteiro/a",
     marriageAge: null,
     childrenCount: 0
+  };
+}
+
+function createSocialPerson(data = {}) {
+  return {
+    id: createId(),
+    name: data.name || generateName(data.sex),
+    surname: data.surname || randomFrom(surnames),
+    sex: data.sex || randomFrom(["Masculino", "Feminino"]),
+    age: Number(data.age) || 18,
+    city: data.city || game.player.city,
+    country: data.country || game.player.country,
+    alive: true,
+    personality: data.personality || randomFrom(personalities),
+    interests: data.interests || [
+      randomFrom(interests),
+      randomFrom(interests)
+    ],
+    compatibility: randomNumber(35, 95),
+    friendship: 0,
+    love: 0,
+    status: "Conhecido/a",
+    partnerId: null,
+    relationshipStatus: "Solteiro/a",
+    job: "",
+    salary: 0,
+    childrenCount: 0,
+    metAtAge: game.player.age
   };
 }
 
@@ -199,15 +245,38 @@ function relationIsFather(relation) {
   return String(relation).toLowerCase() === "pai";
 }
 
-function createAutomaticFamily() {
-  const motherAge = Math.floor(Math.random() * 28) + 18;
-  const fatherAge = Math.floor(Math.random() * 33) + 18;
+function getPersonFullName(person) {
+  return `${person.name} ${person.surname || ""}`.trim();
+}
 
+function getRelationLabel(person) {
+  return person.relation || "Familiar";
+}
+
+function getParentNames(person) {
+  const ids = [
+    ...(person.biologicalParentIds || []),
+    ...(person.adoptiveParentIds || []),
+    ...(person.socialParentIds || [])
+  ];
+
+  return ids
+    .map(id => game.family.find(member => member.id === id))
+    .filter(Boolean)
+    .map(getPersonFullName)
+    .join(", ") || "Não definido";
+}
+
+/* =========================================
+   FAMÍLIA
+========================================= */
+
+function createAutomaticFamily() {
   const mother = createFamilyMember({
     name: generateName("Feminino"),
     surname: game.player.surname,
     relation: "Mãe",
-    age: motherAge,
+    age: randomNumber(18, 45),
     sex: "Feminino"
   });
 
@@ -215,7 +284,7 @@ function createAutomaticFamily() {
     name: generateName("Masculino"),
     surname: game.player.surname,
     relation: "Pai",
-    age: fatherAge,
+    age: randomNumber(18, 50),
     sex: "Masculino"
   });
 
@@ -236,46 +305,16 @@ function connectInitialParents() {
 
   game.player.biologicalParentIds = [];
 
-  if (mother) {
-    game.player.biologicalParentIds.push(mother.id);
-  }
-
-  if (father) {
-    game.player.biologicalParentIds.push(father.id);
-  }
+  if (mother) game.player.biologicalParentIds.push(mother.id);
+  if (father) game.player.biologicalParentIds.push(father.id);
 }
-
-function getPersonFullName(person) {
-  return `${person.name} ${person.surname || ""}`.trim();
-}
-
-function getRelationLabel(person) {
-  return person.relation || "Familiar";
-}
-
-function getParentNames(person) {
-  const ids = [
-    ...(person.biologicalParentIds || []),
-    ...(person.adoptiveParentIds || []),
-    ...(person.socialParentIds || [])
-  ];
-
-  const names = ids
-    .map(id => game.family.find(member => member.id === id))
-    .filter(Boolean)
-    .map(getPersonFullName);
-
-  return names.length ? names.join(", ") : "Não definido";
-}
-
-/* =========================================
-   GESTÃO DA FAMÍLIA
-========================================= */
 
 function addFamilyMember(data, linkType = "biological") {
   if (!game) return;
 
   const person = createFamilyMember(data);
+
+  game.family.push(person);
 
   if (linkType === "biological") {
     person.biologicalParentIds = [];
@@ -284,8 +323,6 @@ function addFamilyMember(data, linkType = "biological") {
   } else {
     person.socialParentIds = [];
   }
-
-  game.family.push(person);
 
   if (["Filho", "Filha"].includes(person.relation)) {
     person.biologicalParentIds = [game.player.id];
@@ -310,17 +347,17 @@ function removeFamilyMember(id) {
   const remainingIds = new Set(game.family.map(member => member.id));
 
   game.player.biologicalParentIds =
-    (game.player.biologicalParentIds || []).filter(id => remainingIds.has(id));
+    (game.player.biologicalParentIds || []).filter(value => remainingIds.has(value));
 
   game.family.forEach(member => {
     member.biologicalParentIds =
-      (member.biologicalParentIds || []).filter(id => remainingIds.has(id));
+      (member.biologicalParentIds || []).filter(value => remainingIds.has(value));
 
     member.adoptiveParentIds =
-      (member.adoptiveParentIds || []).filter(id => remainingIds.has(id));
+      (member.adoptiveParentIds || []).filter(value => remainingIds.has(value));
 
     member.socialParentIds =
-      (member.socialParentIds || []).filter(id => remainingIds.has(id));
+      (member.socialParentIds || []).filter(value => remainingIds.has(value));
 
     if (member.partnerId === id) {
       member.partnerId = null;
@@ -432,15 +469,11 @@ function renderFamilyEditor() {
   });
 
   container.querySelectorAll("[data-edit-person]").forEach(button => {
-    button.addEventListener("click", () => {
-      editFamilyMember(button.dataset.editPerson);
-    });
+    button.addEventListener("click", () => editFamilyMember(button.dataset.editPerson));
   });
 
   container.querySelectorAll("[data-remove-person]").forEach(button => {
-    button.addEventListener("click", () => {
-      removeFamilyMember(button.dataset.removePerson);
-    });
+    button.addEventListener("click", () => removeFamilyMember(button.dataset.removePerson));
   });
 }
 
@@ -448,34 +481,28 @@ function renderFamilyTree() {
   const container = $("familyTree");
   container.innerHTML = "";
 
-  const parents = game.family.filter(person =>
-    (game.player.biologicalParentIds || []).includes(person.id) ||
-    (game.player.adoptiveParentIds || []).includes(person.id) ||
-    (game.player.socialParentIds || []).includes(person.id)
-  );
+  const playerParents = [
+    ...(game.player.biologicalParentIds || []),
+    ...(game.player.adoptiveParentIds || []),
+    ...(game.player.socialParentIds || [])
+  ];
 
-  const children = game.family.filter(person =>
-    [
-      ...(person.biologicalParentIds || []),
-      ...(person.adoptiveParentIds || []),
-      ...(person.socialParentIds || [])
-    ].includes(game.player.id)
-  );
+  const parents = game.family.filter(person => playerParents.includes(person.id));
+
+  const children = game.family.filter(person => [
+    ...(person.biologicalParentIds || []),
+    ...(person.adoptiveParentIds || []),
+    ...(person.socialParentIds || [])
+  ].includes(game.player.id));
 
   const siblings = game.family.filter(person => {
-    const personParents = [
+    const ids = [
       ...(person.biologicalParentIds || []),
       ...(person.adoptiveParentIds || []),
       ...(person.socialParentIds || [])
     ];
 
-    const playerParents = [
-      ...(game.player.biologicalParentIds || []),
-      ...(game.player.adoptiveParentIds || []),
-      ...(game.player.socialParentIds || [])
-    ];
-
-    return personParents.some(id => playerParents.includes(id)) &&
+    return ids.some(id => playerParents.includes(id)) &&
       !children.some(child => child.id === person.id);
   });
 
@@ -490,48 +517,40 @@ function renderFamilyTree() {
   }
 
   if (parents.length) {
-    const parentSection = document.createElement("div");
-    parentSection.innerHTML = `
+    container.innerHTML += `
       <div class="tree-generation">
         ${parents.map(person => personBox(person)).join("")}
       </div>
       <div class="tree-connector">↓</div>
     `;
-    container.appendChild(parentSection);
   }
 
-  const currentSection = document.createElement("div");
-  currentSection.innerHTML = `
+  container.innerHTML += `
     <div class="tree-generation">
       ${personBox(game.player, true)}
     </div>
   `;
-  container.appendChild(currentSection);
 
   if (siblings.length) {
-    const siblingSection = document.createElement("div");
-    siblingSection.innerHTML = `
+    container.innerHTML += `
       <div class="tree-connector">↔</div>
       <div class="tree-generation">
         ${siblings.map(person => personBox(person)).join("")}
       </div>
     `;
-    container.appendChild(siblingSection);
   }
 
   if (children.length) {
-    const childrenSection = document.createElement("div");
-    childrenSection.innerHTML = `
+    container.innerHTML += `
       <div class="tree-connector">↓</div>
       <div class="tree-generation">
         ${children.map(person => personBox(person)).join("")}
       </div>
     `;
-    container.appendChild(childrenSection);
   }
 
   if (!parents.length && !siblings.length && !children.length) {
-    container.innerHTML = "<p class='muted'>A tua árvore genealógica começa contigo. Adiciona familiares nas Definições.</p>";
+    container.innerHTML = "<p class='muted'>A tua árvore genealógica começa contigo.</p>";
   }
 }
 
@@ -541,30 +560,17 @@ function renderFamilyTree() {
 
 function findFamilyPartner(person) {
   if (!person.partnerId) return null;
-
   return game.family.find(member => member.id === person.partnerId) || null;
 }
 
 function createAutonomousPartner(person) {
-  const sex = person.sex === "Feminino"
-    ? "Masculino"
-    : person.sex === "Masculino"
-      ? "Feminino"
-      : randomFrom(["Masculino", "Feminino"]);
-
-  const ageDifference = Math.floor(Math.random() * 9) - 4;
-  const partnerAge = clamp(person.age + ageDifference, 18, 90);
+  const sex = person.sex === "Feminino" ? "Masculino" : "Feminino";
 
   const partner = createFamilyMember({
     name: generateName(sex),
-    surname: randomFrom([
-      "Silva", "Santos", "Ferreira", "Pereira",
-      "Oliveira", "Costa", "Rodrigues", "Martins",
-      "Sousa", "Gomes", "Lopes", "Almeida",
-      "Ribeiro", "Carvalho", "Moreira"
-    ]),
+    surname: randomFrom(surnames),
     relation: "Companheiro/a",
-    age: partnerAge,
+    age: clamp(person.age + randomNumber(-4, 4), 18, 90),
     sex
   });
 
@@ -586,117 +592,40 @@ function createAutonomousPartner(person) {
 function updateFamilyJobs(person) {
   if (!person.alive || person.age < 16) return;
 
-  // Reforma.
   if (person.age >= 67 && person.job) {
     if (Math.random() < 0.20) {
-      addEvent(`${getPersonFullName(person)} reformou-se da profissão de ${person.job}.`);
+      addEvent(`${getPersonFullName(person)} reformou-se.`);
       person.job = "";
       person.salary = 0;
     }
     return;
   }
 
-  // Possibilidade de conseguir o primeiro emprego.
   if (!person.job) {
     const chance = person.age < 18 ? 0.12 : 0.38;
 
     if (Math.random() < chance) {
-      const availableJobs = familyJobs.filter(job =>
+      const available = familyJobs.filter(job =>
         person.age >= 18 || job.salary <= 15000
       );
 
-      const job = randomFrom(availableJobs);
-
+      const job = randomFrom(available);
       person.job = job.name;
       person.salary = job.salary;
 
-      addEvent(
-        `${getPersonFullName(person)} conseguiu emprego como ${job.name}!`
-      );
+      addEvent(`${getPersonFullName(person)} conseguiu emprego como ${job.name}.`);
     }
 
     return;
   }
 
-  // Possibilidade de mudar de emprego.
   if (Math.random() < 0.08) {
-    const oldJob = person.job;
     const newJob = randomFrom(familyJobs);
-
     person.job = newJob.name;
     person.salary = newJob.salary;
 
-    addEvent(
-      `${getPersonFullName(person)} mudou de emprego: deixou de trabalhar como ${oldJob} e passou a trabalhar como ${newJob.name}.`
-    );
+    addEvent(`${getPersonFullName(person)} mudou de profissão para ${newJob.name}.`);
   }
-}
-
-function updateFamilyRelationships(person) {
-  if (!person.alive || person.age < 18) return;
-
-  let partner = findFamilyPartner(person);
-
-  // Se o companheiro faleceu, a pessoa fica viúva.
-  if (partner && !partner.alive) {
-    person.partnerId = null;
-    person.relationshipStatus = "Viúvo/a";
-
-    addEvent(
-      `${getPersonFullName(person)} ficou viúvo/a após a morte de ${getPersonFullName(partner)}.`
-    );
-
-    return;
-  }
-
-  // Encontrar um novo relacionamento.
-  if (!partner && Math.random() < 0.035) {
-    partner = createAutonomousPartner(person);
-    return;
-  }
-
-  if (!partner || !partner.alive) return;
-
-  // Casamento.
-  if (
-    person.relationshipStatus === "Namoro" &&
-    partner.relationshipStatus === "Namoro" &&
-    person.age >= 20 &&
-    partner.age >= 18 &&
-    Math.random() < 0.16
-  ) {
-    person.relationshipStatus = "Casado/a";
-    partner.relationshipStatus = "Casado/a";
-
-    person.marriageAge = person.age;
-    partner.marriageAge = partner.age;
-
-    addEvent(
-      `${getPersonFullName(person)} casou-se com ${getPersonFullName(partner)}! 💍`
-    );
-  }
-
-  // Possibilidade de separação.
-  if (
-    person.relationshipStatus === "Namoro" &&
-    partner.relationshipStatus === "Namoro" &&
-    Math.random() < 0.025
-  ) {
-    person.partnerId = null;
-    partner.partnerId = null;
-
-    person.relationshipStatus = "Separado/a";
-    partner.relationshipStatus = "Separado/a";
-
-    addEvent(
-      `${getPersonFullName(person)} e ${getPersonFullName(partner)} terminaram a relação.`
-    );
-
-    return;
-  }
-
-  // Nascimento de filhos.
-  createAutonomousChild(person, partner);
 }
 
 function createAutonomousChild(parentOne, parentTwo) {
@@ -706,25 +635,18 @@ function createAutonomousChild(parentOne, parentTwo) {
   if (parentOne.age < 20 || parentOne.age > 45) return;
   if (parentTwo.age < 18 || parentTwo.age > 50) return;
 
-  if (
-    !["Namoro", "Casado/a"].includes(parentOne.relationshipStatus) ||
-    !["Namoro", "Casado/a"].includes(parentTwo.relationshipStatus)
-  ) {
-    return;
-  }
+  if (!["Namoro", "Casado/a"].includes(parentOne.relationshipStatus)) return;
+  if (!["Namoro", "Casado/a"].includes(parentTwo.relationshipStatus)) return;
 
-  const existingChildren = game.family.filter(person => {
+  const existing = game.family.filter(person => {
     const ids = person.biologicalParentIds || [];
-
     return ids.includes(parentOne.id) && ids.includes(parentTwo.id);
   });
 
-  if (existingChildren.length >= 3) return;
-
-  // Probabilidade anual de nascimento.
-  if (Math.random() >= 0.035) return;
+  if (existing.length >= 3 || Math.random() >= 0.035) return;
 
   const sex = randomFrom(["Masculino", "Feminino"]);
+
   const child = createFamilyMember({
     name: generateName(sex),
     surname: parentOne.surname || parentTwo.surname,
@@ -745,20 +667,74 @@ function createAutonomousChild(parentOne, parentTwo) {
   );
 }
 
+function updateFamilyRelationships(person, processedPairs) {
+  if (!person.alive || person.age < 18) return;
+
+  let partner = findFamilyPartner(person);
+
+  if (partner && !partner.alive) {
+    person.partnerId = null;
+    person.relationshipStatus = "Viúvo/a";
+    addEvent(`${getPersonFullName(person)} ficou viúvo/a.`, "negative");
+    return;
+  }
+
+  if (!partner && Math.random() < 0.035) {
+    createAutonomousPartner(person);
+    return;
+  }
+
+  if (!partner || !partner.alive) return;
+
+  const pairKey = [person.id, partner.id].sort().join("_");
+  if (processedPairs.has(pairKey)) return;
+
+  processedPairs.add(pairKey);
+
+  if (
+    person.relationshipStatus === "Namoro" &&
+    partner.relationshipStatus === "Namoro" &&
+    person.age >= 20 &&
+    partner.age >= 18 &&
+    Math.random() < 0.16
+  ) {
+    person.relationshipStatus = "Casado/a";
+    partner.relationshipStatus = "Casado/a";
+    person.marriageAge = person.age;
+    partner.marriageAge = partner.age;
+
+    addEvent(`${getPersonFullName(person)} casou-se com ${getPersonFullName(partner)}! 💍`);
+  }
+
+  if (
+    person.relationshipStatus === "Namoro" &&
+    partner.relationshipStatus === "Namoro" &&
+    Math.random() < 0.025
+  ) {
+    person.partnerId = null;
+    partner.partnerId = null;
+    person.relationshipStatus = "Separado/a";
+    partner.relationshipStatus = "Separado/a";
+
+    addEvent(`${getPersonFullName(person)} e ${getPersonFullName(partner)} terminaram a relação.`);
+    return;
+  }
+
+  createAutonomousChild(person, partner);
+}
+
 function processFamilyLife() {
-  if (!game || !Array.isArray(game.family)) return;
+  if (!game) return;
 
-  // Trabalhamos com uma cópia para que os novos familiares
-  // não sejam processados duas vezes no mesmo ano.
-  const familySnapshot = [...game.family];
+  const snapshot = [...game.family];
+  const processedPairs = new Set();
 
-  familySnapshot.forEach(person => {
+  snapshot.forEach(person => {
     if (!person.alive) return;
 
     updateFamilyJobs(person);
-    updateFamilyRelationships(person);
+    updateFamilyRelationships(person, processedPairs);
 
-    // Pequenas alterações na relação com a personagem.
     person.relationship = clamp(
       (person.relationship ?? 70) + (Math.random() < 0.5 ? 1 : -1)
     );
@@ -766,17 +742,683 @@ function processFamilyLife() {
 }
 
 /* =========================================
-   CRIAR E INICIAR JOGO
+   SISTEMA DE RELAÇÕES DO JOGADOR
+========================================= */
+
+function getSocialPerson(id) {
+  return game.socialPeople.find(person => person.id === id) || null;
+}
+
+function getPlayerPartner() {
+  if (!game.player.partnerId) return null;
+  return getSocialPerson(game.player.partnerId);
+}
+
+function isDatingAge(person) {
+  return person && person.age >= 14;
+}
+
+function ageDifferenceAllowed(person) {
+  const difference = Math.abs(game.player.age - person.age);
+
+  if (game.player.age < 18 || person.age < 18) {
+    return difference <= 2;
+  }
+
+  return difference <= 8;
+}
+
+function createNewAcquaintances() {
+  if (game.player.age < 10) {
+    showToast("Ainda és demasiado novo/a para conhecer pessoas desta forma.");
+    return;
+  }
+
+  const available = game.socialPeople.filter(person =>
+    person.alive &&
+    person.status === "Conhecido/a" &&
+    !game.player.friends.includes(person.id) &&
+    person.id !== game.player.partnerId
+  );
+
+  let created = 0;
+
+  for (let i = 0; i < 3; i++) {
+    if (available.length > 0 && Math.random() < 0.4) continue;
+
+    let age;
+
+    if (game.player.age < 18) {
+      age = clamp(game.player.age + randomNumber(-2, 2), 10, 17);
+    } else {
+      age = clamp(game.player.age + randomNumber(-8, 8), 18, 75);
+    }
+
+    const person = createSocialPerson({
+      age,
+      city: game.player.city,
+      country: game.player.country
+    });
+
+    game.socialPeople.push(person);
+    created++;
+  }
+
+  if (created > 0) {
+    addEvent(`Conheceste ${created} pessoa(s) nova(s) na tua cidade. 👋`);
+    showToast(`Conheceste ${created} pessoa(s) nova(s)!`);
+  } else {
+    showToast("Não encontraste ninguém novo desta vez. Tenta novamente.");
+  }
+
+  saveGame();
+  renderRelationships();
+}
+
+function talkToPerson(id) {
+  const person = getSocialPerson(id);
+  if (!person || !person.alive) return;
+
+  person.friendship = clamp(person.friendship + randomNumber(5, 15));
+  person.status = person.friendship >= 60 ? "Amigo/a" : "Conhecido/a";
+
+  game.player.happiness = clamp(game.player.happiness + 2);
+
+  addEvent(`Tiveste uma boa conversa com ${getPersonFullName(person)}. 🙂`);
+
+  if (person.friendship >= 60 && Math.random() < 0.35) {
+    addEvent(`${getPersonFullName(person)} considera-te um/a grande amigo/a.`);
+  }
+
+  saveGame();
+  renderGame();
+}
+
+function flirtWithPerson(id) {
+  const person = getSocialPerson(id);
+  if (!person || !person.alive) return;
+
+  if (game.player.age < 14 || person.age < 14) {
+    showToast("As relações amorosas só estão disponíveis a partir dos 14 anos.");
+    return;
+  }
+
+  if (!ageDifferenceAllowed(person)) {
+    showToast("Esta pessoa não tem uma idade adequada à tua.");
+    return;
+  }
+
+  if (game.player.partnerId) {
+    showToast("Já estás numa relação. Resolve primeiro a tua situação amorosa.");
+    return;
+  }
+
+  person.love = clamp(person.love + randomNumber(8, 18));
+
+  if (Math.random() < person.compatibility / 150) {
+    addEvent(`Houve química entre ti e ${getPersonFullName(person)}. ❤️`);
+    showToast("Parece que existe química!");
+  } else {
+    person.love = clamp(person.love - 5);
+    addEvent(`Tentaste aproximar-te de ${getPersonFullName(person)}, mas não correu muito bem.`);
+    showToast("Não parece ter havido grande química.");
+  }
+
+  saveGame();
+  renderRelationships();
+}
+
+function askForRelationship(id) {
+  const person = getSocialPerson(id);
+  if (!person || !person.alive) return;
+
+  if (game.player.age < 14 || person.age < 14) {
+    showToast("Tens de ter pelo menos 14 anos.");
+    return;
+  }
+
+  if (!ageDifferenceAllowed(person)) {
+    showToast("A diferença de idades não é adequada.");
+    return;
+  }
+
+  if (game.player.partnerId) {
+    showToast("Já estás numa relação.");
+    return;
+  }
+
+  if (person.love < 35) {
+    showToast("Ainda precisam de se conhecer melhor.");
+    return;
+  }
+
+  const chance = clamp(
+    25 + person.love * 0.55 + person.compatibility * 0.2,
+    10,
+    95
+  );
+
+  if (Math.random() * 100 <= chance) {
+    game.player.partnerId = person.id;
+    game.player.relationshipStatus = "Namoro";
+
+    person.partnerId = game.player.id;
+    person.relationshipStatus = "Namoro";
+    person.status = "Namorado/a";
+
+    addEvent(`Começaste a namorar com ${getPersonFullName(person)}! ❤️`);
+    showToast("Parabéns! Estás numa relação.");
+  } else {
+    person.love = clamp(person.love - 10);
+    addEvent(`${getPersonFullName(person)} não aceitou o teu pedido de namoro.`);
+    showToast("Desta vez recebeste um não.");
+  }
+
+  saveGame();
+  renderGame();
+}
+
+function proposeMarriage() {
+  const partner = getPlayerPartner();
+
+  if (!partner || !partner.alive) {
+    showToast("Não tens um/a companheiro/a.");
+    return;
+  }
+
+  if (game.player.age < 18 || partner.age < 18) {
+    showToast("Só podes casar quando ambos tiverem pelo menos 18 anos.");
+    return;
+  }
+
+  if (game.player.relationshipStatus !== "Namoro") {
+    showToast("Tens de estar numa relação de namoro.");
+    return;
+  }
+
+  const chance = clamp(
+    25 + partner.love * 0.55 + partner.compatibility * 0.2,
+    10,
+    98
+  );
+
+  if (Math.random() * 100 <= chance) {
+    game.player.relationshipStatus = "Casado/a";
+    game.player.marriageAge = game.player.age;
+
+    partner.relationshipStatus = "Casado/a";
+    partner.marriageAge = partner.age;
+
+    addEvent(`💍 Pediste ${getPersonFullName(partner)} em casamento e a resposta foi SIM! Casaram-se!`);
+    showToast("Parabéns pelo casamento! 💍");
+  } else {
+    partner.love = clamp(partner.love - 8);
+    addEvent(`${getPersonFullName(partner)} recusou o teu pedido de casamento.`);
+    showToast("O pedido foi recusado...");
+  }
+
+  saveGame();
+  renderGame();
+}
+
+function breakUp() {
+  const partner = getPlayerPartner();
+  if (!partner) return;
+
+  if (!confirm(`Queres terminar a relação com ${getPersonFullName(partner)}?`)) {
+    return;
+  }
+
+  const wasMarried = game.player.relationshipStatus === "Casado/a";
+
+  game.player.partnerId = null;
+  game.player.relationshipStatus = wasMarried ? "Divorciado/a" : "Solteiro/a";
+
+  partner.partnerId = null;
+  partner.relationshipStatus = wasMarried ? "Divorciado/a" : "Solteiro/a";
+  partner.status = "Ex-companheiro/a";
+
+  addEvent(
+    wasMarried
+      ? `Tu e ${getPersonFullName(partner)} divorciaram-se. 💔`
+      : `Tu e ${getPersonFullName(partner)} terminaram o namoro. 💔`,
+    "negative"
+  );
+
+  saveGame();
+  renderGame();
+}
+
+function haveChild() {
+  const partner = getPlayerPartner();
+
+  if (!partner || !partner.alive) {
+    showToast("Precisas de ter um/a companheiro/a.");
+    return;
+  }
+
+  if (game.player.age < 18 || partner.age < 18) {
+    showToast("Só podes ter filhos a partir dos 18 anos.");
+    return;
+  }
+
+  if (game.player.age > 50 || partner.age > 50) {
+    showToast("A idade já não permite esta opção no jogo.");
+    return;
+  }
+
+  if (!confirm("Queres tentar ter um filho com esta pessoa?")) return;
+
+  if (Math.random() > 0.65) {
+    const sex = randomFrom(["Masculino", "Feminino"]);
+
+    const child = createFamilyMember({
+      name: generateName(sex),
+      surname: game.player.surname,
+      relation: sex === "Feminino" ? "Filha" : "Filho",
+      age: 0,
+      sex
+    });
+
+    child.biologicalParentIds = [game.player.id];
+    child.otherParentName = getPersonFullName(partner);
+
+    game.family.push(child);
+
+    game.player.childrenCount = (game.player.childrenCount || 0) + 1;
+    partner.childrenCount = (partner.childrenCount || 0) + 1;
+
+    game.player.happiness = clamp(game.player.happiness + 12);
+
+    addEvent(
+      `👶 Tiveste ${sex === "Feminino" ? "uma filha" : "um filho"} com ${getPersonFullName(partner)}: ${getPersonFullName(child)}!`
+    );
+
+    showToast("A família cresceu! 👶");
+  } else {
+    addEvent("Tentaste aumentar a família, mas não aconteceu desta vez.");
+    showToast("Não aconteceu desta vez. Podes tentar noutro ano.");
+  }
+
+  saveGame();
+  renderGame();
+}
+
+function adoptChild() {
+  const partner = getPlayerPartner();
+
+  if (game.player.age < 18) {
+    showToast("A adoção só está disponível a partir dos 18 anos.");
+    return;
+  }
+
+  if (!confirm("Queres iniciar um processo de adoção?")) return;
+
+  if (Math.random() > 0.25) {
+    const sex = randomFrom(["Masculino", "Feminino"]);
+    const age = randomNumber(0, 8);
+
+    const child = createFamilyMember({
+      name: generateName(sex),
+      surname: game.player.surname,
+      relation: sex === "Feminino" ? "Filha" : "Filho",
+      age,
+      sex
+    });
+
+    child.adoptiveParentIds = [game.player.id];
+
+    if (partner) {
+      child.otherAdoptiveParentName = getPersonFullName(partner);
+    }
+
+    game.family.push(child);
+    game.player.childrenCount = (game.player.childrenCount || 0) + 1;
+
+    addEvent(`❤️ O processo de adoção foi aprovado! ${getPersonFullName(child)} passou a fazer parte da tua família.`);
+    showToast("Adoção aprovada!");
+  } else {
+    addEvent("O processo de adoção ainda não foi aprovado.");
+    showToast("A adoção não foi aprovada desta vez.");
+  }
+
+  saveGame();
+  renderGame();
+}
+
+/* =========================================
+   EVOLUÇÃO DAS PERSONAGENS CONHECIDAS
+========================================= */
+
+function processSocialLife() {
+  if (!game) return;
+
+  game.socialPeople.forEach(person => {
+    if (!person.alive) return;
+
+    person.age += 1;
+
+    if (person.age >= 100 && Math.random() < 0.15) {
+      person.alive = false;
+      addEvent(`${getPersonFullName(person)} faleceu aos ${person.age} anos.`, "negative");
+
+      if (game.player.partnerId === person.id) {
+        game.player.partnerId = null;
+        game.player.relationshipStatus = "Viúvo/a";
+        addEvent("Ficaste viúvo/a após a morte do/a teu/tua companheiro/a.", "negative");
+      }
+
+      return;
+    }
+
+    if (person.age >= 80 && Math.random() < 0.04) {
+      person.alive = false;
+      addEvent(`${getPersonFullName(person)} faleceu aos ${person.age} anos.`, "negative");
+
+      if (game.player.partnerId === person.id) {
+        game.player.partnerId = null;
+        game.player.relationshipStatus = "Viúvo/a";
+      }
+
+      return;
+    }
+
+    // Relações entre personagens independentes.
+    if (
+      person.partnerId &&
+      person.partnerId !== game.player.id
+    ) {
+      const other = getSocialPerson(person.partnerId);
+
+      if (other && !other.alive) {
+        person.partnerId = null;
+        person.relationshipStatus = "Viúvo/a";
+      } else if (other && Math.random() < 0.015) {
+        person.partnerId = null;
+        person.relationshipStatus = "Separado/a";
+        other.partnerId = null;
+        other.relationshipStatus = "Separado/a";
+
+        addEvent(`${getPersonFullName(person)} e ${getPersonFullName(other)} terminaram a relação.`);
+      }
+    }
+  });
+
+  // Atualiza o estado amoroso do jogador se o parceiro morreu.
+  const partner = getPlayerPartner();
+
+  if (partner && !partner.alive) {
+    game.player.partnerId = null;
+    game.player.relationshipStatus = "Viúvo/a";
+  }
+}
+
+function updateSocialJobs() {
+  if (!game) return;
+
+  game.socialPeople.forEach(person => {
+    if (!person.alive || person.age < 18) return;
+
+    if (!person.job && Math.random() < 0.12) {
+      const job = randomFrom(familyJobs);
+      person.job = job.name;
+      person.salary = job.salary;
+    }
+  });
+}
+
+function ensureSocialPeople() {
+  if (!game || game.player.age < 10) return;
+
+  const alivePeople = game.socialPeople.filter(person =>
+    person.alive &&
+    person.status !== "Ex-companheiro/a"
+  );
+
+  const target = game.player.age < 18 ? 6 : 8;
+
+  if (alivePeople.length >= target) return;
+
+  const missing = target - alivePeople.length;
+
+  for (let i = 0; i < missing; i++) {
+    let age;
+
+    if (game.player.age < 18) {
+      age = clamp(game.player.age + randomNumber(-2, 2), 10, 17);
+    } else {
+      age = clamp(game.player.age + randomNumber(-8, 8), 18, 75);
+    }
+
+    game.socialPeople.push(createSocialPerson({ age }));
+  }
+}
+
+/* =========================================
+   INTERFACE DE RELAÇÕES
+========================================= */
+
+function installRelationshipsUI() {
+  if ($("relationshipsTab")) return;
+
+  const nav = $("bottomNav");
+  const profileTab = $("profileTab");
+
+  const navButton = document.createElement("button");
+  navButton.className = "nav-btn";
+  navButton.dataset.tab = "relationshipsTab";
+  navButton.innerHTML = "❤️<span>Relações</span>";
+
+  const profileButton = nav.querySelector('[data-tab="profileTab"]');
+  nav.insertBefore(navButton, profileButton);
+
+  const section = document.createElement("section");
+  section.id = "relationshipsTab";
+  section.className = "tab-content hidden";
+
+  section.innerHTML = `
+    <div class="panel">
+      <p class="eyebrow">Vida social</p>
+      <h2>❤️ Relações</h2>
+      <p class="muted">Conhece pessoas, cria amizades e encontra alguém especial.</p>
+      <button id="meetPeopleBtn" class="primary-btn full-width">
+        + Conhecer pessoas
+      </button>
+      <p class="small-note">As pessoas que conheces têm idade, personalidade e vida próprias.</p>
+    </div>
+
+    <div id="currentRelationshipPanel"></div>
+
+    <div class="panel">
+      <h3>Os teus amigos e conhecidos</h3>
+      <div id="socialPeopleList" class="people-list"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Família e filhos</h3>
+      <div id="relationshipFamilySummary"></div>
+    </div>
+  `;
+
+  profileTab.parentNode.insertBefore(section, profileTab);
+
+  $("meetPeopleBtn").addEventListener("click", createNewAcquaintances);
+
+  section.addEventListener("click", event => {
+    const button = event.target.closest("[data-social-action]");
+    if (!button) return;
+
+    const action = button.dataset.socialAction;
+    const id = button.dataset.personId;
+
+    if (action === "talk") talkToPerson(id);
+    if (action === "flirt") flirtWithPerson(id);
+    if (action === "date") askForRelationship(id);
+    if (action === "marry") proposeMarriage();
+    if (action === "breakup") breakUp();
+    if (action === "child") haveChild();
+    if (action === "adopt") adoptChild();
+  });
+}
+
+function renderRelationships() {
+  if (!game) return;
+
+  installRelationshipsUI();
+
+  const player = game.player;
+  const partner = getPlayerPartner();
+
+  const currentPanel = $("currentRelationshipPanel");
+  const peopleContainer = $("socialPeopleList");
+  const familySummary = $("relationshipFamilySummary");
+
+  if (partner && partner.alive) {
+    const isMarried = player.relationshipStatus === "Casado/a";
+
+    currentPanel.innerHTML = `
+      <div class="panel">
+        <p class="eyebrow">A tua relação</p>
+        <h3>${isMarried ? "💍 Casamento" : "❤️ Namoro"}</h3>
+        <div class="person-card">
+          <div class="person-info">
+            <strong>${escapeHTML(getPersonFullName(partner))}</strong>
+            <small>${partner.age} anos · ${escapeHTML(partner.personality)}</small>
+            <small>Compatibilidade: ${partner.compatibility}%</small>
+            <small>Amor: ${partner.love}%</small>
+            <small>Profissão: ${escapeHTML(partner.job || "Sem profissão")}</small>
+            <small>Interesses: ${escapeHTML((partner.interests || []).join(", "))}</small>
+            <small>Filhos: ${partner.childrenCount || 0}</small>
+          </div>
+        </div>
+
+        ${!isMarried && player.age >= 18 && partner.age >= 18 ? `
+          <button class="primary-btn full-width" data-social-action="marry">
+            💍 Pedir em casamento
+          </button>
+        ` : ""}
+
+        ${player.age >= 18 && partner.age >= 18 ? `
+          <button class="secondary-btn full-width" data-social-action="child">
+            👶 Tentar ter um filho
+          </button>
+        ` : ""}
+
+        ${player.age >= 18 ? `
+          <button class="secondary-btn full-width" data-social-action="adopt">
+            ❤️ Adotar uma criança
+          </button>
+        ` : ""}
+
+        <button class="danger-btn full-width" data-social-action="breakup">
+          ${isMarried ? "Terminar casamento / Divórcio" : "Terminar relação"}
+        </button>
+      </div>
+    `;
+  } else {
+    currentPanel.innerHTML = `
+      <div class="panel">
+        <h3>💔 Estado amoroso</h3>
+        <p>${escapeHTML(player.relationshipStatus || "Solteiro/a")}</p>
+        <p class="muted">
+          ${player.age < 14
+            ? "Podes começar a conhecer pessoas e fazer amizades. As relações amorosas estarão disponíveis a partir dos 14 anos."
+            : "Ainda não tens uma relação. Conhece pessoas e vê se encontras alguém especial."}
+        </p>
+      </div>
+    `;
+  }
+
+  peopleContainer.innerHTML = "";
+
+  const availablePeople = game.socialPeople.filter(person =>
+    person.alive &&
+    person.id !== player.partnerId
+  );
+
+  if (!availablePeople.length) {
+    peopleContainer.innerHTML = `
+      <p class="muted">Ainda não conheces ninguém. Carrega em "Conhecer pessoas" para começares.</p>
+    `;
+  }
+
+  availablePeople.forEach(person => {
+    const card = document.createElement("div");
+    card.className = "person-card";
+
+    const isFriend = person.friendship >= 60;
+    const canDate = player.age >= 14 &&
+      person.age >= 14 &&
+      ageDifferenceAllowed(person) &&
+      !player.partnerId;
+
+    card.innerHTML = `
+      <div class="person-info">
+        <strong>${escapeHTML(getPersonFullName(person))}</strong>
+        <small>${person.age} anos · ${escapeHTML(person.personality)}</small>
+        <small>${escapeHTML(person.status || "Conhecido/a")}</small>
+        <small>Amizade: ${person.friendship}%</small>
+        <small>Interesses: ${escapeHTML((person.interests || []).join(", "))}</small>
+        ${person.love > 0 ? `<small>Química: ${person.love}%</small>` : ""}
+      </div>
+
+      <div class="person-actions">
+        <button class="small-btn" data-social-action="talk" data-person-id="${person.id}">
+          Conversar
+        </button>
+
+        ${canDate ? `
+          <button class="small-btn" data-social-action="flirt" data-person-id="${person.id}">
+            ❤️ Aproximar
+          </button>
+        ` : ""}
+
+        ${canDate && person.love >= 35 ? `
+          <button class="small-btn" data-social-action="date" data-person-id="${person.id}">
+            Namorar
+          </button>
+        ` : ""}
+      </div>
+    `;
+
+    peopleContainer.appendChild(card);
+  });
+
+  const children = game.family.filter(person =>
+    (person.biologicalParentIds || []).includes(player.id) ||
+    (person.adoptiveParentIds || []).includes(player.id)
+  );
+
+  familySummary.innerHTML = `
+    <div class="info-row">
+      <span>Estado amoroso</span>
+      <strong>${escapeHTML(player.relationshipStatus || "Solteiro/a")}</strong>
+    </div>
+    <div class="info-row">
+      <span>Amigos</span>
+      <strong>${game.socialPeople.filter(person => person.friendship >= 60).length}</strong>
+    </div>
+    <div class="info-row">
+      <span>Filhos registados</span>
+      <strong>${children.length}</strong>
+    </div>
+  `;
+}
+
+/* =========================================
+   CRIAÇÃO E INÍCIO DO JOGO
 ========================================= */
 
 function validateStart() {
-  const name = $("playerName").value.trim();
-  const surname = $("playerSurname").value.trim();
-  const sex = $("playerSex").value;
-  const country = $("playerCountry").value.trim();
-  const city = $("playerCity").value.trim();
+  const fields = [
+    $("playerName").value.trim(),
+    $("playerSurname").value.trim(),
+    $("playerSex").value,
+    $("playerCountry").value.trim(),
+    $("playerCity").value.trim()
+  ];
 
-  if (!name || !surname || !sex || !country || !city) {
+  if (fields.some(value => !value)) {
     showToast("Preenche todos os campos para começares a jogar.");
     return false;
   }
@@ -807,12 +1449,18 @@ function startGame() {
     expenses: 0,
     biologicalParentIds: [],
     adoptiveParentIds: [],
-    socialParentIds: []
+    socialParentIds: [],
+    partnerId: null,
+    relationshipStatus: "Solteiro/a",
+    marriageAge: null,
+    childrenCount: 0,
+    friends: []
   };
 
   game = {
     player,
     family: [],
+    socialPeople: [],
     events: [],
     financeHistory: [],
     businesses: [],
@@ -838,7 +1486,6 @@ function startGame() {
     }));
 
     connectInitialParents();
-
     addEvent("Nasceste! A tua família foi criada com os familiares que adicionaste.");
   }
 
@@ -855,6 +1502,8 @@ function showGame() {
   $("gameScreen").classList.remove("hidden");
   $("bottomNav").classList.remove("hidden");
   $("gameStatus").textContent = "Em jogo";
+
+  installRelationshipsUI();
   showTab("homeTab");
 }
 
@@ -878,43 +1527,44 @@ function advanceYear() {
   player.age += 1;
   game.year += 1;
 
-  // Envelhecimento dos familiares vivos.
   game.family.forEach(person => {
-    if (person.alive) {
-      person.age += 1;
+    if (!person.alive) return;
 
-      // Probabilidade simplificada de falecimento.
-      const risk = person.age < 60
-        ? 0.001
-        : person.age < 75
-          ? 0.008
-          : person.age < 85
-            ? 0.025
-            : person.age < 95
-              ? 0.07
-              : 0.16;
+    person.age += 1;
 
-      if (Math.random() < risk) {
-        person.alive = false;
+    const risk = person.age < 60
+      ? 0.001
+      : person.age < 75
+        ? 0.008
+        : person.age < 85
+          ? 0.025
+          : person.age < 95
+            ? 0.07
+            : 0.16;
 
-        addEvent(
-          `${getPersonFullName(person)} faleceu aos ${person.age} anos.`,
-          "negative"
-        );
+    if (Math.random() < risk) {
+      person.alive = false;
 
-        player.happiness = clamp(player.happiness - 12);
-      }
+      addEvent(
+        `${getPersonFullName(person)} faleceu aos ${person.age} anos.`,
+        "negative"
+      );
+
+      player.happiness = clamp(player.happiness - 12);
     }
   });
 
-  // Evolução autónoma da vida dos familiares.
   processFamilyLife();
 
-  // Saúde e felicidade variam ligeiramente com a idade.
+  // Evolução das personagens conhecidas.
+  processSocialLife();
+  updateSocialJobs();
+
+  // Saúde e felicidade.
   player.health = clamp(player.health + (Math.random() * 4 - 2));
   player.happiness = clamp(player.happiness + (Math.random() * 6 - 3));
 
-  // Infância e escolaridade.
+  // Escolaridade.
   if (player.age === 3) {
     addEvent("Começaste a descobrir o mundo e a desenvolver novas capacidades.");
   }
@@ -933,14 +1583,34 @@ function advanceYear() {
     addEvent("Estás a aproximar-te de uma nova fase da tua vida.");
   }
 
+  if (player.age === 16) {
+    addEvent("Já tens idade para procurar algumas oportunidades de trabalho.");
+  }
+
   if (player.age === 18) {
     player.education = "Ensino secundário";
     player.educationLevel = Math.max(player.educationLevel, 2);
     addEvent("Fizeste 18 anos! Entraste na idade adulta. 🎉");
+    addEvent("A partir de agora podes casar, criar um negócio e tomar decisões de adulto/a.");
   }
 
-  if (player.age === 16) {
-    addEvent("Já tens idade para procurar algumas oportunidades de trabalho.");
+  // Geração de pessoas novas ao longo da vida.
+  ensureSocialPeople();
+
+  // Relação amorosa.
+  const partner = getPlayerPartner();
+
+  if (partner && partner.alive) {
+    if (player.relationshipStatus === "Namoro" && Math.random() < 0.015) {
+      partner.love = clamp(partner.love - 10);
+      addEvent(`Tiveste uma discussão com ${getPersonFullName(partner)}.`, "negative");
+    } else {
+      partner.love = clamp(partner.love + randomNumber(-2, 5));
+    }
+
+    if (partner.love < 15 && Math.random() < 0.25) {
+      addEvent(`${getPersonFullName(partner)} está a pensar no futuro da vossa relação.`);
+    }
   }
 
   // Rendimentos e despesas.
@@ -957,11 +1627,9 @@ function advanceYear() {
     const balance = income - livingCosts;
     player.bank += balance;
 
-    if (balance >= 0) {
-      addFinanceEvent(`Recebeste ${money(income)} e gastaste ${money(livingCosts)}. Saldo positivo: ${money(balance)}.`);
-    } else {
-      addFinanceEvent(`Recebeste ${money(income)} e gastaste ${money(livingCosts)}. Saldo negativo: ${money(balance)}.`);
-    }
+    addFinanceEvent(
+      `Recebeste ${money(income)} e gastaste ${money(livingCosts)}. Saldo: ${money(balance)}.`
+    );
 
     if (player.bank < 0) {
       player.debt += Math.abs(player.bank);
@@ -972,7 +1640,6 @@ function advanceYear() {
     player.expenses = 0;
   }
 
-  // Eventos gerais.
   if (player.age === 1) {
     addEvent("Completaste o teu primeiro ano de vida! 🎂");
   } else if (player.age > 1 && player.age % 5 === 0) {
@@ -994,42 +1661,12 @@ function advanceYear() {
 ========================================= */
 
 const jobs = [
-  {
-    name: "Empregado de supermercado",
-    minimumAge: 16,
-    salary: 950,
-    education: 0
-  },
-  {
-    name: "Assistente de loja",
-    minimumAge: 16,
-    salary: 1000,
-    education: 0
-  },
-  {
-    name: "Barbeiro",
-    minimumAge: 18,
-    salary: 14000,
-    education: 1
-  },
-  {
-    name: "Cozinheiro",
-    minimumAge: 18,
-    salary: 15000,
-    education: 1
-  },
-  {
-    name: "Técnico especializado",
-    minimumAge: 20,
-    salary: 22000,
-    education: 2
-  },
-  {
-    name: "Professor",
-    minimumAge: 22,
-    salary: 26000,
-    education: 3
-  }
+  { name: "Empregado de supermercado", minimumAge: 16, salary: 950, education: 0 },
+  { name: "Assistente de loja", minimumAge: 16, salary: 1000, education: 0 },
+  { name: "Barbeiro", minimumAge: 18, salary: 14000, education: 1 },
+  { name: "Cozinheiro", minimumAge: 18, salary: 15000, education: 1 },
+  { name: "Técnico especializado", minimumAge: 20, salary: 22000, education: 2 },
+  { name: "Professor", minimumAge: 22, salary: 26000, education: 3 }
 ];
 
 function applyForJob(index) {
@@ -1108,13 +1745,11 @@ function renderCareer() {
   const educationContainer = $("educationOptions");
   educationContainer.innerHTML = "";
 
-  const educationChoices = [
+  [
     { level: 1, name: "Ensino básico", age: 6 },
     { level: 2, name: "Ensino secundário", age: 15 },
     { level: 3, name: "Ensino superior", age: 18 }
-  ];
-
-  educationChoices.forEach(choice => {
+  ].forEach(choice => {
     const button = document.createElement("button");
     button.className = "secondary-btn";
     button.textContent = `${choice.name} · ${choice.age}+ anos`;
@@ -1252,6 +1887,7 @@ function renderProfile() {
     <div class="info-row"><span>Cidade</span><strong>${escapeHTML(player.city)}</strong></div>
     <div class="info-row"><span>Estado</span><strong>${player.alive ? "Vivo/a" : "Falecido/a"}</strong></div>
     <div class="info-row"><span>Profissão</span><strong>${escapeHTML(player.job || "Nenhuma")}</strong></div>
+    <div class="info-row"><span>Estado amoroso</span><strong>${escapeHTML(player.relationshipStatus || "Solteiro/a")}</strong></div>
     <div class="info-row"><span>Património</span><strong>${money(calculateWealth())}</strong></div>
   `;
 }
@@ -1322,6 +1958,8 @@ function renderHome() {
 function renderGame() {
   if (!game) return;
 
+  installRelationshipsUI();
+
   renderHome();
   renderPatrimony();
   renderCareer();
@@ -1330,6 +1968,7 @@ function renderGame() {
   renderFamilyTree();
   renderProfile();
   renderFamilyEditor();
+  renderRelationships();
 
   $("gameStatus").textContent = game.player.alive
     ? `${game.player.age} anos`
@@ -1464,6 +2103,65 @@ function exportSave() {
   showToast("Gravação exportada!");
 }
 
+function migrateGameData() {
+  if (!game) return;
+
+  const player = game.player;
+
+  player.health ??= 100;
+  player.happiness ??= 80;
+  player.bank ??= 0;
+  player.debt ??= 0;
+  player.salary ??= 0;
+  player.expenses ??= 0;
+  player.education ??= "Sem escolaridade";
+  player.educationLevel ??= 0;
+
+  player.biologicalParentIds ??= [];
+  player.adoptiveParentIds ??= [];
+  player.socialParentIds ??= [];
+
+  player.partnerId ??= null;
+  player.relationshipStatus ??= "Solteiro/a";
+  player.marriageAge ??= null;
+  player.childrenCount ??= 0;
+  player.friends ??= [];
+
+  game.events ??= [];
+  game.financeHistory ??= [];
+  game.businesses ??= [];
+  game.socialPeople ??= [];
+
+  game.family.forEach(person => {
+    person.biologicalParentIds ??= [];
+    person.adoptiveParentIds ??= [];
+    person.socialParentIds ??= [];
+    person.relationship ??= 70;
+    person.alive ??= true;
+    person.partnerId ??= null;
+    person.relationshipStatus ??= "Solteiro/a";
+    person.marriageAge ??= null;
+    person.childrenCount ??= 0;
+    person.job ??= "";
+    person.salary ??= 0;
+  });
+
+  game.socialPeople.forEach(person => {
+    person.alive ??= true;
+    person.personality ??= randomFrom(personalities);
+    person.interests ??= [randomFrom(interests)];
+    person.compatibility ??= randomNumber(35, 95);
+    person.friendship ??= 0;
+    person.love ??= 0;
+    person.status ??= "Conhecido/a";
+    person.partnerId ??= null;
+    person.relationshipStatus ??= "Solteiro/a";
+    person.job ??= "";
+    person.salary ??= 0;
+    person.childrenCount ??= 0;
+  });
+}
+
 function importSave(file) {
   if (!file) return;
 
@@ -1478,39 +2176,7 @@ function importSave(file) {
       }
 
       game = imported;
-
-      // Garante que os campos essenciais existem em gravações antigas.
-      game.player.health ??= 100;
-      game.player.happiness ??= 80;
-      game.player.bank ??= 0;
-      game.player.debt ??= 0;
-      game.player.salary ??= 0;
-      game.player.expenses ??= 0;
-      game.player.education ??= "Sem escolaridade";
-      game.player.educationLevel ??= 0;
-      game.player.biologicalParentIds ??= [];
-      game.player.adoptiveParentIds ??= [];
-      game.player.socialParentIds ??= [];
-
-      game.events ??= [];
-      game.financeHistory ??= [];
-      game.businesses ??= [];
-
-      game.family.forEach(person => {
-        person.biologicalParentIds ??= [];
-        person.adoptiveParentIds ??= [];
-        person.socialParentIds ??= [];
-        person.relationship ??= 70;
-        person.alive ??= true;
-
-        // Compatibilidade com gravações anteriores.
-        person.partnerId ??= null;
-        person.relationshipStatus ??= "Solteiro/a";
-        person.marriageAge ??= null;
-        person.childrenCount ??= 0;
-        person.job ??= "";
-        person.salary ??= 0;
-      });
+      migrateGameData();
 
       saveGame();
       showGame();
@@ -1546,37 +2212,7 @@ function boot() {
     }
 
     game = saved;
-
-    // Atualiza gravações antigas sem apagar dados existentes.
-    game.player.health ??= 100;
-    game.player.happiness ??= 80;
-    game.player.bank ??= 0;
-    game.player.debt ??= 0;
-    game.player.salary ??= 0;
-    game.player.expenses ??= 0;
-    game.player.education ??= "Sem escolaridade";
-    game.player.educationLevel ??= 0;
-    game.player.biologicalParentIds ??= [];
-    game.player.adoptiveParentIds ??= [];
-    game.player.socialParentIds ??= [];
-
-    game.events ??= [];
-    game.financeHistory ??= [];
-    game.businesses ??= [];
-
-    game.family.forEach(person => {
-      person.biologicalParentIds ??= [];
-      person.adoptiveParentIds ??= [];
-      person.socialParentIds ??= [];
-      person.relationship ??= 70;
-      person.alive ??= true;
-      person.partnerId ??= null;
-      person.relationshipStatus ??= "Solteiro/a";
-      person.marriageAge ??= null;
-      person.childrenCount ??= 0;
-      person.job ??= "";
-      person.salary ??= 0;
-    });
+    migrateGameData();
 
     saveGame();
     showGame();
@@ -1592,9 +2228,7 @@ function boot() {
   });
 
   $("advanceYearBtn").addEventListener("click", advanceYear);
-
   $("createBusinessBtn").addEventListener("click", createBusiness);
-
   $("showFamilyEditorBtn").addEventListener("click", openFamilyEditor);
 
   $("closeFamilyEditorBtn").addEventListener("click", () => {
@@ -1628,7 +2262,6 @@ function boot() {
   });
 
   $("newLifeBtn").addEventListener("click", newLife);
-
   $("exportSaveBtn").addEventListener("click", exportSave);
 
   $("importSaveInput").addEventListener("change", event => {

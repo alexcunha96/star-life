@@ -1,8 +1,8 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - SISTEMA PRINCIPAL
-   EDUCAÇÃO + FAMÍLIA + RELAÇÕES + CARREIRA
+   STARLIFE - SISTEMA PRINCIPAL (FASE 1: REALISMO FINANCEIRO)
+   EDUCAÇÃO + FAMÍLIA + RELAÇÕES + CARREIRA + IMPOSTOS + DÍVIDAS
 ========================================= */
 
 const SAVE_KEY = "starlife_save_v1";
@@ -317,7 +317,6 @@ function triggerRandomEvent() {
 
   const ev = randomFrom(validEvents);
   
-  // Criar modal de evento
   let modal = $("eventModal");
   if (!modal) {
     modal = document.createElement("div");
@@ -981,8 +980,15 @@ function showSetup() {
 }
 
 /* =========================================
-   PASSAGEM DO TEMPO
+   PASSAGEM DO TEMPO (FASE 1: IMPOSTOS E CUSTOS REAIS)
 ========================================= */
+
+function calculateTaxes(grossSalary) {
+  if (grossSalary <= 12000) return grossSalary * 0.11; // 11% para rendimentos baixos
+  if (grossSalary <= 25000) return grossSalary * 0.20; // 20% para classe média
+  if (grossSalary <= 50000) return grossSalary * 0.32; // 32% para rendimentos médios-altos
+  return grossSalary * 0.45; // 48% / 45% para salários altos
+}
 
 function advanceYear() {
   if (!game || !game.player.alive) return;
@@ -996,15 +1002,33 @@ function advanceYear() {
   processSchoolYear();
   processFurtherEducation();
 
-  let income = player.salary || 0;
-  game.businesses.forEach(b => income += b.yearlyProfit || 0);
+  let grossIncome = player.salary || 0;
+  game.businesses.forEach(b => grossIncome += b.yearlyProfit || 0);
 
   if (player.age >= 18) {
-    const livingCosts = 1000 + (player.age * 12);
-    player.expenses = livingCosts;
-    const balance = income - livingCosts;
-    player.bank += balance;
-    addFinanceEvent(`Recebeste ${money(income)} e gastaste ${money(livingCosts)}.`);
+    // Impostos estatais sobre o salário/rendimentos
+    const taxes = calculateTaxes(grossIncome);
+    const netIncome = grossIncome - taxes;
+
+    // Custo de vida real e impiedoso (Renda, alimentação, contas, etc.)
+    const livingCosts = 4800 + (player.age * 95); 
+    player.expenses = livingCosts + taxes;
+
+    const netBalance = netIncome - livingCosts;
+    player.bank += netBalance;
+
+    if (taxes > 0) {
+      addFinanceEvent(`Pagaste ${money(taxes)} em impostos ao Estado.`);
+    }
+    addFinanceEvent(`Recebeste ${money(netIncome)} líquidos e gastaste ${money(livingCosts)} em subsistência.`);
+
+    // Se ficar com saldo negativo, acumula dívida com juros severos de 15% ao ano!
+    if (player.bank < 0) {
+      const negativeAmount = Math.abs(player.bank);
+      player.debt += negativeAmount + (negativeAmount * 0.15); // Juros de dívida
+      player.bank = 0;
+      addEvent("Estás com o saldo negativo! Acumulaste dívida bancária com juros pesados.", "negative");
+    }
   }
 
   triggerRandomEvent();
@@ -1129,7 +1153,7 @@ function renderHome() {
 
 function renderPatrimony() {
   const player = game.player;
-  const totalW = player.bank + game.businesses.reduce((acc, b) => acc + b.investment, 0);
+  const totalW = player.bank + game.businesses.reduce((acc, b) => acc + b.investment, 0) - player.debt;
   $("totalWealth").textContent = money(totalW);
   $("bankBalance").textContent = money(player.bank);
   $("annualSalary").textContent = money(player.salary);

@@ -8,9 +8,9 @@
 </head>
 <body>
 
-  <!-- Ecrã Inicial / Criação de Personagem -->
+  <!-- Ecrã Inicial / Criação de Personagem e Família -->
   <div id="setupScreen" class="screen">
-    <div class="panel">
+    <div class="panel setup-panel">
       <h1>⭐ StarLife</h1>
       <p>A tua vida. As tuas escolhas.</p>
       
@@ -38,7 +38,33 @@
           <label>Cidade</label>
           <input type="text" id="playerCity" value="Lisboa">
         </div>
-        <button type="submit" class="primary-btn full-width">Nova Vida</button>
+
+        <!-- Secção para Adicionar Família Manualmente -->
+        <div class="panel" style="margin-top: 15px; background: rgba(0,0,0,0.2);">
+          <h3>👨‍👩‍👧 Adicionar Familiar (Opcional)</h3>
+          <div class="input-group">
+            <label>Nome do Familiar</label>
+            <input type="text" id="famName" placeholder="Ex: Maria">
+          </div>
+          <div class="input-group">
+            <label>Parentesco</label>
+            <select id="famRelation">
+              <option value="Mãe">Mãe</option>
+              <option value="Pai">Pai</option>
+              <option value="Irmão/ã">Irmão/ã</option>
+              <option value="Outro">Outro</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>Idade</label>
+            <input type="number" id="famAge" value="30" min="0" max="120">
+          </div>
+          <button type="button" id="addFamilyMemberBtn" class="secondary-btn full-width">+ Adicionar à Lista</button>
+          
+          <div id="setupFamilyList" style="margin-top: 10px;" class="people-list"></div>
+        </div>
+
+        <button type="submit" class="primary-btn full-width" style="margin-top: 15px;">Nova Vida</button>
       </form>
 
       <div id="continuePanel" class="hidden" style="margin-top: 15px;">
@@ -113,7 +139,6 @@
           <div id="jobOptions" class="button-list"></div>
         </div>
 
-        <!-- Contentor dinâmico para a escola, estatísticas e universidade -->
         <div id="schoolSectionContainer"></div>
       </section>
 

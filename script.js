@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - SISTEMA PRINCIPAL (VERSÃO COMPLETA E CORRIGIDA)
+   STARLIFE - SISTEMA PRINCIPAL (COM FAMÍLIA MANUAL)
 ========================================= */
 
 const SAVE_KEY = "starlife_save_v1";
@@ -13,7 +13,7 @@ let toastTimer = null;
 const $ = id => document.getElementById(id);
 
 function createId() {
-  return "person_" + Date.now + "_" + Math.floor(Math.random() * 1000000);
+  return "person_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
 }
 
 function randomFrom(list) {
@@ -1213,7 +1213,54 @@ function showTab(tabId) {
   document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.tab === tabId));
 }
 
+function updateSetupFamilyUI() {
+  const container = $("setupFamilyList");
+  if (!container) return;
+  container.innerHTML = "";
+  initialFamily.forEach((f, idx) => {
+    const card = document.createElement("div");
+    card.className = "person-card";
+    card.innerHTML = `
+      <div class="person-info">
+        <strong>${escapeHTML(f.name)}</strong>
+        <small>${escapeHTML(f.relation)} · ${f.age} anos</small>
+      </div>
+      <button type="button" class="small-btn danger-btn" data-remove-fam="${idx}">Remover</button>
+    `;
+    container.appendChild(card);
+  });
+
+  container.querySelectorAll("[data-remove-fam]").forEach(btn => {
+    btn.onclick = () => {
+      initialFamily.splice(Number(btn.dataset.removeFam), 1);
+      updateSetupFamilyUI();
+    };
+  });
+}
+
 function boot() {
+  const addFamBtn = $("addFamilyMemberBtn");
+  if (addFamBtn) {
+    addFamBtn.onclick = () => {
+      const name = $("famName").value.trim();
+      const relation = $("famRelation").value;
+      const age = Number($("famAge").value) || 30;
+      if (!name) {
+        showToast("Insere o nome do familiar.");
+        return;
+      }
+      initialFamily.push({
+        name,
+        surname: $("playerSurname").value.trim() || "Silva",
+        relation,
+        age,
+        sex: relation === "Mãe" ? "Feminino" : relation === "Pai" ? "Masculino" : "Outro"
+      });
+      $("famName").value = "";
+      updateSetupFamilyUI();
+    };
+  }
+
   $("startForm").addEventListener("submit", e => { e.preventDefault(); startGame(); });
   
   if ($("continueGameBtn")) {
@@ -1240,6 +1287,7 @@ function boot() {
   });
 
   updateContinuePanel();
+  updateSetupFamilyUI();
 }
 
 document.addEventListener("DOMContentLoaded", boot);

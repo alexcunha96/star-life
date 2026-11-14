@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - SISTEMA PRINCIPAL (UNIVERSIDADE + BOLSAS + CRÉDITO + MENU ORGANIZADO)
+   STARLIFE - SISTEMA PRINCIPAL (CORREÇÃO DE RENDERIZAÇÃO INSTANTÂNEA)
 ========================================= */
 
 const SAVE_KEY = "starlife_save_v1";
@@ -398,7 +398,7 @@ function initializeEducation(player) {
   player.professionalQualifications ??= [];
   player.universityCourse ??= null;
   player.universityProgress ??= 0;
-  player.universityFunding ??= null; // "parents", "scholarship", "loan"
+  player.universityFunding ??= null;
   player.professionalCourse ??= null;
   player.professionalProgress ??= 0;
   player.studying ??= false;
@@ -499,7 +499,7 @@ function studyHarder() {
   player.happiness = clamp(player.happiness - 2);
   addEvent("Estudaste afincadamente. As notas melhoraram! 📖");
   saveGame();
-  renderGame();
+  renderGame(); // <--- ATUALIZAÇÃO IMEDIATA DO ECRÃ
   showToast("Estudaste com sucesso!");
 }
 
@@ -509,7 +509,7 @@ function improveBehavior() {
   player.absences = Math.max(0, player.absences - randomNumber(2, 4));
   addEvent("Portaste-te exemplarmente nas aulas e reduziste faltas.");
   saveGame();
-  renderGame();
+  renderGame(); // <--- ATUALIZAÇÃO IMEDIATA DO ECRÃ
 }
 
 function abandonEducation() {
@@ -531,7 +531,6 @@ function returnToSchool() {
   renderGame();
 }
 
-/* UNIVERSIDADE COM FINANCIAMENTO REALISTA */
 function enrollUniversity(index, fundingType) {
   const player = game.player;
   const course = universityCourses[index];
@@ -541,7 +540,7 @@ function enrollUniversity(index, fundingType) {
     return;
   }
 
-  let funding = fundingType; // "savings", "parents", "scholarship", "loan"
+  let funding = fundingType;
 
   if (funding === "savings") {
     if (player.bank < course.cost) {
@@ -552,13 +551,11 @@ function enrollUniversity(index, fundingType) {
     addFinanceEvent(`Pagaste ${money(course.cost)} de propinas com as tuas poupanças.`);
   } 
   else if (funding === "parents") {
-    // Verificar se os pais aceitam pagar
     const parents = game.family.filter(f => ["Mãe", "Pai"].includes(f.relation) && f.alive);
     if (parents.length === 0) {
       showToast("Não tens pais vivos para te ajudarem a pagar os estudos.");
       return;
     }
-    // Probabilidade dos pais aceitarem (ex: 70% se tiverem boa relação ou dinheiro)
     const accepted = Math.random() < 0.75;
     if (accepted) {
       addEvent(`Os teus pais concordaram em pagar as propinas da tua universidade em ${course.name}! ❤️`, "positive");
@@ -568,19 +565,18 @@ function enrollUniversity(index, fundingType) {
     }
   } 
   else if (funding === "scholarship") {
-    // Bolsa de estudos baseada na inteligência e notas
     const successChance = (player.intelligence + (player.schoolGrade * 5)) / 2;
     if (Math.random() * 100 <= successChance) {
-      addEvent(`Parabéns! Obtiveste uma Bolsa de Estudo integral para ${course.name}. O Estado paga as propinas! 🎓`, "positive");
+      addEvent(`Parabéns! Obtiveste uma Bolsa de Estudo integral para ${course.name}. 🎓`, "positive");
     } else {
-      addEvent(`A tua candidatura à bolsa de estudos foi rejeitada por falta de média suficiente.`, "negative");
+      addEvent(`A tua candidatura à bolsa de estudos foi rejeitada.`, "negative");
       return;
     }
   } 
   else if (funding === "loan") {
     player.studyDebt += course.cost;
-    addFinanceEvent(`Contraíste um Crédito Estudantil de ${money(course.cost)} para pagar a universidade.`);
-    addEvent(`Contraíste um empréstimo bancário para financiar os estudos em ${course.name}. Ficaste com dívida acumulada.`, "neutral");
+    addFinanceEvent(`Contraíste um Crédito Estudantil de ${money(course.cost)}.`);
+    addEvent(`Contraíste um empréstimo bancário para financiar os estudos.`, "neutral");
   }
 
   player.universityCourse = course.name;
@@ -1014,7 +1010,7 @@ function advanceYear() {
   }
 
   saveGame();
-  renderGame();
+  renderGame(); // <--- ATUALIZAÇÃO IMEDIATA DO ECRÃ APÓS AVANÇAR O ANO
 }
 
 /* =========================================
@@ -1143,7 +1139,6 @@ function renderCareer() {
   $("careerEducation").textContent = player.education;
   $("careerDescription").textContent = player.job ? `Trabalhas como ${player.job}.` : "Sem profissão ativa.";
 
-  // Organizar a Tab de Carreira em duas secções limpas: 1. Trabalhos | 2. Escola e Universidade
   const careerTab = $("careerTab");
   if (!careerTab) return;
 
@@ -1166,7 +1161,6 @@ function renderCareer() {
     <div id="schoolSectionContainer"></div>
   `;
 
-  // Preencher empregos
   const jobContainer = $("jobOptions");
   jobs.forEach((job, index) => {
     const btn = document.createElement("button");
@@ -1177,7 +1171,6 @@ function renderCareer() {
     jobContainer.appendChild(btn);
   });
 
-  // Renderizar secção escolar e universitária organizada
   renderSchoolAndUniversitySubmenu();
 }
 
@@ -1217,7 +1210,6 @@ function renderSchoolAndUniversitySubmenu() {
     `;
   }
 
-  // Ensino Superior com opções de financiamento (Pais, Poupanças, Bolsa, Crédito)
   if (player.age >= 18 && player.educationLevel >= 2) {
     html += `
       <div class="panel">

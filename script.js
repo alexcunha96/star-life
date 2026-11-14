@@ -1,8 +1,8 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - SISTEMA PRINCIPAL (FASE 1: REALISMO FINANCEIRO)
-   EDUCAÇÃO + FAMÍLIA + RELAÇÕES + CARREIRA + IMPOSTOS + DÍVIDAS
+   STARLIFE - SISTEMA PRINCIPAL (CORREÇÃO DA EDUCAÇÃO)
+   EDUCAÇÃO + EXAMES + FAMÍLIA + RELAÇÕES + CARREIRA + IMPOSTOS
 ========================================= */
 
 const SAVE_KEY = "starlife_save_v1";
@@ -270,40 +270,36 @@ function getParentNames(person) {
 }
 
 /* =========================================
-   SISTEMA DE EVENTOS ALEATÓRIOS
+   SISTEMA DE EVENTOS E ESCOLARES
 ========================================= */
 
-const randomEventsPool = [
+const schoolEventsPool = [
   {
-    minAge: 6, maxAge: 12,
-    text: "Encontraste uma nota de 20€ no chão da escola do teu colega.",
+    minAge: 10, maxAge: 17,
+    text: "Um colega mais velho na escola está a ameaçar-te e a pedir dinheiro no recreio.",
     options: [
-      { text: "Entregar ao professor", effect: () => { game.player.happiness = clamp(game.player.happiness + 2); addEvent("Fizeste a coisa certa e entregaste o dinheiro.", "positive"); } },
-      { text: "Guardar para ti", effect: () => { game.player.bank += 20; addEvent("Ficaste com os 20€ e gastaste em doces.", "neutral"); } }
+      { text: "Contar a um professor ou diretor", effect: () => { game.player.happiness = clamp(game.player.happiness - 2); addEvent("Contaste à direção. O valentão foi repreendido.", "neutral"); } },
+      { text: "Enfrentá-lo à pancada", effect: () => { if (Math.random() > 0.5) { game.player.happiness = clamp(game.player.happiness + 5); addEvent("Ganhaste a luta e ganhaste respeito na escola!", "positive"); } else { game.player.health = clamp(game.player.health - 10); game.player.happiness = clamp(game.player.happiness - 8); addEvent("Levaste uma coça valente do valentão...", "negative"); } } },
+      { text: "Ignorar e fugir sempre", effect: () => { game.player.happiness = clamp(game.player.happiness - 5); addEvent("Passaste a evitar certas zonas da escola.", "negative"); } }
     ]
   },
   {
-    minAge: 12, maxAge: 18,
-    text: "Um grupo de colegas convidou-te para faltar às aulas e ir dar uma volta.",
+    minAge: 12, maxAge: 17,
+    text: "Estes dias vais ter um teste muito difícil de Matemática e não estudaste nada.",
     options: [
-      { text: "Ir com eles", effect: () => { game.player.happiness = clamp(game.player.happiness + 5); game.player.behavior = clamp(game.player.behavior - 10); addEvent("Faltaste às aulas e divertiste-te, mas o comportamento piorou.", "negative"); } },
-      { text: "Recusar e ficar na aula", effect: () => { game.player.schoolPerformance = clamp(game.player.schoolPerformance + 4); addEvent("Ficaste na aula e tiraste bom proveito.", "positive"); } }
+      { text: "Tentar colar com uma cábula", effect: () => { if (Math.random() > 0.4) { game.player.schoolGrade = clamp(game.player.schoolGrade + 3, 0, 20); addEvent("Colaste com sucesso e safaste-te no teste!", "positive"); } else { game.player.behavior = clamp(game.player.behavior - 15); addEvent("O professor apanhou-te a colar e meteu-te falta disciplinar!", "negative"); } } },
+      { text: "Aceitar a negativa e ir à sorte", effect: () => { game.player.schoolPerformance = clamp(game.player.schoolPerformance - 5); addEvent("Tiviste uma nota fraca no teste.", "negative"); } }
     ]
-  },
+  }
+];
+
+const generalEventsPool = [
   {
     minAge: 18, maxAge: 80,
-    text: "Alguém bateu levemente no teu carro num parque de estacionamento e fugiu, mas conseguiste ver a matrícula.",
+    text: "Alguém bateu levemente no teu carro num parque de estacionamento e fugiu.",
     options: [
-      { text: "Apresentar queixa na polícia", effect: () => { game.player.bank += 300; addFinanceEvent("Recebeste uma indemnização de 300€ pelo seguro."); addEvent("O seguro cobriu os danos do carro.", "positive"); } },
-      { text: "Ignorar e seguir caminho", effect: () => { game.player.happiness = clamp(game.player.happiness - 2); addEvent("Decidiste não chatear a cabeça com isso."); } }
-    ]
-  },
-  {
-    minAge: 20, maxAge: 65,
-    text: "Surgiram horas extra no teu local de trabalho, mas vais ter de ficar até tarde.",
-    options: [
-      { text: "Aceitar as horas extra", effect: () => { const bonus = 800; game.player.bank += bonus; addFinanceEvent(`Ganhaste um bónus de ${money(bonus)} pelas horas extra.`); addEvent("Trabalhaste afincadamente e recebeste um extra no banco.", "positive"); } },
-      { text: "Recusar e ir descansar", effect: () => { game.player.happiness = clamp(game.player.happiness + 3); addEvent("Preferiste descansar e cuidar da tua saúde mental."); } }
+      { text: "Apresentar queixa na polícia", effect: () => { game.player.bank += 300; addFinanceEvent("Recebeste indemnização do seguro."); addEvent("O seguro cobriu os danos.", "positive"); } },
+      { text: "Ignorar e seguir", effect: () => { game.player.happiness = clamp(game.player.happiness - 2); addEvent("Ignoraste o risco no carro."); } }
     ]
   }
 ];
@@ -312,7 +308,12 @@ function triggerRandomEvent() {
   if (!game || !game.player.alive) return;
   const age = game.player.age;
 
-  const validEvents = randomEventsPool.filter(ev => age >= ev.minAge && age <= ev.maxAge);
+  let pool = generalEventsPool;
+  if (age >= 6 && age <= 17 && Math.random() < 0.6) {
+    pool = schoolEventsPool;
+  }
+
+  const validEvents = pool.filter(ev => age >= ev.minAge && age <= ev.maxAge);
   if (validEvents.length === 0 || Math.random() > 0.45) return;
 
   const ev = randomFrom(validEvents);
@@ -327,7 +328,7 @@ function triggerRandomEvent() {
 
   modal.innerHTML = `
     <div class="modal-card">
-      <h3>⚠️ Acontecimento na tua vida</h3>
+      <h3>⚠️ Dilema de Vida</h3>
       <p>${escapeHTML(ev.text)}</p>
       <div class="modal-buttons" id="eventOptionsContainer"></div>
     </div>
@@ -335,6 +336,7 @@ function triggerRandomEvent() {
   modal.classList.remove("hidden");
 
   const btnContainer = $("eventOptionsContainer");
+  btnContainer.innerHTML = "";
   ev.options.forEach(opt => {
     const btn = document.createElement("button");
     btn.className = "primary-btn full-width";
@@ -350,7 +352,7 @@ function triggerRandomEvent() {
 }
 
 /* =========================================
-   SISTEMA DE EDUCAÇÃO
+   SISTEMA DE EDUCAÇÃO PROFUNDO
 ========================================= */
 
 const educationStages = [
@@ -418,7 +420,7 @@ function startSchoolStage(stage) {
 
   player.currentSchoolStage = stage.name;
   player.schoolStatus = "A frequentar";
-  player.schoolGrade = clamp(Math.round((player.intelligence * 0.12) + randomNumber(5, 10)), 5, 20);
+  player.schoolGrade = clamp(Math.round((player.intelligence * 0.12) + randomNumber(4, 10)), 5, 20);
 
   addEducationHistory(`Começaste o ${stage.name}.`);
   addEvent(`🎒 Começaste o ${stage.name}!`);
@@ -457,33 +459,33 @@ function processSchoolYear() {
   let grade = Math.round(10 + intelligenceBonus + performanceBonus + behaviorBonus + randomFactor);
   player.schoolGrade = clamp(grade, 0, 20);
 
-  if (Math.random() < 0.06) player.absences += randomNumber(1, 4);
+  if (Math.random() < 0.08) player.absences += randomNumber(1, 3);
 
-  if (player.absences > 12) {
-    player.schoolGrade = clamp(player.schoolGrade - 2, 0, 20);
+  if (player.absences > 10) {
+    player.schoolGrade = clamp(player.schoolGrade - 3, 0, 20);
   }
 
   if (player.schoolGrade >= 10) {
     player.schoolPerformance = clamp(player.schoolPerformance + randomNumber(1, 4));
     addEducationHistory(`Aprovado/a em ${stage.name} com média de ${player.schoolGrade}/20.`);
 
-    if (age === 9) addEvent("Concluíste o 1.º ciclo do ensino básico! 📚");
-    if (age === 11) addEvent("Concluíste o 2.º ciclo do ensino básico!");
+    if (age === 9) addEvent("Concluíste com sucesso o 1.º Ciclo do Ensino Básico! 📚");
+    if (age === 11) addEvent("Concluíste o 2.º Ciclo do Ensino Básico!");
     if (age === 14) {
       player.education = "Ensino básico";
       player.educationLevel = Math.max(player.educationLevel, 1);
-      addEvent("Concluíste o ensino básico! 🎓");
+      addEvent("Concluíste o Ensino Básico! 🎓");
     }
     if (age === 17) {
       player.education = "Ensino secundário";
       player.educationLevel = Math.max(player.educationLevel, 2);
       player.schoolStatus = "Concluído";
-      addEvent("🎓 Concluíste o ensino secundário!");
+      addEvent("🎓 Concluíste o Ensino Secundário com sucesso!");
     }
   } else {
     player.schoolStatus = "Reprovado/a";
-    player.happiness = clamp(player.happiness - 5);
-    addEvent(`Ficaste retido/a no ${stage.name} com média de ${player.schoolGrade}/20.`, "negative");
+    player.happiness = clamp(player.happiness - 8);
+    addEvent(`Chumbaste de ano no ${stage.name} com média de ${player.schoolGrade}/20. Ficaste retido/a!`, "negative");
     addEducationHistory(`Reprovaste no ${stage.name}. Média: ${player.schoolGrade}/20.`);
   }
 
@@ -497,29 +499,30 @@ function studyHarder() {
     return;
   }
   player.intelligence = clamp(player.intelligence + randomNumber(1, 3));
-  player.schoolPerformance = clamp(player.schoolPerformance + randomNumber(5, 10));
+  player.schoolPerformance = clamp(player.schoolPerformance + randomNumber(6, 12));
   player.schoolGrade = clamp(player.schoolGrade + randomNumber(1, 3), 0, 20);
-  addEvent("Dedicaste tempo ao estudo e melhoraste o teu aproveitamento. 📚");
+  player.happiness = clamp(player.happiness - 2);
+  addEvent("Passaste horas a estudar. As notas melhoraram, mas o cansaço acumulou-se. 📖");
   saveGame();
   renderGame();
-  showToast("Estudaste e melhoraste as notas!");
+  showToast("Estudaste com sucesso!");
 }
 
 function improveBehavior() {
   const player = game.player;
-  player.behavior = clamp(player.behavior + randomNumber(5, 12));
-  player.absences = Math.max(0, player.absences - randomNumber(1, 3));
-  addEvent("Melhoraste o teu comportamento e reduziste as faltas.");
+  player.behavior = clamp(player.behavior + randomNumber(8, 15));
+  player.absences = Math.max(0, player.absences - randomNumber(2, 4));
+  addEvent("Portaste-te exemplarmente nas aulas e limpaste faltas.");
   saveGame();
   renderGame();
 }
 
 function abandonEducation() {
   const player = game.player;
-  if (player.age < 15 || !confirm("Tens a certeza de que queres abandonar os estudos?")) return;
+  if (player.age < 15 || !confirm("Abandonar a escola vai arruinar as tuas opções de futuro. Tens a certeza?")) return;
   player.schoolStatus = "Abandonou os estudos";
   player.education = player.educationLevel >= 1 ? "Ensino básico incompleto" : "Sem escolaridade";
-  addEvent("Decidiste abandonar os estudos.", "negative");
+  addEvent("Abandonaste a escola precipitadamente.", "negative");
   saveGame();
   renderGame();
 }
@@ -528,7 +531,7 @@ function returnToSchool() {
   const player = game.player;
   player.schoolStatus = "A frequentar";
   player.currentSchoolStage = player.age <= 17 ? "Ensino Secundário" : "Ensino Recorrente";
-  addEvent("Regressaste aos estudos! 📚");
+  addEvent("Decidiste dar uma nova oportunidade aos estudos e voltaste à escola! 📚");
   saveGame();
   renderGame();
 }
@@ -537,15 +540,15 @@ function enrollUniversity(index) {
   const player = game.player;
   const course = universityCourses[index];
   if (player.bank < course.cost) {
-    showToast(`Precisas de ${money(course.cost)} para pagar a inscrição.`);
+    showToast(`Precisas de ${money(course.cost)} para as propinas iniciais.`);
     return;
   }
   player.bank -= course.cost;
   player.universityCourse = course.name;
   player.universityProgress = 0;
   player.studying = true;
-  addFinanceEvent(`Pagaste ${money(course.cost)} pela inscrição em ${course.name}.`);
-  addEvent(`Entraste na universidade para estudar ${course.name}! 🎓`);
+  addFinanceEvent(`Pagaste ${money(course.cost)} de inscrição em ${course.name}.`);
+  addEvent(`Entraste na Universidade para tirar curso superior de ${course.name}! 🎓`);
   saveGame();
   renderGame();
 }
@@ -560,8 +563,8 @@ function enrollProfessionalCourse(index) {
   player.bank -= course.cost;
   player.professionalCourse = course.name;
   player.professionalProgress = 0;
-  addFinanceEvent(`Pagaste ${money(course.cost)} pelo curso ${course.name}.`);
-  addEvent(`Começaste o curso profissional: ${course.name}.`);
+  addFinanceEvent(`Pagaste ${money(course.cost)} pelo curso profissional ${course.name}.`);
+  addEvent(`Iniciaste o curso profissional: ${course.name}.`);
   saveGame();
   renderGame();
 }
@@ -577,10 +580,10 @@ function processFurtherEducation() {
       player.salary = Math.max(player.salary, course?.salary || 22000);
       player.universityCourse = null;
       player.universityProgress = 0;
-      addEvent(`🎓 Concluíste a universidade! Licenciatura em ${course?.name}.`);
+      addEvent(`🎓 Licenciatura concluída com sucesso em ${course?.name}!`);
     } else if (course) {
       player.bank -= course.cost;
-      addFinanceEvent(`Pagaste ${money(course.cost)} de propinas universitárias.`);
+      addFinanceEvent(`Pagaste ${money(course.cost)} de propinas anuais.`);
       if (player.bank < 0) {
         player.studyDebt += Math.abs(player.bank);
         player.bank = 0;
@@ -593,7 +596,7 @@ function processFurtherEducation() {
     const course = professionalCourses.find(c => c.name === player.professionalCourse);
     if (course && player.professionalProgress >= course.duration) {
       player.professionalQualifications.push(course.qualification);
-      addEvent(`Concluíste o curso profissional: ${course.name}! 🎓`);
+      addEvent(`Concluíste com aproveitamento o curso profissional de ${course.name}! 🎓`);
       player.professionalCourse = null;
       player.professionalProgress = 0;
     }
@@ -980,14 +983,14 @@ function showSetup() {
 }
 
 /* =========================================
-   PASSAGEM DO TEMPO (FASE 1: IMPOSTOS E CUSTOS REAIS)
+   PASSAGEM DO TEMPO
 ========================================= */
 
 function calculateTaxes(grossSalary) {
-  if (grossSalary <= 12000) return grossSalary * 0.11; // 11% para rendimentos baixos
-  if (grossSalary <= 25000) return grossSalary * 0.20; // 20% para classe média
-  if (grossSalary <= 50000) return grossSalary * 0.32; // 32% para rendimentos médios-altos
-  return grossSalary * 0.45; // 48% / 45% para salários altos
+  if (grossSalary <= 12000) return grossSalary * 0.11;
+  if (grossSalary <= 25000) return grossSalary * 0.20;
+  if (grossSalary <= 50000) return grossSalary * 0.32;
+  return grossSalary * 0.45;
 }
 
 function advanceYear() {
@@ -1006,11 +1009,8 @@ function advanceYear() {
   game.businesses.forEach(b => grossIncome += b.yearlyProfit || 0);
 
   if (player.age >= 18) {
-    // Impostos estatais sobre o salário/rendimentos
     const taxes = calculateTaxes(grossIncome);
     const netIncome = grossIncome - taxes;
-
-    // Custo de vida real e impiedoso (Renda, alimentação, contas, etc.)
     const livingCosts = 4800 + (player.age * 95); 
     player.expenses = livingCosts + taxes;
 
@@ -1018,16 +1018,15 @@ function advanceYear() {
     player.bank += netBalance;
 
     if (taxes > 0) {
-      addFinanceEvent(`Pagaste ${money(taxes)} em impostos ao Estado.`);
+      addFinanceEvent(`Pagaste ${money(taxes)} em impostos.`);
     }
     addFinanceEvent(`Recebeste ${money(netIncome)} líquidos e gastaste ${money(livingCosts)} em subsistência.`);
 
-    // Se ficar com saldo negativo, acumula dívida com juros severos de 15% ao ano!
     if (player.bank < 0) {
       const negativeAmount = Math.abs(player.bank);
-      player.debt += negativeAmount + (negativeAmount * 0.15); // Juros de dívida
+      player.debt += negativeAmount + (negativeAmount * 0.15);
       player.bank = 0;
-      addEvent("Estás com o saldo negativo! Acumulaste dívida bancária com juros pesados.", "negative");
+      addEvent("Estás com o saldo negativo! Dívida acumulada com juros de 15%.", "negative");
     }
   }
 
@@ -1126,7 +1125,7 @@ function renderBusinesses() {
 }
 
 /* =========================================
-   RENDERIZAÇÃO GERAL
+   RENDERIZAÇÃO GERAL E EDUCAÇÃO VISUAL
 ========================================= */
 
 function renderHome() {
@@ -1173,9 +1172,84 @@ function renderCareer() {
     const btn = document.createElement("button");
     btn.className = "secondary-btn";
     btn.textContent = `${job.name} · ${money(job.salary)}/ano`;
-    btn.disabled = player.age < job.minimumAge;
+    btn.disabled = player.age < job.minimumAge || player.educationLevel < job.education;
     btn.addEventListener("click", () => applyForJob(index));
     jobContainer.appendChild(btn);
+  });
+
+  // Renderizar Secção Escolar / Universidade na Tab de Carreira
+  renderEducationTab();
+}
+
+function renderEducationTab() {
+  const player = game.player;
+  let container = $("educationSection");
+  
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "educationSection";
+    const careerTab = $("careerTab");
+    if (careerTab) careerTab.appendChild(container);
+  }
+
+  if (!container) return;
+
+  const stage = getCurrentEducationStage(player.age);
+
+  let html = `
+    <div class="panel">
+      <h3>📚 Percurso Escolar e Académico</h3>
+      <div class="info-row"><span>Etapa atual</span><strong>${escapeHTML(stage?.name || player.education)}</strong></div>
+      <div class="info-row"><span>Estado</span><strong>${escapeHTML(player.schoolStatus)}</strong></div>
+      <div class="info-row"><span>Média Escolar</span><strong>${player.schoolGrade}/20</strong></div>
+      <div class="info-row"><span>Inteligência</span><strong>${player.intelligence}%</strong></div>
+      <div class="info-row"><span>Comportamento</span><strong>${player.behavior}%</strong></div>
+      <div class="info-row"><span>Faltas</span><strong>${player.absences}</strong></div>
+    </div>
+  `;
+
+  if (player.age >= 6 && player.age <= 18 && player.schoolStatus !== "Abandonou os estudos") {
+    html += `
+      <div class="panel">
+        <h3>Atividades de Estudante</h3>
+        <button class="primary-btn full-width" id="studyBtn">📖 Estudar Mais</button>
+        <button class="secondary-btn full-width" id="behaviorBtn">⭐ Melhorar Comportamento</button>
+        ${player.age >= 15 ? `<button class="danger-btn full-width" id="abandonBtn">Abandonar Escola</button>` : ""}
+      </div>
+    `;
+  }
+
+  if (player.schoolStatus === "Abandonou os estudos" && player.age >= 16) {
+    html += `
+      <div class="panel">
+        <button class="primary-btn full-width" id="returnSchoolBtn">Voltar a Estudar</button>
+      </div>
+    `;
+  }
+
+  if (player.age >= 18 && player.educationLevel >= 2) {
+    html += `
+      <div class="panel">
+        <h3>🏛️ Ensino Superior (Universidade)</h3>
+        ${player.universityCourse ? `<p>A cursar: <strong>${player.universityCourse}</strong> (${player.universityProgress} anos concl.)</p>` : ""}
+        ${universityCourses.map((c, idx) => `
+          <button class="secondary-btn full-width" data-uni="${idx}" ${player.universityCourse ? "disabled" : ""}>
+            ${c.name} · ${money(c.cost)}/ano · ${c.duration} anos
+          </button>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+
+  if ($("studyBtn")) $("studyBtn").onclick = studyHarder;
+  if ($("behaviorBtn")) $("behaviorBtn").onclick = improveBehavior;
+  if ($("abandonBtn")) $("abandonBtn").onclick = abandonEducation;
+  if ($("returnSchoolBtn")) $("returnSchoolBtn").onclick = returnToSchool;
+
+  container.querySelectorAll("[data-uni]").forEach(btn => {
+    btn.onclick = () => enrollUniversity(Number(btn.dataset.uni));
   });
 }
 

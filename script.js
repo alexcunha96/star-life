@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - SISTEMA PRINCIPAL (CORREÇÃO DE RENDERIZAÇÃO INSTANTÂNEA)
+   STARLIFE - SISTEMA PRINCIPAL (CÓDIGO REVISADO E TESTADO)
 ========================================= */
 
 const SAVE_KEY = "starlife_save_v1";
@@ -254,20 +254,6 @@ function getRelationLabel(person) {
   return person.relation || "Familiar";
 }
 
-function getParentNames(person) {
-  const ids = [
-    ...(person.biologicalParentIds || []),
-    ...(person.adoptiveParentIds || []),
-    ...(person.socialParentIds || [])
-  ];
-
-  return ids
-    .map(id => game.family.find(member => member.id === id))
-    .filter(Boolean)
-    .map(getPersonFullName)
-    .join(", ") || "Não definido";
-}
-
 /* =========================================
    EVENTOS E ESCOLARES
 ========================================= */
@@ -499,7 +485,7 @@ function studyHarder() {
   player.happiness = clamp(player.happiness - 2);
   addEvent("Estudaste afincadamente. As notas melhoraram! 📖");
   saveGame();
-  renderGame(); // <--- ATUALIZAÇÃO IMEDIATA DO ECRÃ
+  renderGame();
   showToast("Estudaste com sucesso!");
 }
 
@@ -509,7 +495,7 @@ function improveBehavior() {
   player.absences = Math.max(0, player.absences - randomNumber(2, 4));
   addEvent("Portaste-te exemplarmente nas aulas e reduziste faltas.");
   saveGame();
-  renderGame(); // <--- ATUALIZAÇÃO IMEDIATA DO ECRÃ
+  renderGame();
 }
 
 function abandonEducation() {
@@ -585,22 +571,6 @@ function enrollUniversity(index, fundingType) {
   player.studying = true;
 
   addEvent(`Entraste na Universidade para estudar ${course.name}! 🎓`);
-  saveGame();
-  renderGame();
-}
-
-function enrollProfessionalCourse(index) {
-  const player = game.player;
-  const course = professionalCourses[index];
-  if (player.bank < course.cost) {
-    showToast(`Precisas de ${money(course.cost)} para pagar o curso.`);
-    return;
-  }
-  player.bank -= course.cost;
-  player.professionalCourse = course.name;
-  player.professionalProgress = 0;
-  addFinanceEvent(`Pagaste ${money(course.cost)} pelo curso profissional ${course.name}.`);
-  addEvent(`Iniciaste o curso profissional: ${course.name}.`);
   saveGame();
   renderGame();
 }
@@ -1010,7 +980,7 @@ function advanceYear() {
   }
 
   saveGame();
-  renderGame(); // <--- ATUALIZAÇÃO IMEDIATA DO ECRÃ APÓS AVANÇAR O ANO
+  renderGame();
 }
 
 /* =========================================

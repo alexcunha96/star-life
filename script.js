@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - SISTEMA PRINCIPAL (CORREÇÃO TOTAL DE UI E BOTÕES)
+   STARLIFE - SISTEMA PRINCIPAL (VERSÃO COMPLETA E CORRIGIDA)
 ========================================= */
 
 const SAVE_KEY = "starlife_save_v1";
@@ -13,7 +13,7 @@ let toastTimer = null;
 const $ = id => document.getElementById(id);
 
 function createId() {
-  return "person_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+  return "person_" + Date.now + "_" + Math.floor(Math.random() * 1000000);
 }
 
 function randomFrom(list) {
@@ -88,12 +88,12 @@ function loadGame() {
 }
 
 function deleteSave() {
-  if (!confirm("Tens a certeza de que queres apagar o jogo guardado? Perderás todo o progresso.")) return;
+  if (!confirm("Tens a certeza de que queres apagar o jogo guardado?")) return;
   localStorage.removeItem(SAVE_KEY);
   game = null;
   updateContinuePanel();
   showSetup();
-  showToast("Jogo guardado apagado com sucesso.");
+  showToast("Jogo guardado apagado.");
 }
 
 function updateContinuePanel() {
@@ -199,7 +199,7 @@ function generateName(sex) {
 
 function createFamilyMember(data) {
   return {
-    id: createId(),
+    id: "person_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
     name: data.name || "Sem nome",
     surname: data.surname || "",
     relation: data.relation || "Outro",
@@ -221,7 +221,7 @@ function createFamilyMember(data) {
 
 function createSocialPerson(data = {}) {
   return {
-    id: createId(),
+    id: "person_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
     name: data.name || generateName(data.sex),
     surname: data.surname || randomFrom(surnames),
     sex: data.sex || randomFrom(["Masculino", "Feminino"]),
@@ -353,15 +353,6 @@ const educationStages = [
   { name: "Ensino Secundário", start: 15, end: 17, level: 2 }
 ];
 
-const professionalCourses = [
-  { name: "Curso Profissional de Barbeiro", cost: 1200, duration: 1, education: 1, qualification: "Barbeiro" },
-  { name: "Curso de Cozinha", cost: 1500, duration: 1, education: 1, qualification: "Cozinheiro" },
-  { name: "Curso de Eletricidade", cost: 2200, duration: 2, education: 1, qualification: "Eletricista" },
-  { name: "Curso de Mecânica", cost: 2000, duration: 2, education: 1, qualification: "Mecânico" },
-  { name: "Curso de Gestão", cost: 2500, duration: 1, education: 2, qualification: "Gestão" },
-  { name: "Curso de Informática", cost: 1800, duration: 1, education: 2, qualification: "Informática" }
-];
-
 const universityCourses = [
   { name: "Medicina", cost: 3500, duration: 6, salary: 42000 },
   { name: "Direito", cost: 2500, duration: 4, salary: 35000 },
@@ -391,8 +382,6 @@ function initializeEducation(player) {
   player.universityCourse ??= null;
   player.universityProgress ??= 0;
   player.universityFunding ??= null;
-  player.professionalCourse ??= null;
-  player.professionalProgress ??= 0;
   player.studying ??= false;
   player.studyDebt ??= 0;
 }
@@ -604,17 +593,6 @@ function processFurtherEducation() {
     } else if (course && player.universityFunding === "loan") {
       player.studyDebt += course.cost;
       addFinanceEvent(`Acumulaste mais ${money(course.cost)} de dívida no crédito estudantil.`);
-    }
-  }
-
-  if (player.professionalCourse) {
-    player.professionalProgress++;
-    const course = professionalCourses.find(c => c.name === player.professionalCourse);
-    if (course && player.professionalProgress >= course.duration) {
-      player.professionalQualifications.push(course.qualification);
-      addEvent(`Concluíste com aproveitamento o curso profissional de ${course.name}! 🎓`);
-      player.professionalCourse = null;
-      player.professionalProgress = 0;
     }
   }
 }
@@ -868,7 +846,7 @@ function startGame() {
   }
 
   const player = {
-    id: createId(),
+    id: "person_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
     name: $("playerName").value.trim(),
     surname: $("playerSurname").value.trim(),
     sex: $("playerSex").value,
@@ -1033,7 +1011,7 @@ function createBusiness() {
     return;
   }
   game.player.bank -= inv;
-  game.businesses.push({ id: createId(), name, investment: inv, yearlyProfit: Math.round(inv * 0.2) });
+  game.businesses.push({ id: "person_" + Date.now() + "_" + Math.floor(Math.random() * 1000000), name, investment: inv, yearlyProfit: Math.round(inv * 0.2) });
   addEvent(`Criaste o negócio "${name}"!`);
   saveGame();
   renderGame();
@@ -1052,6 +1030,7 @@ function sellBusiness(id) {
 
 function renderBusinesses() {
   const container = $("businessList");
+  if (!container) return;
   container.innerHTML = "";
   if (!game.businesses.length) {
     container.innerHTML = "<p class='muted'>Sem negócios ativos.</p>";
@@ -1073,7 +1052,7 @@ function renderBusinesses() {
 }
 
 /* =========================================
-   RENDERIZAÇÃO GERAL E EVENT LISTENERS FIXOS
+   RENDERIZAÇÃO GERAL
 ========================================= */
 
 function renderHome() {
@@ -1115,15 +1094,17 @@ function renderCareer() {
   $("careerEducation").textContent = player.education;
 
   const jobContainer = $("jobOptions");
-  jobContainer.innerHTML = "";
-  jobs.forEach((job, index) => {
-    const btn = document.createElement("button");
-    btn.className = "secondary-btn";
-    btn.textContent = `${job.name} · ${money(job.salary)}/ano`;
-    btn.disabled = player.age < job.minimumAge || player.educationLevel < job.education;
-    btn.onclick = () => applyForJob(index);
-    jobContainer.appendChild(btn);
-  });
+  if (jobContainer) {
+    jobContainer.innerHTML = "";
+    jobs.forEach((job, index) => {
+      const btn = document.createElement("button");
+      btn.className = "secondary-btn";
+      btn.textContent = `${job.name} · ${money(job.salary)}/ano`;
+      btn.disabled = player.age < job.minimumAge || player.educationLevel < job.education;
+      btn.onclick = () => applyForJob(index);
+      jobContainer.appendChild(btn);
+    });
+  }
 
   renderSchoolAndUniversitySubmenu();
 }
@@ -1136,7 +1117,7 @@ function renderSchoolAndUniversitySubmenu() {
   const stage = getCurrentEducationStage(player.age);
 
   let html = `
-    <div class="panel">
+    <div class="panel" style="margin-top: 16px;">
       <h3>📚 Estatísticas Escolares</h3>
       <div class="info-row"><span>Etapa atual</span><strong>${escapeHTML(stage?.name || player.education)}</strong></div>
       <div class="info-row"><span>Estado escolar</span><strong>${escapeHTML(player.schoolStatus)}</strong></div>
@@ -1178,10 +1159,10 @@ function renderSchoolAndUniversitySubmenu() {
             <strong>${escapeHTML(c.name)}</strong> (${money(c.cost)}/ano · ${c.duration} anos)
             ${!player.universityCourse ? `
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px;">
-                <button class="small-btn" data-uni-fund="${idx}_savings">Pagar com Poupanças</button>
-                <button class="small-btn" data-uni-fund="${idx}_parents">Pedir aos Pais</button>
-                <button class="small-btn" data-uni-fund="${idx}_scholarship">Pedir Bolsa de Estudo</button>
-                <button class="small-btn" data-uni-fund="${idx}_loan">Crédito Estudantil</button>
+                <button class="small-btn" data-uni-fund="${idx}_savings">Poupanças</button>
+                <button class="small-btn" data-uni-fund="${idx}_parents">Pais</button>
+                <button class="small-btn" data-uni-fund="${idx}_scholarship">Bolsa</button>
+                <button class="small-btn" data-uni-fund="${idx}_loan">Crédito</button>
               </div>
             ` : ""}
           </div>
@@ -1246,7 +1227,6 @@ function boot() {
     });
   }
 
-  // Ligar botão de apagar save (se existir no HTML)
   if ($("deleteSaveBtn")) {
     $("deleteSaveBtn").addEventListener("click", deleteSave);
   }

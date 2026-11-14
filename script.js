@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - SISTEMA PRINCIPAL (CÓDIGO REVISADO E TESTADO)
+   STARLIFE - SISTEMA PRINCIPAL (VERSÃO FINAL REVISADA)
 ========================================= */
 
 const SAVE_KEY = "starlife_save_v1";

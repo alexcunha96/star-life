@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - SISTEMA PRINCIPAL (VERSÃO FINAL REVISADA)
+   STARLIFE - SISTEMA PRINCIPAL (CORREÇÃO TOTAL DE UI E BOTÕES)
 ========================================= */
 
 const SAVE_KEY = "starlife_save_v1";
@@ -85,6 +85,15 @@ function loadGame() {
     console.error("Erro ao carregar:", error);
     return null;
   }
+}
+
+function deleteSave() {
+  if (!confirm("Tens a certeza de que queres apagar o jogo guardado? Perderás todo o progresso.")) return;
+  localStorage.removeItem(SAVE_KEY);
+  game = null;
+  updateContinuePanel();
+  showSetup();
+  showToast("Jogo guardado apagado com sucesso.");
 }
 
 function updateContinuePanel() {
@@ -221,10 +230,7 @@ function createSocialPerson(data = {}) {
     country: data.country || game.player.country,
     alive: true,
     personality: data.personality || randomFrom(personalities),
-    interests: data.interests || [
-      randomFrom(interests),
-      randomFrom(interests)
-    ],
+    interests: data.interests || [randomFrom(interests), randomFrom(interests)],
     compatibility: randomNumber(35, 95),
     friendship: 0,
     love: 0,
@@ -1067,7 +1073,7 @@ function renderBusinesses() {
 }
 
 /* =========================================
-   RENDERIZAÇÃO GERAL E MENU DE CARREIRA ORGANIZADO
+   RENDERIZAÇÃO GERAL E EVENT LISTENERS FIXOS
 ========================================= */
 
 function renderHome() {
@@ -1107,37 +1113,15 @@ function renderCareer() {
   $("careerJob").textContent = player.job || "Nenhuma";
   $("careerSalary").textContent = money(player.salary);
   $("careerEducation").textContent = player.education;
-  $("careerDescription").textContent = player.job ? `Trabalhas como ${player.job}.` : "Sem profissão ativa.";
-
-  const careerTab = $("careerTab");
-  if (!careerTab) return;
-
-  careerTab.innerHTML = `
-    <div class="panel">
-      <h2>💼 Carreira e Educação</h2>
-      <div class="info-row"><span>Profissão</span><strong id="careerJob">${escapeHTML(player.job || "Nenhuma")}</strong></div>
-      <div class="info-row"><span>Salário anual</span><strong id="careerSalary">${money(player.salary)}</strong></div>
-      <div class="info-row"><span>Escolaridade</span><strong id="careerEducation">${escapeHTML(player.education)}</strong></div>
-    </div>
-
-    <!-- SUB-MENU 1: TRABALHOS -->
-    <div class="panel">
-      <h3>💼 Oportunidades de Trabalho</h3>
-      <p class="muted">Procura emprego a partir dos 16 anos.</p>
-      <div id="jobOptions" class="button-list"></div>
-    </div>
-
-    <!-- SUB-MENU 2: ESCOLA E UNIVERSIDADE -->
-    <div id="schoolSectionContainer"></div>
-  `;
 
   const jobContainer = $("jobOptions");
+  jobContainer.innerHTML = "";
   jobs.forEach((job, index) => {
     const btn = document.createElement("button");
     btn.className = "secondary-btn";
     btn.textContent = `${job.name} · ${money(job.salary)}/ano`;
     btn.disabled = player.age < job.minimumAge || player.educationLevel < job.education;
-    btn.addEventListener("click", () => applyForJob(index));
+    btn.onclick = () => applyForJob(index);
     jobContainer.appendChild(btn);
   });
 
@@ -1250,14 +1234,23 @@ function showTab(tabId) {
 
 function boot() {
   $("startForm").addEventListener("submit", e => { e.preventDefault(); startGame(); });
-  $("continueGameBtn").addEventListener("click", () => {
-    const saved = loadGame();
-    if (saved) {
-      game = saved;
-      showGame();
-      renderGame();
-    }
-  });
+  
+  if ($("continueGameBtn")) {
+    $("continueGameBtn").addEventListener("click", () => {
+      const saved = loadGame();
+      if (saved) {
+        game = saved;
+        showGame();
+        renderGame();
+      }
+    });
+  }
+
+  // Ligar botão de apagar save (se existir no HTML)
+  if ($("deleteSaveBtn")) {
+    $("deleteSaveBtn").addEventListener("click", deleteSave);
+  }
+
   $("advanceYearBtn").addEventListener("click", advanceYear);
   $("createBusinessBtn").addEventListener("click", createBusiness);
   

@@ -1,8 +1,7 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - SISTEMA PRINCIPAL (CORREÇÃO DA EDUCAÇÃO)
-   EDUCAÇÃO + EXAMES + FAMÍLIA + RELAÇÕES + CARREIRA + IMPOSTOS
+   STARLIFE - SISTEMA PRINCIPAL (UNIVERSIDADE + BOLSAS + CRÉDITO + MENU ORGANIZADO)
 ========================================= */
 
 const SAVE_KEY = "starlife_save_v1";
@@ -270,7 +269,7 @@ function getParentNames(person) {
 }
 
 /* =========================================
-   SISTEMA DE EVENTOS E ESCOLARES
+   EVENTOS E ESCOLARES
 ========================================= */
 
 const schoolEventsPool = [
@@ -278,17 +277,17 @@ const schoolEventsPool = [
     minAge: 10, maxAge: 17,
     text: "Um colega mais velho na escola está a ameaçar-te e a pedir dinheiro no recreio.",
     options: [
-      { text: "Contar a um professor ou diretor", effect: () => { game.player.happiness = clamp(game.player.happiness - 2); addEvent("Contaste à direção. O valentão foi repreendido.", "neutral"); } },
-      { text: "Enfrentá-lo à pancada", effect: () => { if (Math.random() > 0.5) { game.player.happiness = clamp(game.player.happiness + 5); addEvent("Ganhaste a luta e ganhaste respeito na escola!", "positive"); } else { game.player.health = clamp(game.player.health - 10); game.player.happiness = clamp(game.player.happiness - 8); addEvent("Levaste uma coça valente do valentão...", "negative"); } } },
-      { text: "Ignorar e fugir sempre", effect: () => { game.player.happiness = clamp(game.player.happiness - 5); addEvent("Passaste a evitar certas zonas da escola.", "negative"); } }
+      { text: "Contar a um professor", effect: () => { game.player.happiness = clamp(game.player.happiness - 2); addEvent("Contaste à direção. O valentão foi repreendido.", "neutral"); } },
+      { text: "Enfrentá-lo", effect: () => { if (Math.random() > 0.5) { game.player.happiness = clamp(game.player.happiness + 5); addEvent("Ganhaste a luta e respeito na escola!", "positive"); } else { game.player.health = clamp(game.player.health - 10); addEvent("Levaste uma coça valente...", "negative"); } } },
+      { text: "Ignorar e fugir", effect: () => { game.player.happiness = clamp(game.player.happiness - 5); addEvent("Evitas certas zonas da escola com medo.", "negative"); } }
     ]
   },
   {
     minAge: 12, maxAge: 17,
-    text: "Estes dias vais ter um teste muito difícil de Matemática e não estudaste nada.",
+    text: "Vais ter um teste muito difícil de Matemática e não estudaste nada.",
     options: [
-      { text: "Tentar colar com uma cábula", effect: () => { if (Math.random() > 0.4) { game.player.schoolGrade = clamp(game.player.schoolGrade + 3, 0, 20); addEvent("Colaste com sucesso e safaste-te no teste!", "positive"); } else { game.player.behavior = clamp(game.player.behavior - 15); addEvent("O professor apanhou-te a colar e meteu-te falta disciplinar!", "negative"); } } },
-      { text: "Aceitar a negativa e ir à sorte", effect: () => { game.player.schoolPerformance = clamp(game.player.schoolPerformance - 5); addEvent("Tiviste uma nota fraca no teste.", "negative"); } }
+      { text: "Tentar colar", effect: () => { if (Math.random() > 0.4) { game.player.schoolGrade = clamp(game.player.schoolGrade + 3, 0, 20); addEvent("Colaste com sucesso!", "positive"); } else { game.player.behavior = clamp(game.player.behavior - 15); addEvent("O professor apanhou-te a colar!", "negative"); } } },
+      { text: "Aceitar a negativa", effect: () => { game.player.schoolPerformance = clamp(game.player.schoolPerformance - 5); addEvent("Tiviste uma nota fraca no teste.", "negative"); } }
     ]
   }
 ];
@@ -296,10 +295,10 @@ const schoolEventsPool = [
 const generalEventsPool = [
   {
     minAge: 18, maxAge: 80,
-    text: "Alguém bateu levemente no teu carro num parque de estacionamento e fugiu.",
+    text: "Alguém bateu no teu carro num parque e fugiu.",
     options: [
-      { text: "Apresentar queixa na polícia", effect: () => { game.player.bank += 300; addFinanceEvent("Recebeste indemnização do seguro."); addEvent("O seguro cobriu os danos.", "positive"); } },
-      { text: "Ignorar e seguir", effect: () => { game.player.happiness = clamp(game.player.happiness - 2); addEvent("Ignoraste o risco no carro."); } }
+      { text: "Queixa na polícia", effect: () => { game.player.bank += 300; addFinanceEvent("Recebeste indemnização do seguro."); addEvent("O seguro cobriu os danos.", "positive"); } },
+      { text: "Ignorar", effect: () => { game.player.happiness = clamp(game.player.happiness - 2); addEvent("Ignoraste o risco no carro."); } }
     ]
   }
 ];
@@ -309,9 +308,7 @@ function triggerRandomEvent() {
   const age = game.player.age;
 
   let pool = generalEventsPool;
-  if (age >= 6 && age <= 17 && Math.random() < 0.6) {
-    pool = schoolEventsPool;
-  }
+  if (age >= 6 && age <= 17 && Math.random() < 0.6) pool = schoolEventsPool;
 
   const validEvents = pool.filter(ev => age >= ev.minAge && age <= ev.maxAge);
   if (validEvents.length === 0 || Math.random() > 0.45) return;
@@ -352,7 +349,7 @@ function triggerRandomEvent() {
 }
 
 /* =========================================
-   SISTEMA DE EDUCAÇÃO PROFUNDO
+   SISTEMA DE EDUCAÇÃO E UNIVERSIDADE
 ========================================= */
 
 const educationStages = [
@@ -401,6 +398,7 @@ function initializeEducation(player) {
   player.professionalQualifications ??= [];
   player.universityCourse ??= null;
   player.universityProgress ??= 0;
+  player.universityFunding ??= null; // "parents", "scholarship", "loan"
   player.professionalCourse ??= null;
   player.professionalProgress ??= 0;
   player.studying ??= false;
@@ -460,16 +458,13 @@ function processSchoolYear() {
   player.schoolGrade = clamp(grade, 0, 20);
 
   if (Math.random() < 0.08) player.absences += randomNumber(1, 3);
-
-  if (player.absences > 10) {
-    player.schoolGrade = clamp(player.schoolGrade - 3, 0, 20);
-  }
+  if (player.absences > 10) player.schoolGrade = clamp(player.schoolGrade - 3, 0, 20);
 
   if (player.schoolGrade >= 10) {
     player.schoolPerformance = clamp(player.schoolPerformance + randomNumber(1, 4));
-    addEducationHistory(`Aprovado/a em ${stage.name} com média de ${player.schoolGrade}/20.`);
+    addEducationHistory(`Aprovado/a em ${stage.name} com média ${player.schoolGrade}/20.`);
 
-    if (age === 9) addEvent("Concluíste com sucesso o 1.º Ciclo do Ensino Básico! 📚");
+    if (age === 9) addEvent("Concluíste com sucesso o 1.º Ciclo! 📚");
     if (age === 11) addEvent("Concluíste o 2.º Ciclo do Ensino Básico!");
     if (age === 14) {
       player.education = "Ensino básico";
@@ -485,7 +480,7 @@ function processSchoolYear() {
   } else {
     player.schoolStatus = "Reprovado/a";
     player.happiness = clamp(player.happiness - 8);
-    addEvent(`Chumbaste de ano no ${stage.name} com média de ${player.schoolGrade}/20. Ficaste retido/a!`, "negative");
+    addEvent(`Chumbaste de ano no ${stage.name} com média de ${player.schoolGrade}/20!`, "negative");
     addEducationHistory(`Reprovaste no ${stage.name}. Média: ${player.schoolGrade}/20.`);
   }
 
@@ -495,14 +490,14 @@ function processSchoolYear() {
 function studyHarder() {
   const player = game.player;
   if (player.age < 6 || player.age > 18) {
-    showToast("Não estás atualmente em idade escolar.");
+    showToast("Não estás em idade escolar.");
     return;
   }
   player.intelligence = clamp(player.intelligence + randomNumber(1, 3));
   player.schoolPerformance = clamp(player.schoolPerformance + randomNumber(6, 12));
   player.schoolGrade = clamp(player.schoolGrade + randomNumber(1, 3), 0, 20);
   player.happiness = clamp(player.happiness - 2);
-  addEvent("Passaste horas a estudar. As notas melhoraram, mas o cansaço acumulou-se. 📖");
+  addEvent("Estudaste afincadamente. As notas melhoraram! 📖");
   saveGame();
   renderGame();
   showToast("Estudaste com sucesso!");
@@ -512,17 +507,17 @@ function improveBehavior() {
   const player = game.player;
   player.behavior = clamp(player.behavior + randomNumber(8, 15));
   player.absences = Math.max(0, player.absences - randomNumber(2, 4));
-  addEvent("Portaste-te exemplarmente nas aulas e limpaste faltas.");
+  addEvent("Portaste-te exemplarmente nas aulas e reduziste faltas.");
   saveGame();
   renderGame();
 }
 
 function abandonEducation() {
   const player = game.player;
-  if (player.age < 15 || !confirm("Abandonar a escola vai arruinar as tuas opções de futuro. Tens a certeza?")) return;
+  if (player.age < 15 || !confirm("Abandonar a escola vai arruinar o teu futuro. Tens a certeza?")) return;
   player.schoolStatus = "Abandonou os estudos";
   player.education = player.educationLevel >= 1 ? "Ensino básico incompleto" : "Sem escolaridade";
-  addEvent("Abandonaste a escola precipitadamente.", "negative");
+  addEvent("Abandonaste a escola.", "negative");
   saveGame();
   renderGame();
 }
@@ -531,24 +526,69 @@ function returnToSchool() {
   const player = game.player;
   player.schoolStatus = "A frequentar";
   player.currentSchoolStage = player.age <= 17 ? "Ensino Secundário" : "Ensino Recorrente";
-  addEvent("Decidiste dar uma nova oportunidade aos estudos e voltaste à escola! 📚");
+  addEvent("Regressaste à escola! 📚");
   saveGame();
   renderGame();
 }
 
-function enrollUniversity(index) {
+/* UNIVERSIDADE COM FINANCIAMENTO REALISTA */
+function enrollUniversity(index, fundingType) {
   const player = game.player;
   const course = universityCourses[index];
-  if (player.bank < course.cost) {
-    showToast(`Precisas de ${money(course.cost)} para as propinas iniciais.`);
+
+  if (player.universityCourse) {
+    showToast("Já estás a frequentar um curso superior.");
     return;
   }
-  player.bank -= course.cost;
+
+  let funding = fundingType; // "savings", "parents", "scholarship", "loan"
+
+  if (funding === "savings") {
+    if (player.bank < course.cost) {
+      showToast("Não tens saldo suficiente na conta bancária.");
+      return;
+    }
+    player.bank -= course.cost;
+    addFinanceEvent(`Pagaste ${money(course.cost)} de propinas com as tuas poupanças.`);
+  } 
+  else if (funding === "parents") {
+    // Verificar se os pais aceitam pagar
+    const parents = game.family.filter(f => ["Mãe", "Pai"].includes(f.relation) && f.alive);
+    if (parents.length === 0) {
+      showToast("Não tens pais vivos para te ajudarem a pagar os estudos.");
+      return;
+    }
+    // Probabilidade dos pais aceitarem (ex: 70% se tiverem boa relação ou dinheiro)
+    const accepted = Math.random() < 0.75;
+    if (accepted) {
+      addEvent(`Os teus pais concordaram em pagar as propinas da tua universidade em ${course.name}! ❤️`, "positive");
+    } else {
+      addEvent(`Pediste aos teus pais para pagarem a faculdade, mas recusaram por falta de posses.`, "negative");
+      return;
+    }
+  } 
+  else if (funding === "scholarship") {
+    // Bolsa de estudos baseada na inteligência e notas
+    const successChance = (player.intelligence + (player.schoolGrade * 5)) / 2;
+    if (Math.random() * 100 <= successChance) {
+      addEvent(`Parabéns! Obtiveste uma Bolsa de Estudo integral para ${course.name}. O Estado paga as propinas! 🎓`, "positive");
+    } else {
+      addEvent(`A tua candidatura à bolsa de estudos foi rejeitada por falta de média suficiente.`, "negative");
+      return;
+    }
+  } 
+  else if (funding === "loan") {
+    player.studyDebt += course.cost;
+    addFinanceEvent(`Contraíste um Crédito Estudantil de ${money(course.cost)} para pagar a universidade.`);
+    addEvent(`Contraíste um empréstimo bancário para financiar os estudos em ${course.name}. Ficaste com dívida acumulada.`, "neutral");
+  }
+
   player.universityCourse = course.name;
   player.universityProgress = 0;
+  player.universityFunding = funding;
   player.studying = true;
-  addFinanceEvent(`Pagaste ${money(course.cost)} de inscrição em ${course.name}.`);
-  addEvent(`Entraste na Universidade para tirar curso superior de ${course.name}! 🎓`);
+
+  addEvent(`Entraste na Universidade para estudar ${course.name}! 🎓`);
   saveGame();
   renderGame();
 }
@@ -580,14 +620,18 @@ function processFurtherEducation() {
       player.salary = Math.max(player.salary, course?.salary || 22000);
       player.universityCourse = null;
       player.universityProgress = 0;
+      player.universityFunding = null;
       addEvent(`🎓 Licenciatura concluída com sucesso em ${course?.name}!`);
-    } else if (course) {
+    } else if (course && player.universityFunding === "savings") {
       player.bank -= course.cost;
       addFinanceEvent(`Pagaste ${money(course.cost)} de propinas anuais.`);
       if (player.bank < 0) {
         player.studyDebt += Math.abs(player.bank);
         player.bank = 0;
       }
+    } else if (course && player.universityFunding === "loan") {
+      player.studyDebt += course.cost;
+      addFinanceEvent(`Acumulaste mais ${money(course.cost)} de dívida no crédito estudantil.`);
     }
   }
 
@@ -604,34 +648,22 @@ function processFurtherEducation() {
 }
 
 /* =========================================
-   FAMÍLIA
+   FAMÍLIA E RELAÇÕES
 ========================================= */
 
 function createAutomaticFamily() {
   const mother = createFamilyMember({
-    name: generateName("Feminino"),
-    surname: game.player.surname,
-    relation: "Mãe",
-    age: randomNumber(18, 45),
-    sex: "Feminino"
+    name: generateName("Feminino"), surname: game.player.surname, relation: "Mãe", age: randomNumber(18, 45), sex: "Feminino"
   });
-
   const father = createFamilyMember({
-    name: generateName("Masculino"),
-    surname: game.player.surname,
-    relation: "Pai",
-    age: randomNumber(18, 50),
-    sex: "Masculino"
+    name: generateName("Masculino"), surname: game.player.surname, relation: "Pai", age: randomNumber(18, 50), sex: "Masculino"
   });
-
   mother.partnerId = father.id;
   father.partnerId = mother.id;
   mother.relationshipStatus = "Casado/a";
   father.relationshipStatus = "Casado/a";
-
   game.family.push(mother, father);
   game.player.biologicalParentIds = [mother.id, father.id];
-
   return { mother, father };
 }
 
@@ -641,36 +673,6 @@ function connectInitialParents() {
   game.player.biologicalParentIds = [];
   if (mother) game.player.biologicalParentIds.push(mother.id);
   if (father) game.player.biologicalParentIds.push(father.id);
-}
-
-function addFamilyMember(data, linkType = "biological") {
-  if (!game) return;
-  const person = createFamilyMember(data);
-  game.family.push(person);
-  addEvent(`${getPersonFullName(person)} passou a fazer parte da tua família.`);
-  saveGame();
-  renderGame();
-  renderFamilyEditor();
-}
-
-function removeFamilyMember(id) {
-  const person = game.family.find(member => member.id === id);
-  if (!person || !confirm(`Queres mesmo remover ${getPersonFullName(person)}?`)) return;
-  game.family = game.family.filter(member => member.id !== id);
-  saveGame();
-  renderGame();
-  renderFamilyEditor();
-}
-
-function editFamilyMember(id) {
-  const person = game.family.find(member => member.id === id);
-  if (!person) return;
-  const newName = prompt("Nome:", person.name);
-  if (newName === null) return;
-  person.name = newName.trim();
-  saveGame();
-  renderGame();
-  renderFamilyEditor();
 }
 
 function renderPeople() {
@@ -707,19 +709,8 @@ function renderFamilyEditor() {
         <strong>${escapeHTML(getPersonFullName(person))}</strong>
         <small>${escapeHTML(person.relation)} · ${person.age} anos</small>
       </div>
-      <div class="person-actions">
-        <button class="small-btn" data-edit-person="${person.id}">Editar</button>
-        <button class="small-btn" data-remove-person="${person.id}">Remover</button>
-      </div>
     `;
     container.appendChild(card);
-  });
-
-  container.querySelectorAll("[data-edit-person]").forEach(button => {
-    button.addEventListener("click", () => editFamilyMember(button.dataset.editPerson));
-  });
-  container.querySelectorAll("[data-remove-person]").forEach(button => {
-    button.addEventListener("click", () => removeFamilyMember(button.dataset.removePerson));
   });
 }
 
@@ -727,15 +718,6 @@ function renderFamilyTree() {
   const container = $("familyTree");
   if (!container) return;
   container.innerHTML = "<p class='muted'>Árvore genealógica ativa.</p>";
-}
-
-/* =========================================
-   VIDA AUTÓNOMA DOS FAMILIARES
-========================================= */
-
-function findFamilyPartner(person) {
-  if (!person.partnerId) return null;
-  return game.family.find(member => member.id === person.partnerId) || null;
 }
 
 function processFamilyLife() {
@@ -750,10 +732,6 @@ function processFamilyLife() {
     }
   });
 }
-
-/* =========================================
-   RELAÇÕES DO JOGADOR
-========================================= */
 
 function getSocialPerson(id) {
   return game.socialPeople.find(person => person.id === id) || null;
@@ -1017,16 +995,14 @@ function advanceYear() {
     const netBalance = netIncome - livingCosts;
     player.bank += netBalance;
 
-    if (taxes > 0) {
-      addFinanceEvent(`Pagaste ${money(taxes)} em impostos.`);
-    }
+    if (taxes > 0) addFinanceEvent(`Pagaste ${money(taxes)} em impostos.`);
     addFinanceEvent(`Recebeste ${money(netIncome)} líquidos e gastaste ${money(livingCosts)} em subsistência.`);
 
     if (player.bank < 0) {
       const negativeAmount = Math.abs(player.bank);
       player.debt += negativeAmount + (negativeAmount * 0.15);
       player.bank = 0;
-      addEvent("Estás com o saldo negativo! Dívida acumulada com juros de 15%.", "negative");
+      addEvent("Estás com o saldo negativo! Dívida acumulada com juros.", "negative");
     }
   }
 
@@ -1125,7 +1101,7 @@ function renderBusinesses() {
 }
 
 /* =========================================
-   RENDERIZAÇÃO GERAL E EDUCAÇÃO VISUAL
+   RENDERIZAÇÃO GERAL E MENU DE CARREIRA ORGANIZADO
 ========================================= */
 
 function renderHome() {
@@ -1152,12 +1128,12 @@ function renderHome() {
 
 function renderPatrimony() {
   const player = game.player;
-  const totalW = player.bank + game.businesses.reduce((acc, b) => acc + b.investment, 0) - player.debt;
+  const totalW = player.bank + game.businesses.reduce((acc, b) => acc + b.investment, 0) - player.debt - player.studyDebt;
   $("totalWealth").textContent = money(totalW);
   $("bankBalance").textContent = money(player.bank);
   $("annualSalary").textContent = money(player.salary);
   $("annualExpenses").textContent = money(player.expenses);
-  $("debtValue").textContent = money(player.debt);
+  $("debtValue").textContent = money(player.debt + player.studyDebt);
 }
 
 function renderCareer() {
@@ -1165,9 +1141,33 @@ function renderCareer() {
   $("careerJob").textContent = player.job || "Nenhuma";
   $("careerSalary").textContent = money(player.salary);
   $("careerEducation").textContent = player.education;
+  $("careerDescription").textContent = player.job ? `Trabalhas como ${player.job}.` : "Sem profissão ativa.";
 
+  // Organizar a Tab de Carreira em duas secções limpas: 1. Trabalhos | 2. Escola e Universidade
+  const careerTab = $("careerTab");
+  if (!careerTab) return;
+
+  careerTab.innerHTML = `
+    <div class="panel">
+      <h2>💼 Carreira e Educação</h2>
+      <div class="info-row"><span>Profissão</span><strong id="careerJob">${escapeHTML(player.job || "Nenhuma")}</strong></div>
+      <div class="info-row"><span>Salário anual</span><strong id="careerSalary">${money(player.salary)}</strong></div>
+      <div class="info-row"><span>Escolaridade</span><strong id="careerEducation">${escapeHTML(player.education)}</strong></div>
+    </div>
+
+    <!-- SUB-MENU 1: TRABALHOS -->
+    <div class="panel">
+      <h3>💼 Oportunidades de Trabalho</h3>
+      <p class="muted">Procura emprego a partir dos 16 anos.</p>
+      <div id="jobOptions" class="button-list"></div>
+    </div>
+
+    <!-- SUB-MENU 2: ESCOLA E UNIVERSIDADE -->
+    <div id="schoolSectionContainer"></div>
+  `;
+
+  // Preencher empregos
   const jobContainer = $("jobOptions");
-  jobContainer.innerHTML = "";
   jobs.forEach((job, index) => {
     const btn = document.createElement("button");
     btn.className = "secondary-btn";
@@ -1177,34 +1177,24 @@ function renderCareer() {
     jobContainer.appendChild(btn);
   });
 
-  // Renderizar Secção Escolar / Universidade na Tab de Carreira
-  renderEducationTab();
+  // Renderizar secção escolar e universitária organizada
+  renderSchoolAndUniversitySubmenu();
 }
 
-function renderEducationTab() {
+function renderSchoolAndUniversitySubmenu() {
   const player = game.player;
-  let container = $("educationSection");
-  
-  if (!container) {
-    container = document.createElement("div");
-    container.id = "educationSection";
-    const careerTab = $("careerTab");
-    if (careerTab) careerTab.appendChild(container);
-  }
-
+  const container = $("schoolSectionContainer");
   if (!container) return;
 
   const stage = getCurrentEducationStage(player.age);
 
   let html = `
     <div class="panel">
-      <h3>📚 Percurso Escolar e Académico</h3>
+      <h3>📚 Estatísticas Escolares</h3>
       <div class="info-row"><span>Etapa atual</span><strong>${escapeHTML(stage?.name || player.education)}</strong></div>
-      <div class="info-row"><span>Estado</span><strong>${escapeHTML(player.schoolStatus)}</strong></div>
-      <div class="info-row"><span>Média Escolar</span><strong>${player.schoolGrade}/20</strong></div>
+      <div class="info-row"><span>Estado escolar</span><strong>${escapeHTML(player.schoolStatus)}</strong></div>
+      <div class="info-row"><span>Média</span><strong>${player.schoolGrade}/20</strong></div>
       <div class="info-row"><span>Inteligência</span><strong>${player.intelligence}%</strong></div>
-      <div class="info-row"><span>Comportamento</span><strong>${player.behavior}%</strong></div>
-      <div class="info-row"><span>Faltas</span><strong>${player.absences}</strong></div>
     </div>
   `;
 
@@ -1227,15 +1217,28 @@ function renderEducationTab() {
     `;
   }
 
+  // Ensino Superior com opções de financiamento (Pais, Poupanças, Bolsa, Crédito)
   if (player.age >= 18 && player.educationLevel >= 2) {
     html += `
       <div class="panel">
         <h3>🏛️ Ensino Superior (Universidade)</h3>
-        ${player.universityCourse ? `<p>A cursar: <strong>${player.universityCourse}</strong> (${player.universityProgress} anos concl.)</p>` : ""}
+        ${player.universityCourse ? `
+          <p>Curso atual: <strong>${player.universityCourse}</strong> (${player.universityProgress} anos concl.)</p>
+          <p class="muted">Financiamento: <strong>${player.universityFunding === "parents" ? "Pago pelos Pais" : player.universityFunding === "scholarship" ? "Bolsa de Estudo" : player.universityFunding === "loan" ? "Crédito Estudantil" : "Poupanças Próprias"}</strong></p>
+        ` : `<p class="muted">Escolhe um curso e a forma como vais pagar os estudos:</p>`}
+
         ${universityCourses.map((c, idx) => `
-          <button class="secondary-btn full-width" data-uni="${idx}" ${player.universityCourse ? "disabled" : ""}>
-            ${c.name} · ${money(c.cost)}/ano · ${c.duration} anos
-          </button>
+          <div style="margin-top: 12px; padding: 10px; background: var(--panel-light); border-radius: 10px;">
+            <strong>${escapeHTML(c.name)}</strong> (${money(c.cost)}/ano · ${c.duration} anos)
+            ${!player.universityCourse ? `
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px;">
+                <button class="small-btn" data-uni-fund="${idx}_savings">Pagar com Poupanças</button>
+                <button class="small-btn" data-uni-fund="${idx}_parents">Pedir aos Pais</button>
+                <button class="small-btn" data-uni-fund="${idx}_scholarship">Pedir Bolsa de Estudo</button>
+                <button class="small-btn" data-uni-fund="${idx}_loan">Crédito Estudantil</button>
+              </div>
+            ` : ""}
+          </div>
         `).join("")}
       </div>
     `;
@@ -1248,8 +1251,11 @@ function renderEducationTab() {
   if ($("abandonBtn")) $("abandonBtn").onclick = abandonEducation;
   if ($("returnSchoolBtn")) $("returnSchoolBtn").onclick = returnToSchool;
 
-  container.querySelectorAll("[data-uni]").forEach(btn => {
-    btn.onclick = () => enrollUniversity(Number(btn.dataset.uni));
+  container.querySelectorAll("[data-uni-fund]").forEach(btn => {
+    btn.onclick = () => {
+      const [idxStr, fund] = btn.dataset.uniFund.split("_");
+      enrollUniversity(Number(idxStr), fund);
+    };
   });
 }
 

@@ -1,368 +1,166 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#111827">
   <title>StarLife</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <header class="topbar">
-    <div>
+  <!-- Ecrã Inicial / Criação de Personagem -->
+  <div id="setupScreen" class="screen">
+    <div class="panel">
       <h1>⭐ StarLife</h1>
-      <p class="subtitle">A tua vida. As tuas escolhas.</p>
-    </div>
-    <div id="gameStatus" class="game-status">Nova vida</div>
-  </header>
-
-  <!-- CRIAÇÃO DA PERSONAGEM -->
-  <main id="setupScreen" class="screen">
-    <section class="panel welcome-panel">
-      <h2>Começa a tua história</h2>
-      <p>Cria a tua personagem e prepara-te para viver uma vida inteira.</p>
-
+      <p>A tua vida. As tuas escolhas.</p>
+      
       <form id="startForm">
-        <div class="form-grid">
-          <label>
-            Nome
-            <input id="playerName" type="text" maxlength="30" required placeholder="O teu nome">
-          </label>
-
-          <label>
-            Apelido
-            <input id="playerSurname" type="text" maxlength="40" required placeholder="O teu apelido">
-          </label>
-
-          <label>
-            Sexo
-            <select id="playerSex" required>
-              <option value="">Selecionar</option>
-              <option value="Masculino">Masculino</option>
-              <option value="Feminino">Feminino</option>
-              <option value="Outro">Outro</option>
-            </select>
-          </label>
-
-          <label>
-            País
-            <input id="playerCountry" type="text" value="Portugal" required>
-          </label>
-
-          <label class="full-width">
-            Cidade
-            <input id="playerCity" type="text" placeholder="Ex.: Chamusca" required>
-          </label>
+        <div class="input-group">
+          <label>Nome</label>
+          <input type="text" id="playerName" placeholder="Ex: João" required>
         </div>
-
-        <div class="baby-notice">
-          👶 A tua personagem começa sempre com 0 anos, como recém-nascida.
+        <div class="input-group">
+          <label>Apelido</label>
+          <input type="text" id="playerSurname" placeholder="Ex: Silva" required>
         </div>
-
-        <div class="initial-family">
-          <h3>Família inicial (opcional)</h3>
-          <p>Se não adicionares ninguém, o jogo cria automaticamente uma mãe e um pai.</p>
-
-          <div class="form-grid">
-            <label>
-              Nome do familiar
-              <input id="initialFamilyName" type="text" placeholder="Nome">
-            </label>
-
-            <label>
-              Parentesco
-              <select id="initialFamilyRelation">
-                <option value="Mãe">Mãe</option>
-                <option value="Pai">Pai</option>
-                <option value="Irmão">Irmão</option>
-                <option value="Irmã">Irmã</option>
-                <option value="Avó">Avó</option>
-                <option value="Avô">Avô</option>
-                <option value="Padrasto">Padrasto</option>
-                <option value="Madrasta">Madrasta</option>
-                <option value="Outro">Outro</option>
-              </select>
-            </label>
-
-            <label>
-              Idade
-              <input id="initialFamilyAge" type="number" min="0" max="110" placeholder="Idade">
-            </label>
-
-            <label>
-              Sexo
-              <select id="initialFamilySex">
-                <option value="Feminino">Feminino</option>
-                <option value="Masculino">Masculino</option>
-                <option value="Outro">Outro</option>
-              </select>
-            </label>
-          </div>
-
-          <button type="button" id="addInitialFamilyBtn" class="secondary-btn">
-            + Adicionar familiar
-          </button>
-
-          <div id="initialFamilyList" class="family-list"></div>
+        <div class="input-group">
+          <label>Género</label>
+          <select id="playerSex">
+            <option value="Masculino">Masculino</option>
+            <option value="Feminino">Feminino</option>
+          </select>
         </div>
-
-        <button type="submit" class="primary-btn full-width">
-          Começar a minha vida
-        </button>
+        <div class="input-group">
+          <label>País</label>
+          <input type="text" id="playerCountry" value="Portugal">
+        </div>
+        <div class="input-group">
+          <label>Cidade</label>
+          <input type="text" id="playerCity" value="Lisboa">
+        </div>
+        <button type="submit" class="primary-btn full-width">Nova Vida</button>
       </form>
-    </section>
 
-    <section id="continuePanel" class="panel hidden">
-      <h3>Já tens uma vida guardada</h3>
-      <p>Podes continuar de onde ficaste.</p>
-      <button id="continueGameBtn" class="primary-btn">Continuar jogo</button>
-      <button id="deleteSaveBtn" class="danger-btn">Apagar gravação</button>
-    </section>
-  </main>
-
-  <!-- JOGO -->
-  <main id="gameScreen" class="screen hidden">
-
-    <section id="homeTab" class="tab-content">
-      <div class="panel profile-summary">
-        <div>
-          <p class="eyebrow">A tua personagem</p>
-          <h2 id="homePlayerName">—</h2>
-          <p id="homePlayerLocation">—</p>
-        </div>
-        <div class="age-circle">
-          <strong id="homeAge">0</strong>
-          <span>anos</span>
-        </div>
+      <div id="continuePanel" class="hidden" style="margin-top: 15px;">
+        <button id="continueGameBtn" class="secondary-btn full-width">Continuar Jogo</button>
+        <button id="deleteSaveBtn" class="danger-btn full-width" style="margin-top: 8px;">Apagar Jogo Guardado</button>
       </div>
+    </div>
+  </div>
 
-      <div class="stats-grid">
-        <div class="stat-card">
-          <span>❤️ Saúde</span>
-          <strong id="healthValue">100%</strong>
-          <div class="progress"><div id="healthBar"></div></div>
-        </div>
-        <div class="stat-card">
-          <span>😊 Felicidade</span>
-          <strong id="happinessValue">80%</strong>
-          <div class="progress"><div id="happinessBar"></div></div>
-        </div>
-        <div class="stat-card">
-          <span>🎓 Educação</span>
-          <strong id="educationValue">Sem escolaridade</strong>
-        </div>
-        <div class="stat-card">
-          <span>💼 Profissão</span>
-          <strong id="jobValue">Sem profissão</strong>
-        </div>
+  <!-- Ecrã Principal do Jogo -->
+  <div id="gameScreen" class="screen hidden">
+    <header class="game-header">
+      <div class="player-info-main">
+        <h2 id="homePlayerName">Nome</h2>
+        <p id="homePlayerLocation">Localização</p>
       </div>
-
-      <div class="panel">
-        <h3>O que acontece na tua vida?</h3>
-        <div id="lifeSummary" class="summary-text">
-          A tua história está prestes a começar.
-        </div>
-        <button id="advanceYearBtn" class="primary-btn full-width">
-          Avançar 1 ano
-        </button>
-        <p class="small-note">Cada avanço corresponde a um ano de vida.</p>
+      <div class="age-display">
+        <span>Idade: <strong id="homeAge">0</strong></span>
+        <button id="advanceYearBtn" class="primary-btn">+ 1 Ano</button>
       </div>
+    </header>
 
-      <div class="panel">
-        <div class="section-heading">
-          <h3>Últimos acontecimentos</h3>
-        </div>
-        <div id="recentEvents" class="event-list"></div>
-      </div>
-    </section>
-
-    <section id="patrimonyTab" class="tab-content hidden">
-      <div class="panel">
-        <p class="eyebrow">A tua situação financeira</p>
-        <h2>💰 Património</h2>
-        <div class="big-money" id="totalWealth">0 €</div>
-        <p class="muted">Património estimado</p>
-      </div>
-
-      <div class="stats-grid">
-        <div class="stat-card">
-          <span>Conta bancária</span>
-          <strong id="bankBalance">0 €</strong>
-        </div>
-        <div class="stat-card">
-          <span>Salário anual</span>
-          <strong id="annualSalary">0 €</strong>
-        </div>
-        <div class="stat-card">
-          <span>Despesas anuais</span>
-          <strong id="annualExpenses">0 €</strong>
-        </div>
-        <div class="stat-card">
-          <span>Dívidas</span>
-          <strong id="debtValue">0 €</strong>
-        </div>
-      </div>
-
-      <div class="panel">
-        <h3>Movimentos financeiros</h3>
-        <div id="financeHistory" class="event-list"></div>
-      </div>
-    </section>
-
-    <section id="careerTab" class="tab-content hidden">
-      <div class="panel">
-        <h2>💼 Carreira e educação</h2>
-        <p id="careerDescription">Ainda não começaste a tua vida profissional.</p>
-        <div class="info-row"><span>Profissão</span><strong id="careerJob">Nenhuma</strong></div>
-        <div class="info-row"><span>Salário anual</span><strong id="careerSalary">0 €</strong></div>
-        <div class="info-row"><span>Escolaridade</span><strong id="careerEducation">Nenhuma</strong></div>
-      </div>
-
-      <div class="panel">
-        <h3>Oportunidades de trabalho</h3>
-        <p class="muted">A partir dos 16 anos podes começar a procurar trabalho.</p>
-        <div id="jobOptions" class="button-list"></div>
-      </div>
-
-      <div class="panel">
-        <h3>Educação</h3>
-        <div id="educationOptions" class="button-list"></div>
-      </div>
-    </section>
-
-    <section id="businessTab" class="tab-content hidden">
-      <div class="panel">
-        <h2>🏢 Negócios</h2>
-        <p>Constrói o teu próprio negócio e cria novas fontes de rendimento.</p>
-        <div id="businessList" class="event-list"></div>
-        <button id="createBusinessBtn" class="primary-btn full-width">
-          + Criar negócio
-        </button>
-      </div>
-    </section>
-
-    <section id="peopleTab" class="tab-content hidden">
-      <div class="panel">
-        <h2>👨‍👩‍👧‍👦 Pessoas</h2>
-        <p class="muted">Conhece e acompanha as pessoas da tua vida.</p>
-        <div id="peopleList" class="people-list"></div>
-      </div>
-
-      <div class="panel">
-        <h3>Árvore genealógica</h3>
-        <div id="familyTree" class="family-tree"></div>
-      </div>
-    </section>
-
-    <section id="profileTab" class="tab-content hidden">
-      <div class="panel">
-        <h2>👤 Perfil</h2>
-        <div id="profileDetails"></div>
-      </div>
-    </section>
-
-    <section id="settingsTab" class="tab-content hidden">
-      <div class="panel">
-        <h2>⚙️ Definições</h2>
-        <p>Gere a tua gravação e personaliza a tua família.</p>
-        <button id="showFamilyEditorBtn" class="secondary-btn full-width">
-          Editar família
-        </button>
-        <button id="exportSaveBtn" class="secondary-btn full-width">
-          Exportar gravação
-        </button>
-        <label class="secondary-btn full-width import-label">
-          Importar gravação
-          <input id="importSaveInput" type="file" accept=".json,application/json">
-        </label>
-        <button id="newLifeBtn" class="danger-btn full-width">
-          Começar uma nova vida
-        </button>
-      </div>
-
-      <div id="familyEditor" class="panel hidden">
-        <div class="section-heading">
-          <h3>Editar família</h3>
-          <button id="closeFamilyEditorBtn" class="icon-btn">✕</button>
-        </div>
-
-        <div id="familyEditorList" class="people-list"></div>
-
-        <h3>Adicionar familiar</h3>
-        <form id="familyForm">
-          <div class="form-grid">
-            <label>
-              Nome
-              <input id="familyName" type="text" required maxlength="50">
-            </label>
-            <label>
-              Apelido
-              <input id="familySurname" type="text" maxlength="50">
-            </label>
-            <label>
-              Parentesco
-              <select id="familyRelation">
-                <option value="Mãe">Mãe</option>
-                <option value="Pai">Pai</option>
-                <option value="Irmão">Irmão</option>
-                <option value="Irmã">Irmã</option>
-                <option value="Meio-irmão">Meio-irmão</option>
-                <option value="Meia-irmã">Meia-irmã</option>
-                <option value="Padrasto">Padrasto</option>
-                <option value="Madrasta">Madrasta</option>
-                <option value="Avó">Avó</option>
-                <option value="Avô">Avô</option>
-                <option value="Filho">Filho</option>
-                <option value="Filha">Filha</option>
-                <option value="Cônjuge">Cônjuge</option>
-                <option value="Outro">Outro</option>
-              </select>
-            </label>
-            <label>
-              Idade
-              <input id="familyAge" type="number" min="0" max="110" required>
-            </label>
-            <label>
-              Sexo
-              <select id="familySex">
-                <option value="Feminino">Feminino</option>
-                <option value="Masculino">Masculino</option>
-                <option value="Outro">Outro</option>
-              </select>
-            </label>
-            <label>
-              Tipo de ligação
-              <select id="familyLinkType">
-                <option value="biological">Biológica</option>
-                <option value="adoptive">Adotiva</option>
-                <option value="social">Social / Enteado</option>
-              </select>
-            </label>
+    <main class="game-body">
+      <!-- Tab: Início -->
+      <section id="homeTab" class="tab-content">
+        <div class="panel">
+          <h3>Estatísticas</h3>
+          <div class="stat-bar">
+            <span>Saúde</span>
+            <div class="bar"><div id="healthBar" class="fill"></div></div>
+            <strong id="healthValue">100%</strong>
           </div>
-          <button type="submit" class="primary-btn full-width">Adicionar familiar</button>
-        </form>
-      </div>
+          <div class="stat-bar">
+            <span>Felicidade</span>
+            <div class="bar"><div id="happinessBar" class="fill"></div></div>
+            <strong id="happinessValue">80%</strong>
+          </div>
+          <div class="info-row"><span>Escolaridade</span><strong id="educationValue">Sem escolaridade</strong></div>
+          <div class="info-row"><span>Profissão</span><strong id="jobValue">Sem profissão</strong></div>
+        </div>
 
-      <div class="panel">
-        <h3>Sobre o StarLife</h3>
-        <p class="muted">Uma vida, milhares de possibilidades.</p>
-        <p class="small-note">Versão inicial em desenvolvimento.</p>
-      </div>
-    </section>
+        <div class="panel">
+          <h3>Acontecimentos Recentes</h3>
+          <div id="recentEvents" class="events-list"></div>
+        </div>
+      </section>
 
-  </main>
+      <!-- Tab: Património -->
+      <section id="patrimonyTab" class="tab-content hidden">
+        <div class="panel">
+          <h2>💰 Património</h2>
+          <div class="info-row"><span>Património Total</span><strong id="totalWealth">0 €</strong></div>
+          <div class="info-row"><span>Conta Bancária</span><strong id="bankBalance">0 €</strong></div>
+          <div class="info-row"><span>Salário Anual</span><strong id="annualSalary">0 €</strong></div>
+          <div class="info-row"><span>Despesas Anuais</span><strong id="annualExpenses">0 €</strong></div>
+          <div class="info-row"><span>Dívidas</span><strong id="debtValue">0 €</strong></div>
+        </div>
+      </section>
 
-  <!-- NAVEGAÇÃO -->
-  <nav id="bottomNav" class="bottom-nav hidden">
-    <button class="nav-btn active" data-tab="homeTab">🏠<span>Início</span></button>
-    <button class="nav-btn" data-tab="patrimonyTab">💰<span>Património</span></button>
-    <button class="nav-btn" data-tab="careerTab">💼<span>Carreira</span></button>
-    <button class="nav-btn" data-tab="businessTab">🏢<span>Negócios</span></button>
-    <button class="nav-btn" data-tab="peopleTab">👥<span>Pessoas</span></button>
-    <button class="nav-btn" data-tab="profileTab">👤<span>Perfil</span></button>
-    <button class="nav-btn" data-tab="settingsTab">⚙️<span>Definições</span></button>
-  </nav>
+      <!-- Tab: Carreira e Educação -->
+      <section id="careerTab" class="tab-content hidden">
+        <div class="panel">
+          <h2>💼 Carreira e Educação</h2>
+          <div class="info-row"><span>Profissão</span><strong id="careerJob">Nenhuma</strong></div>
+          <div class="info-row"><span>Salário anual</span><strong id="careerSalary">0 €</strong></div>
+          <div class="info-row"><span>Escolaridade</span><strong id="careerEducation">Sem escolaridade</strong></div>
+        </div>
+
+        <div class="panel">
+          <h3>💼 Oportunidades de Trabalho</h3>
+          <p class="muted">Procura emprego a partir dos 16 anos.</p>
+          <div id="jobOptions" class="button-list"></div>
+        </div>
+
+        <!-- Contentor dinâmico para a escola, estatísticas e universidade -->
+        <div id="schoolSectionContainer"></div>
+      </section>
+
+      <!-- Tab: Negócios -->
+      <section id="businessTab" class="tab-content hidden">
+        <div class="panel">
+          <h2>🏢 Negócios</h2>
+          <button id="createBusinessBtn" class="primary-btn full-width">Criar Novo Negócio</button>
+        </div>
+        <div id="businessList"></div>
+      </section>
+
+      <!-- Tab: Pessoas / Família -->
+      <section id="peopleTab" class="tab-content hidden">
+        <div class="panel">
+          <h2>👨‍👩‍👧 Família</h2>
+          <div id="peopleList" class="people-list"></div>
+        </div>
+        <div class="panel">
+          <h3>Árvore Genealógica</h3>
+          <div id="familyTree"></div>
+        </div>
+      </section>
+
+      <!-- Tab: Perfil -->
+      <section id="profileTab" class="tab-content hidden">
+        <div class="panel">
+          <h2>👤 Perfil</h2>
+          <div id="profileDetails"></div>
+        </div>
+        <div class="panel">
+          <h3>Família (Editor)</h3>
+          <div id="familyEditorList"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Navegação Inferior -->
+    <nav id="bottomNav" class="bottom-nav">
+      <button class="nav-btn active" data-tab="homeTab">🏠<span>Início</span></button>
+      <button class="nav-btn" data-tab="patrimonyTab">💰<span>Património</span></button>
+      <button class="nav-btn" data-tab="careerTab">💼<span>Carreira</span></button>
+      <button class="nav-btn" data-tab="businessTab">🏢<span>Negócios</span></button>
+      <button class="nav-btn" data-tab="peopleTab">👨‍👩‍👧<span>Pessoas</span></button>
+      <button class="nav-btn" data-tab="profileTab">👤<span>Perfil</span></button>
+    </nav>
+  </div>
 
   <div id="toast" class="toast"></div>
 

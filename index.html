@@ -52,12 +52,27 @@
               <option value="Mãe">Mãe</option>
               <option value="Pai">Pai</option>
               <option value="Irmão/ã">Irmão/ã</option>
+              <option value="Avó">Avó</option>
+              <option value="Avô">Avô</option>
               <option value="Outro">Outro</option>
             </select>
           </div>
           <div class="input-group">
             <label>Idade</label>
             <input type="number" id="famAge" value="30" min="0" max="120">
+          </div>
+          <div class="input-group">
+            <label>Estado Civil</label>
+            <select id="famMaritalStatus">
+              <option value="Solteiro/a">Solteiro/a</option>
+              <option value="Casado/a">Casado/a</option>
+            </select>
+          </div>
+          <div class="input-group hidden" id="famSpouseGroup">
+            <label>Casado/a com</label>
+            <select id="famSpouseSelect">
+              <option value="">-- Selecionar Familiar --</option>
+            </select>
           </div>
           <button type="button" id="addFamilyMemberBtn" class="secondary-btn full-width">+ Adicionar à Lista</button>
           

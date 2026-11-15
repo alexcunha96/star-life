@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - SCRIPT PROFISSIONAL OTIMIZADO
+   STARLIFE - SCRIPT PROFISSIONAL CORRIGIDO
 ========================================= */
 
 const SAVE_KEY = "starlife_v2_stable";
@@ -248,15 +248,129 @@ function executeHealthAction(type) {
 }
 
 /* =========================================
-   ESCOLA E EDUCAÇÃO
+   ESCOLA E UNIVERSIDADE (RESTAURADO)
 ========================================= */
+
+const educationStages = [
+  { name: "Creche", start: 0, end: 2, level: 0 },
+  { name: "Jardim de infância", start: 3, end: 5, level: 0 },
+  { name: "1.º Ciclo do Ensino Básico", start: 6, end: 9, level: 1 },
+  { name: "2.º Ciclo do Ensino Básico", start: 10, end: 11, level: 1 },
+  { name: "3.º Ciclo do Ensino Básico", start: 12, end: 14, level: 1 },
+  { name: "Ensino Secundário", start: 15, end: 17, level: 2 }
+];
+
+const universityCourses = [
+  { name: "Medicina", cost: 3500, duration: 6, salary: 42000 },
+  { name: "Direito", cost: 2500, duration: 4, salary: 35000 },
+  { name: "Engenharia", cost: 2800, duration: 5, salary: 32000 },
+  { name: "Gestão", cost: 2300, duration: 3, salary: 30000 }
+];
+
+function getCurrentEducationStage(age) {
+  return educationStages.find(stage => age >= stage.start && age <= stage.end) || null;
+}
+
+function initializeEducation(player) {
+  player.intelligence ??= randomNumber(35, 85);
+  player.schoolGrade ??= 12;
+  player.schoolStatus ??= "A frequentar";
+  player.education ??= "Sem escolaridade";
+  player.educationLevel ??= 0;
+  player.universityCourse ??= null;
+  player.universityProgress ??= 0;
+}
 
 function processSchoolYear() {
   const player = game.player;
-  if (player.age > 17) return;
+  const stage = getCurrentEducationStage(player.age);
+  if (!stage || player.age > 17) return;
   player.schoolGrade = clamp(Math.round(12 + randomNumber(-2, 3)), 5, 20);
   if (player.age === 14) { player.education = "Ensino básico"; player.educationLevel = 1; }
   if (player.age === 17) { player.education = "Ensino secundário"; player.educationLevel = 2; }
+}
+
+function studyHarder() {
+  const player = game.player;
+  player.intelligence = clamp(player.intelligence + 2);
+  player.schoolGrade = clamp(player.schoolGrade + 1, 0, 20);
+  addEvent("Estudaste com afinco. 📖");
+  saveGame();
+  renderGame();
+}
+
+function enrollUniversity(index, fundingType) {
+  const player = game.player;
+  const course = universityCourses[index];
+  if (player.universityCourse) { showToast("Já estás na universidade."); return; }
+  player.universityCourse = course.name;
+  player.universityProgress = 0;
+  player.universityFunding = fundingType;
+  addEvent(`Entraste na Universidade para estudar ${course.name}! 🎓`);
+  saveGame();
+  renderGame();
+}
+
+function processFurtherEducation() {
+  const player = game.player;
+  if (player.universityCourse) {
+    player.universityProgress++;
+    const course = universityCourses.find(c => c.name === player.universityCourse);
+    if (player.universityProgress >= (course?.duration || 4)) {
+      player.education = `Licenciatura em ${player.universityCourse}`;
+      player.educationLevel = 3;
+      player.salary = course?.salary || 30000;
+      player.universityCourse = null;
+      addEvent(`🎓 Licenciatura concluída em ${course?.name}!`);
+    }
+  }
+}
+
+function renderSchoolAndUniversitySubmenu() {
+  const player = game.player;
+  const container = $("schoolSectionContainer");
+  if (!container) return;
+  const stage = getCurrentEducationStage(player.age);
+
+  let html = `
+    <div class="panel" style="margin-top: 16px;">
+      <h3>📚 Estatísticas Escolares</h3>
+      <div class="info-row"><span>Etapa atual</span><strong>${escapeHTML(stage?.name || player.education)}</strong></div>
+      <div class="info-row"><span>Média</span><strong>${player.schoolGrade}/20</strong></div>
+      <div class="info-row"><span>Inteligência</span><strong>${player.intelligence}%</strong></div>
+    </div>
+  `;
+
+  if (player.age >= 6 && player.age <= 18) {
+    html += `
+      <div class="panel">
+        <h3>Atividades de Estudante</h3>
+        <button class="primary-btn full-width" id="studyBtn">📖 Estudar Mais</button>
+      </div>
+    `;
+  }
+
+  if (player.age >= 18 && player.educationLevel >= 2) {
+    html += `
+      <div class="panel">
+        <h3>🏛️ Ensino Superior (Universidade)</h3>
+        ${player.universityCourse ? `<p>Curso atual: <strong>${player.universityCourse}</strong> (${player.universityProgress} anos concl.)</p>` : `<p class="muted">Escolhe um curso superior:</p>`}
+        ${universityCourses.map((c, idx) => `
+          <div style="margin-top: 8px; padding: 8px; background: var(--panel-light); border-radius: 8px;">
+            <strong>${escapeHTML(c.name)}</strong> (${money(c.cost)}/ano)
+            ${!player.universityCourse ? `<button class="small-btn full-width" style="margin-top:6px;" data-uni-idx="${idx}">Inscrever-se</button>` : ""}
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+
+  if ($("studyBtn")) $("studyBtn").onclick = studyHarder;
+  container.querySelectorAll("[data-uni-idx]").forEach(b => {
+    b.onclick = () => enrollUniversity(Number(b.dataset.uniIdx), "savings");
+  });
 }
 
 /* =========================================
@@ -350,6 +464,7 @@ function advanceYear() {
   game.year += 1;
 
   processSchoolYear();
+  processFurtherEducation();
   checkRandomIllness();
 
   if (player.illness) {
@@ -392,6 +507,8 @@ function startGame() {
     player, family: [], socialPeople: [], events: [], financeHistory: [], businesses: [], vehicles: [],
     year: new Date().getFullYear(), started: true
   };
+
+  initializeEducation(player);
 
   if (initialFamily.length === 0) {
     const mother = createFamilyMember({ name: generateName("Feminino"), surname, relation: "Mãe", age: 30, sex: "Feminino" });
@@ -470,6 +587,8 @@ function renderCareer() {
       jobContainer.innerHTML = `<p class="muted">Procura emprego a partir dos 16 anos.</p>`;
     }
   }
+
+  renderSchoolAndUniversitySubmenu();
 }
 
 function applyJob(name, salary) {

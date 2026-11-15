@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - SISTEMA PRINCIPAL
+   STARLIFE - SISTEMA PRINCIPAL (PASSO 1: CARTA E VEÍCULOS)
 ========================================= */
 
 const SAVE_KEY = "starlife_save_v1";
@@ -79,6 +79,10 @@ function loadGame() {
     if (!loaded || !loaded.player || !Array.isArray(loaded.family)) {
       return null;
     }
+
+    // Garantir compatibilidade com saves anteriores
+    loaded.player.hasDrivingLicense ??= false;
+    loaded.vehicles ??= [];
 
     return loaded;
   } catch (error) {
@@ -261,6 +265,184 @@ function getRelationLabel(person) {
 }
 
 /* =========================================
+   CARTA DE CONDUÇÃO E VEÍCULOS
+========================================= */
+
+const DRIVING_LICENSE_COST = 650;
+
+const availableVehicles = [
+  { name: "Citadino Usado (2006)", price: 2500, annualCost: 450, happinessBonus: 3 },
+  { name: "Utilitário Compacto (2015)", price: 8500, annualCost: 650, happinessBonus: 6 },
+  { name: "Carrinha Familiar (2019)", price: 18000, annualCost: 950, happinessBonus: 10 },
+  { name: "SUV Executivo (2023)", price: 36000, annualCost: 1600, happinessBonus: 16 },
+  { name: "Desportivo de Luxo", price: 85000, annualCost: 3400, happinessBonus: 25 }
+];
+
+function takeDrivingLicense() {
+  const player = game.player;
+
+  if (player.age < 18) {
+    showToast("Precisas de ter pelo menos 18 anos.");
+    return;
+  }
+
+  if (player.hasDrivingLicense) {
+    showToast("Já tens carta de condução!");
+    return;
+  }
+
+  if (player.bank < DRIVING_LICENSE_COST) {
+    showToast(`Precisas de ${money(DRIVING_LICENSE_COST)} na conta bancária.`);
+    return;
+  }
+
+  player.bank -= DRIVING_LICENSE_COST;
+  addFinanceEvent(`Pagaste ${money(DRIVING_LICENSE_COST)} pela inscrição e exames da carta de condução.`);
+
+  // Probabilidade baseada na inteligência (mínimo 55%, máximo 95%)
+  const passChance = clamp(45 + (player.intelligence * 0.5), 55, 95);
+
+  if (Math.random() * 100 <= passChance) {
+    player.hasDrivingLicense = true;
+    player.happiness = clamp(player.happiness + 10);
+    addEvent("🚗 Parabéns! Passaste no exame e tiraste a Carta de Condução!", "positive");
+    showToast("Carta de condução obtida!");
+  } else {
+    player.happiness = clamp(player.happiness - 5);
+    addEvent("Reprovaste no exame prático de condução. Podes tentar novamente.", "negative");
+    showToast("Reprovaste no exame de condução.");
+  }
+
+  saveGame();
+  renderGame();
+}
+
+function buyVehicle(index) {
+  const player = game.player;
+  const car = availableVehicles[index];
+
+  if (!player.hasDrivingLicense) {
+    showToast("Precisas de tirar a carta de condução primeiro.");
+    return;
+  }
+
+  if (player.bank < car.price) {
+    showToast("Não tens saldo suficiente para comprar este veículo.");
+    return;
+  }
+
+  player.bank -= car.price;
+  player.happiness = clamp(player.happiness + car.happinessBonus);
+
+  game.vehicles.push({
+    id: createId(),
+    name: car.name,
+    value: car.price,
+    annualCost: car.annualCost,
+    ageYears: 0
+  });
+
+  addFinanceEvent(`Compraste um ${car.name} por ${money(car.price)}.`);
+  addEvent(`🚘 Compraste um ${car.name}!`, "positive");
+  showToast(`Compraste ${car.name}!`);
+
+  saveGame();
+  renderGame();
+}
+
+function sellVehicle(id) {
+  const idx = game.vehicles.findIndex(v => v.id === id);
+  if (idx === -1) return;
+
+  const car = game.vehicles[idx];
+  game.player.bank += car.value;
+  game.vehicles.splice(idx, 1);
+
+  addFinanceEvent(`Vendeste o teu ${car.name} por ${money(car.value)}.`);
+  addEvent(`Vendeste o teu ${car.name} por ${money(car.value)}.`, "neutral");
+  showToast("Veículo vendido!");
+
+  saveGame();
+  renderGame();
+}
+
+function processVehiclesYear() {
+  if (!game || !game.vehicles.length) return;
+
+  game.vehicles.forEach(car => {
+    car.ageYears += 1;
+    // Desvalorização anual de 8% (mínimo 250 €)
+    car.value = Math.max(250, Math.round(car.value * 0.92));
+  });
+}
+
+function renderVehiclesSection() {
+  const container = $("vehiclesSectionContainer");
+  if (!container) return;
+
+  const player = game.player;
+
+  let html = `
+    <div class="panel">
+      <h3>🚗 Carta de Condução e Veículos</h3>
+      <div class="info-row">
+        <span>Carta de Condução</span>
+        <strong>${player.hasDrivingLicense ? "✅ Obtida" : "❌ Não tem"}</strong>
+      </div>
+  `;
+
+  if (!player.hasDrivingLicense) {
+    html += `
+      <p class="muted" style="margin-top: 8px;">A partir dos 18 anos podes tirar a carta de condução (${money(DRIVING_LICENSE_COST)}).</p>
+      <button id="takeLicenseBtn" class="primary-btn full-width" style="margin-top: 8px;" ${player.age < 18 ? "disabled" : ""}>
+        Tirar Carta de Condução (${money(DRIVING_LICENSE_COST)})
+      </button>
+    `;
+  } else {
+    html += `
+      <h4 style="margin-top: 14px; margin-bottom: 6px;">A Tua Garagem</h4>
+      ${game.vehicles.length === 0 ? `<p class="muted">Ainda não tens nenhum veículo.</p>` : `
+        <div class="people-list">
+          ${game.vehicles.map(v => `
+            <div class="person-card">
+              <div class="person-info">
+                <strong>${escapeHTML(v.name)}</strong>
+                <small>Valor atual: ${money(v.value)} · Seguro/Manut.: ${money(v.annualCost)}/ano</small>
+              </div>
+              <button class="small-btn" data-sell-car="${v.id}">Vender</button>
+            </div>
+          `).join("")}
+        </div>
+      `}
+
+      <h4 style="margin-top: 16px; margin-bottom: 6px;">Stand Automóvel</h4>
+      <div class="button-list">
+        ${availableVehicles.map((car, idx) => `
+          <button class="secondary-btn" data-buy-car="${idx}" ${player.bank < car.price ? "disabled" : ""}>
+            ${escapeHTML(car.name)} · ${money(car.price)} (Manut. ${money(car.annualCost)}/ano)
+          </button>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+
+  if ($("takeLicenseBtn")) {
+    $("takeLicenseBtn").onclick = takeDrivingLicense;
+  }
+
+  container.querySelectorAll("[data-buy-car]").forEach(btn => {
+    btn.onclick = () => buyVehicle(Number(btn.dataset.buyCar));
+  });
+
+  container.querySelectorAll("[data-sell-car]").forEach(btn => {
+    btn.onclick = () => sellVehicle(btn.dataset.sellCar);
+  });
+}
+
+/* =========================================
    EVENTOS ALEATÓRIOS POR IDADE E BENS
 ========================================= */
 
@@ -366,6 +548,26 @@ const lifeEventsPool = [
     options: [
       { text: "Apagar (É burla)", effect: () => { game.player.intelligence = clamp(game.player.intelligence + 1); addEvent("Identificaste facilmente a tentativa de burla.", "positive"); } },
       { text: "Transferir 300 €", effect: () => { const loss = Math.min(game.player.bank, 300); game.player.bank -= loss; game.player.happiness = clamp(game.player.happiness - 12); addFinanceEvent(`Perdeste ${money(loss)} numa burla online.`); addEvent("Caíste numa burla e perdeste dinheiro!", "negative"); } }
+    ]
+  },
+
+  // --- CONDICIONADOS A VEÍCULOS (CARROS) ---
+  {
+    minAge: 18, maxAge: 90,
+    condition: () => game.vehicles.length > 0,
+    text: "Alguém raspou no para-choques do teu carro num parque de estacionamento e fugiu sem deixar contacto.",
+    options: [
+      { text: "Acionar seguro / polícia", effect: () => { game.player.bank += 250; addFinanceEvent("Recebeste 250 € de indemnização do seguro automóvel."); addEvent("O seguro cobriu a reparação do carro!", "positive"); } },
+      { text: "Deixar andar", effect: () => { game.player.happiness = clamp(game.player.happiness - 3); addEvent("Ficaste aborrecido com o risco no carro.", "negative"); } }
+    ]
+  },
+  {
+    minAge: 18, maxAge: 90,
+    condition: () => game.vehicles.length > 0,
+    text: "Foste mandado parar numa operação stop de rotina da polícia enquanto conduzia.",
+    options: [
+      { text: "Mostrar documentos com calma", effect: () => { addEvent("Tinhas tudo em ordem e seguiste viagem sem problemas.", "positive"); } },
+      { text: "Tentar acelerar para evitar", effect: () => { const fine = 500; game.player.bank -= fine; addFinanceEvent(`Pagaste ${money(fine)} de multa por fuga à polícia.`); addEvent("Foste intercetado e levaste uma multa pesada de 500 €!", "negative"); } }
     ]
   },
 
@@ -1002,6 +1204,7 @@ function startGame() {
     bank: 1000,
     debt: 0,
     expenses: 0,
+    hasDrivingLicense: false,
     biologicalParentIds: [],
     partnerId: null,
     relationshipStatus: "Solteiro/a"
@@ -1014,6 +1217,7 @@ function startGame() {
     events: [],
     financeHistory: [],
     businesses: [],
+    vehicles: [],
     year: new Date().getFullYear(),
     started: true
   };
@@ -1071,20 +1275,24 @@ function advanceYear() {
   processSocialLife();
   processSchoolYear();
   processFurtherEducation();
+  processVehiclesYear();
 
   let grossIncome = player.salary || 0;
   game.businesses.forEach(b => grossIncome += b.yearlyProfit || 0);
+
+  const vehicleCosts = game.vehicles.reduce((acc, v) => acc + (v.annualCost || 0), 0);
 
   if (player.age >= 18) {
     const taxes = calculateTaxes(grossIncome);
     const netIncome = grossIncome - taxes;
     const livingCosts = 4800 + (player.age * 95); 
-    player.expenses = livingCosts + taxes;
+    player.expenses = livingCosts + taxes + vehicleCosts;
 
-    const netBalance = netIncome - livingCosts;
+    const netBalance = netIncome - livingCosts - vehicleCosts;
     player.bank += netBalance;
 
     if (taxes > 0) addFinanceEvent(`Pagaste ${money(taxes)} em impostos.`);
+    if (vehicleCosts > 0) addFinanceEvent(`Pagaste ${money(vehicleCosts)} em seguros e manutenção de veículos.`);
     addFinanceEvent(`Recebeste ${money(netIncome)} líquidos e gastaste ${money(livingCosts)} em subsistência.`);
 
     if (player.bank < 0) {
@@ -1093,6 +1301,9 @@ function advanceYear() {
       player.bank = 0;
       addEvent("Estás com o saldo negativo! Dívida acumulada com juros.", "negative");
     }
+  } else if (vehicleCosts > 0) {
+    player.bank -= vehicleCosts;
+    player.expenses = vehicleCosts;
   }
 
   triggerRandomEvent();
@@ -1218,12 +1429,17 @@ function renderHome() {
 
 function renderPatrimony() {
   const player = game.player;
-  const totalW = player.bank + game.businesses.reduce((acc, b) => acc + b.investment, 0) - player.debt - player.studyDebt;
+  const businessValue = game.businesses.reduce((acc, b) => acc + b.investment, 0);
+  const vehiclesValue = game.vehicles.reduce((acc, v) => acc + v.value, 0);
+  const totalW = player.bank + businessValue + vehiclesValue - player.debt - player.studyDebt;
+
   $("totalWealth").textContent = money(totalW);
   $("bankBalance").textContent = money(player.bank);
   $("annualSalary").textContent = money(player.salary);
   $("annualExpenses").textContent = money(player.expenses);
   $("debtValue").textContent = money(player.debt + player.studyDebt);
+
+  renderVehiclesSection();
 }
 
 function renderCareer() {
@@ -1329,6 +1545,7 @@ function renderProfile() {
   $("profileDetails").innerHTML = `
     <div class="info-row"><span>Nome</span><strong>${getPersonFullName(game.player)}</strong></div>
     <div class="info-row"><span>Idade</span><strong>${game.player.age} anos</strong></div>
+    <div class="info-row"><span>Carta de Condução</span><strong>${game.player.hasDrivingLicense ? "Sim" : "Não"}</strong></div>
   `;
 }
 

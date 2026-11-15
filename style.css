@@ -288,6 +288,7 @@ button {
 }
 
 .person-info small {
+  display: block;
   color: var(--text-muted);
   font-size: 0.8rem;
 }

@@ -59,7 +59,7 @@ body {
   border: 1px solid var(--border-color);
 }
 
-h1, h2, h3 {
+h1, h2, h3, h4 {
   margin-bottom: 10px;
   color: var(--text-main);
 }
@@ -100,12 +100,17 @@ button {
   transition: background 0.2s;
 }
 
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .primary-btn {
   background-color: var(--accent-color);
   color: white;
 }
 
-.primary-btn:hover {
+.primary-btn:hover:not(:disabled) {
   background-color: var(--accent-hover);
 }
 
@@ -114,7 +119,7 @@ button {
   color: var(--text-main);
 }
 
-.secondary-btn:hover {
+.secondary-btn:hover:not(:disabled) {
   background-color: #475569;
 }
 
@@ -123,7 +128,7 @@ button {
   color: white;
 }
 
-.danger-btn:hover {
+.danger-btn:hover:not(:disabled) {
   background-color: var(--danger-hover);
 }
 
@@ -134,7 +139,7 @@ button {
   color: var(--text-main);
 }
 
-.small-btn:hover {
+.small-btn:hover:not(:disabled) {
   background-color: #475569;
 }
 

@@ -68,12 +68,6 @@
               <option value="Casado/a">Casado/a</option>
             </select>
           </div>
-          <div class="input-group hidden" id="famSpouseGroup">
-            <label>Casado/a com</label>
-            <select id="famSpouseSelect">
-              <option value="">-- Selecionar Familiar --</option>
-            </select>
-          </div>
           <button type="button" id="addFamilyMemberBtn" class="secondary-btn full-width">+ Adicionar à Lista</button>
           
           <div id="setupFamilyList" style="margin-top: 10px;" class="people-list"></div>
@@ -139,7 +133,6 @@
           <div class="info-row"><span>Dívidas</span><strong id="debtValue">0 €</strong></div>
         </div>
 
-        <!-- Secção de Carta de Condução e Veículos -->
         <div id="vehiclesSectionContainer"></div>
       </section>
 
@@ -188,12 +181,10 @@
           <h2>🏥 Centro Médico & Saúde</h2>
           <p class="muted">Cuida da tua saúde e previne doenças graves.</p>
           <div class="button-list" style="margin-top: 12px;">
-            <button class="secondary-btn full-width" onclick="openHealthMenu('familyDoctor')">👨‍⚕️ Médico de Família (Check-up)</button>
-            <button class="secondary-btn full-width" onclick="openHealthMenu('urgency')">🚑 Urgências Hospitalares</button>
-            <button class="secondary-btn full-width" onclick="openHealthMenu('cardiology')">❤️ Cardiologia</button>
-            <button class="secondary-btn full-width" onclick="openHealthMenu('oncology')">🎗️ Oncologia (Rastreio de Cancro)</button>
-            <button class="secondary-btn full-width" onclick="openHealthMenu('psychiatry')">🧠 Psiquiatria & Bem-estar</button>
-            <button class="secondary-btn full-width" onclick="openHealthMenu('orthopedics')">🦴 Ortopedia & Fisioterapia</button>
+            <button class="secondary-btn full-width" data-health="familyDoctor">👨‍⚕️ Médico de Família (Check-up)</button>
+            <button class="secondary-btn full-width" data-health="urgency">🚑 Urgências Hospitalares</button>
+            <button class="secondary-btn full-width" data-health="oncology">🎗️ Oncologia (Rastreio de Cancro)</button>
+            <button class="secondary-btn full-width" data-health="specialist">🏥 Especialidades Gerais</button>
           </div>
         </div>
         <div id="healthActionContainer"></div>

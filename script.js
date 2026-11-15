@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - SISTEMA PRINCIPAL (COM FAMÍLIA MANUAL)
+   STARLIFE - SISTEMA PRINCIPAL
 ========================================= */
 
 const SAVE_KEY = "starlife_save_v1";
@@ -199,7 +199,7 @@ function generateName(sex) {
 
 function createFamilyMember(data) {
   return {
-    id: "person_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
+    id: data.id || createId(),
     name: data.name || "Sem nome",
     surname: data.surname || "",
     relation: data.relation || "Outro",
@@ -212,8 +212,8 @@ function createFamilyMember(data) {
     adoptiveParentIds: [],
     socialParentIds: [],
     relationship: 70,
-    partnerId: null,
-    relationshipStatus: "Solteiro/a",
+    partnerId: data.partnerId || null,
+    relationshipStatus: data.relationshipStatus || "Solteiro/a",
     marriageAge: null,
     childrenCount: 0
   };
@@ -221,7 +221,7 @@ function createFamilyMember(data) {
 
 function createSocialPerson(data = {}) {
   return {
-    id: "person_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
+    id: createId(),
     name: data.name || generateName(data.sex),
     surname: data.surname || randomFrom(surnames),
     sex: data.sex || randomFrom(["Masculino", "Feminino"]),
@@ -261,36 +261,160 @@ function getRelationLabel(person) {
 }
 
 /* =========================================
-   EVENTOS E ESCOLARES
+   EVENTOS ALEATÓRIOS POR IDADE E BENS
 ========================================= */
 
-const schoolEventsPool = [
+const lifeEventsPool = [
+  // --- INFÂNCIA (1 a 5 anos) ---
+  {
+    minAge: 1, maxAge: 3,
+    text: "Encontraste uma caixa cheia de lápis de cera na sala e a parede branca parece muito convidativa.",
+    options: [
+      { text: "Desenhar um mural", effect: () => { game.player.happiness = clamp(game.player.happiness + 8); addEvent("Fizeste uma obra de arte na parede. Os teus pais não acharam piada!", "neutral"); } },
+      { text: "Brincar com os blocos", effect: () => { game.player.intelligence = clamp(game.player.intelligence + 2); addEvent("Construíste uma torre gigante com blocos.", "positive"); } }
+    ]
+  },
+  {
+    minAge: 2, maxAge: 5,
+    text: "Um cão vadio muito amigável aproximou-se de ti no parque infantil.",
+    options: [
+      { text: "Fazer festas", effect: () => { game.player.happiness = clamp(game.player.happiness + 10); addEvent("Fizeste um amigo peludo no parque!", "positive"); } },
+      { text: "Afastar-te", effect: () => { addEvent("Mantiveste distância por precaução.", "neutral"); } }
+    ]
+  },
+  {
+    minAge: 3, maxAge: 5,
+    text: "No jardim de infância, outra criança tirou-te o teu brinquedo favorito das mãos.",
+    options: [
+      { text: "Partilhar o brinquedo", effect: () => { game.player.happiness = clamp(game.player.happiness + 5); addEvent("Partilhaste o brinquedo e fizeram amizade!", "positive"); } },
+      { text: "Puxar de volta e chorar", effect: () => { game.player.happiness = clamp(game.player.happiness - 5); addEvent("Fizeste uma birra no jardim de infância.", "negative"); } }
+    ]
+  },
+
+  // --- ESCOLA BÁSICA E SECUNDÁRIO (6 a 17 anos) ---
+  {
+    minAge: 6, maxAge: 12,
+    text: "A turma vai fazer uma visita de estudo ao Museu de Ciência.",
+    options: [
+      { text: "Prestar muita atenção", effect: () => { game.player.intelligence = clamp(game.player.intelligence + 3); game.player.schoolPerformance = clamp(game.player.schoolPerformance + 4); addEvent("Aprendeste imenso na visita de estudo!", "positive"); } },
+      { text: "Conversar com os amigos", effect: () => { game.player.happiness = clamp(game.player.happiness + 6); addEvent("Divertiste-te muito no autocarro com os amigos.", "positive"); } }
+    ]
+  },
+  {
+    minAge: 8, maxAge: 15,
+    text: "Encontraste uma nota de 20 € caída no chão do corredor da escola.",
+    options: [
+      { text: "Entregar na secretaria", effect: () => { game.player.behavior = clamp(game.player.behavior + 10); addEvent("A direção elogiou a tua honestidade!", "positive"); } },
+      { text: "Guardar no bolso", effect: () => { game.player.bank += 20; addFinanceEvent("Encontraste 20 € na escola."); addEvent("Ficaste com os 20 € para ti.", "neutral"); } }
+    ]
+  },
   {
     minAge: 10, maxAge: 17,
-    text: "Um colega mais velho na escola está a ameaçar-te e a pedir dinheiro no recreio.",
+    text: "Um colega mais velho está a intimidar um aluno mais novo no recreio.",
     options: [
-      { text: "Contar a um professor", effect: () => { game.player.happiness = clamp(game.player.happiness - 2); addEvent("Contaste à direção. O valentão foi repreendido.", "neutral"); } },
-      { text: "Enfrentá-lo", effect: () => { if (Math.random() > 0.5) { game.player.happiness = clamp(game.player.happiness + 5); addEvent("Ganhaste a luta e respeito na escola!", "positive"); } else { game.player.health = clamp(game.player.health - 10); addEvent("Levaste uma coça valente...", "negative"); } } },
-      { text: "Ignorar e fugir", effect: () => { game.player.happiness = clamp(game.player.happiness - 5); addEvent("Evitas certas zonas da escola com medo.", "negative"); } }
+      { text: "Defender o mais novo", effect: () => { if (Math.random() > 0.4) { game.player.happiness = clamp(game.player.happiness + 8); addEvent("Enfrentaste o valentão e ganhaste o respeito da escola!", "positive"); } else { game.player.health = clamp(game.player.health - 10); addEvent("Levaste um empurrão feio ao tentar ajudar.", "negative"); } } },
+      { text: "Chamar um contínuo", effect: () => { game.player.behavior = clamp(game.player.behavior + 5); addEvent("Chamaste um adulto que resolveu a situação.", "positive"); } },
+      { text: "Ignorar e seguir", effect: () => { game.player.happiness = clamp(game.player.happiness - 3); addEvent("Preferiste não te meter em problemas.", "neutral"); } }
     ]
   },
   {
     minAge: 12, maxAge: 17,
-    text: "Vais ter um teste muito difícil de Matemática e não estudaste nada.",
+    text: "Vais ter um teste surpresa de Matemática e não estudaste.",
     options: [
-      { text: "Tentar colar", effect: () => { if (Math.random() > 0.4) { game.player.schoolGrade = clamp(game.player.schoolGrade + 3, 0, 20); addEvent("Colaste com sucesso!", "positive"); } else { game.player.behavior = clamp(game.player.behavior - 15); addEvent("O professor apanhou-te a colar!", "negative"); } } },
-      { text: "Aceitar a negativa", effect: () => { game.player.schoolPerformance = clamp(game.player.schoolPerformance - 5); addEvent("Tiviste uma nota fraca no teste.", "negative"); } }
+      { text: "Tentar copiar pelo colega", effect: () => { if (Math.random() > 0.45) { game.player.schoolGrade = clamp(game.player.schoolGrade + 2, 0, 20); addEvent("Conseguiste safar-te no teste!", "positive"); } else { game.player.behavior = clamp(game.player.behavior - 15); game.player.schoolGrade = clamp(game.player.schoolGrade - 2, 0, 20); addEvent("O professor apanhou-te a copiar e anulou o teste!", "negative"); } } },
+      { text: "Fazer o melhor que sabes", effect: () => { game.player.schoolPerformance = clamp(game.player.schoolPerformance - 2); addEvent("Fizeste o teste com honestidade.", "neutral"); } }
     ]
-  }
-];
-
-const generalEventsPool = [
+  },
   {
-    minAge: 18, maxAge: 80,
-    text: "Alguém bateu no teu carro num parque e fugiu.",
+    minAge: 14, maxAge: 17,
+    text: "Os teus amigos convidaram-te para faltar às aulas da tarde para ir ao centro comercial.",
     options: [
-      { text: "Queixa na polícia", effect: () => { game.player.bank += 300; addFinanceEvent("Recebeste indemnização do seguro."); addEvent("O seguro cobriu os danos.", "positive"); } },
-      { text: "Ignorar", effect: () => { game.player.happiness = clamp(game.player.happiness - 2); addEvent("Ignoraste o risco no carro."); } }
+      { text: "Ir com eles", effect: () => { game.player.absences += 2; game.player.behavior = clamp(game.player.behavior - 8); game.player.happiness = clamp(game.player.happiness + 7); addEvent("Faltaste às aulas e foste passear com os amigos.", "neutral"); } },
+      { text: "Ficar nas aulas", effect: () => { game.player.schoolPerformance = clamp(game.player.schoolPerformance + 3); addEvent("Foste responsável e assististe às aulas todas.", "positive"); } }
+    ]
+  },
+
+  // --- JUVENTUDE E VIDA ADULTA (18 a 65 anos) ---
+  {
+    minAge: 18, maxAge: 35,
+    text: "Um amigo propôs-te fazer uma viagem de mochila às costas pela Europa durante umas semanas.",
+    condition: () => game.player.bank >= 800,
+    options: [
+      { text: "Aceitar (Custa 800 €)", effect: () => { game.player.bank -= 800; game.player.happiness = clamp(game.player.happiness + 18); addFinanceEvent("Gastaste 800 € numa viagem pela Europa."); addEvent("Fizeste uma viagem inesquecível pela Europa!", "positive"); } },
+      { text: "Poupar o dinheiro", effect: () => { addEvent("Decidiste guardar as tuas poupanças.", "neutral"); } }
+    ]
+  },
+  {
+    minAge: 18, maxAge: 65,
+    text: "Encontraste uma carteira perdida no passeio com documentos e algum dinheiro.",
+    options: [
+      { text: "Devolver ao dono", effect: () => { game.player.happiness = clamp(game.player.happiness + 10); game.player.bank += 50; addFinanceEvent("Recebeste 50 € de gratificação por devolveres uma carteira."); addEvent("O dono ficou imensamente grato e deu-te 50 €!", "positive"); } },
+      { text: "Ficar com o dinheiro", effect: () => { game.player.bank += 120; game.player.happiness = clamp(game.player.happiness - 4); addFinanceEvent("Ficaste com 120 € de uma carteira perdida."); addEvent("Ficaste com o dinheiro da carteira.", "negative"); } }
+    ]
+  },
+  {
+    minAge: 20, maxAge: 65,
+    text: "Sentiste uma dor forte nas costas depois de levantar uma caixa pesada em casa.",
+    options: [
+      { text: "Ir ao médico / fisioterapia (150 €)", effect: () => { if (game.player.bank >= 150) { game.player.bank -= 150; game.player.health = clamp(game.player.health + 5); addFinanceEvent("Gastaste 150 € em fisioterapia."); addEvent("Trataste das costas a tempo.", "positive"); } else { game.player.health = clamp(game.player.health - 8); addEvent("Sem dinheiro para o médico, tiveste de aguentar as dores.", "negative"); } } },
+      { text: "Descansar em casa", effect: () => { game.player.health = clamp(game.player.health - 5); addEvent("Ficaste com dores nas costas durante semanas.", "negative"); } }
+    ]
+  },
+  {
+    minAge: 18, maxAge: 65,
+    text: "Recebeste um e-mail suspeito a dizer que ganhaste um prémio milionário mas precisas de pagar uma taxa.",
+    options: [
+      { text: "Apagar (É burla)", effect: () => { game.player.intelligence = clamp(game.player.intelligence + 1); addEvent("Identificaste facilmente a tentativa de burla.", "positive"); } },
+      { text: "Transferir 300 €", effect: () => { const loss = Math.min(game.player.bank, 300); game.player.bank -= loss; game.player.happiness = clamp(game.player.happiness - 12); addFinanceEvent(`Perdeste ${money(loss)} numa burla online.`); addEvent("Caíste numa burla e perdeste dinheiro!", "negative"); } }
+    ]
+  },
+
+  // --- CONDICIONADOS A EMPREGO ---
+  {
+    minAge: 16, maxAge: 70,
+    condition: () => Boolean(game.player.job),
+    text: "O teu chefe pediu-te para fazeres horas extra esta semana para cobrir um colega doente.",
+    options: [
+      { text: "Aceitar o esforço extra", effect: () => { const bonus = Math.round(game.player.salary * 0.08); game.player.bank += bonus; game.player.happiness = clamp(game.player.happiness - 4); addFinanceEvent(`Recebeste ${money(bonus)} de bónus por horas extra.`); addEvent(`Trabalhaste duro e ganhaste um bónus de ${money(bonus)}!`, "positive"); } },
+      { text: "Recusar educadamente", effect: () => { game.player.happiness = clamp(game.player.happiness + 3); addEvent("Valorizaste o teu tempo livre.", "neutral"); } }
+    ]
+  },
+  {
+    minAge: 18, maxAge: 70,
+    condition: () => Boolean(game.player.job),
+    text: "Houve uma reestruturação na empresa onde trabalhas e o teu desempenho foi avaliado.",
+    options: [
+      { text: "Pedir aumento salarial", effect: () => { if (Math.random() > 0.45) { const raise = Math.round(game.player.salary * 0.1); game.player.salary += raise; addEvent(`Conseguiste um aumento salarial de ${money(raise)}/ano!`, "positive"); } else { addEvent("O teu pedido de aumento foi recusado desta vez.", "neutral"); } } },
+      { text: "Manter perfil discreto", effect: () => { addEvent("Mantiveste o teu posto de trabalho seguro.", "neutral"); } }
+    ]
+  },
+
+  // --- CONDICIONADOS A NEGÓCIOS ---
+  {
+    minAge: 18, maxAge: 85,
+    condition: () => game.businesses.length > 0,
+    text: "Um fornecedor propôs-te um novo contrato que pode aumentar a margem de lucro da tua empresa.",
+    options: [
+      { text: "Assinar contrato", effect: () => { const b = randomFrom(game.businesses); const boost = Math.round(b.yearlyProfit * 0.25); b.yearlyProfit += boost; addEvent(`O negócio "${b.name}" aumentou o lucro anual em ${money(boost)}!`, "positive"); } },
+      { text: "Manter fornecedor atual", effect: () => { addEvent("Optaste pela estabilidade no teu negócio.", "neutral"); } }
+    ]
+  },
+
+  // --- TERCEIRA IDADE (66+ anos) ---
+  {
+    minAge: 66, maxAge: 110,
+    text: "Os vizinhos organizaram um torneio de sueca e dominó no centro comunitário do bairro.",
+    options: [
+      { text: "Participar e conviver", effect: () => { game.player.happiness = clamp(game.player.happiness + 10); game.player.health = clamp(game.player.health + 2); addEvent("Passaste uma tarde excelente a jogar e a rir com os vizinhos!", "positive"); } },
+      { text: "Ficar a ler em casa", effect: () => { game.player.intelligence = clamp(game.player.intelligence + 1); addEvent("Tiveste uma tarde sossegada de leitura.", "neutral"); } }
+    ]
+  },
+  {
+    minAge: 66, maxAge: 110,
+    text: "O médico recomendou-te fazer caminhadas diárias de 30 minutos para manter o coração forte.",
+    options: [
+      { text: "Seguir o conselho", effect: () => { game.player.health = clamp(game.player.health + 6); addEvent("As caminhadas diárias melhoraram a tua vitalidade!", "positive"); } },
+      { text: "Ignorar", effect: () => { game.player.health = clamp(game.player.health - 4); addEvent("Tens estado demasiado sedentário/a.", "negative"); } }
     ]
   }
 ];
@@ -299,10 +423,12 @@ function triggerRandomEvent() {
   if (!game || !game.player.alive) return;
   const age = game.player.age;
 
-  let pool = generalEventsPool;
-  if (age >= 6 && age <= 17 && Math.random() < 0.6) pool = schoolEventsPool;
+  const validEvents = lifeEventsPool.filter(ev => {
+    const ageOk = age >= ev.minAge && age <= ev.maxAge;
+    const condOk = ev.condition ? ev.condition() : true;
+    return ageOk && condOk;
+  });
 
-  const validEvents = pool.filter(ev => age >= ev.minAge && age <= ev.maxAge);
   if (validEvents.length === 0 || Math.random() > 0.45) return;
 
   const ev = randomFrom(validEvents);
@@ -317,7 +443,7 @@ function triggerRandomEvent() {
 
   modal.innerHTML = `
     <div class="modal-card">
-      <h3>⚠️ Dilema de Vida</h3>
+      <h3>⚠️ Acontecimento</h3>
       <p>${escapeHTML(ev.text)}</p>
       <div class="modal-buttons" id="eventOptionsContainer"></div>
     </div>
@@ -625,6 +751,12 @@ function connectInitialParents() {
   if (father) game.player.biologicalParentIds.push(father.id);
 }
 
+function getSpouseName(person) {
+  if (!person.partnerId) return "";
+  const spouse = game.family.find(f => f.id === person.partnerId);
+  return spouse ? getPersonFullName(spouse) : "";
+}
+
 function renderPeople() {
   const container = $("peopleList");
   if (!container) return;
@@ -634,12 +766,18 @@ function renderPeople() {
     return;
   }
   game.family.forEach(person => {
+    const spouseName = getSpouseName(person);
+    const maritalLabel = person.relationshipStatus === "Casado/a" && spouseName 
+      ? `Casado/a com ${spouseName}` 
+      : person.relationshipStatus;
+
     const card = document.createElement("div");
     card.className = "person-card";
     card.innerHTML = `
       <div class="person-info">
         <strong>${escapeHTML(getPersonFullName(person))}</strong>
         <small>${escapeHTML(getRelationLabel(person))} · ${person.age} anos</small>
+        <small>Estado: ${escapeHTML(maritalLabel)}</small>
         <small>Profissão: ${escapeHTML(person.job || "Sem profissão")}</small>
       </div>
     `;
@@ -652,12 +790,13 @@ function renderFamilyEditor() {
   if (!container || !game) return;
   container.innerHTML = "";
   game.family.forEach(person => {
+    const spouseName = getSpouseName(person);
     const card = document.createElement("div");
     card.className = "person-card";
     card.innerHTML = `
       <div class="person-info">
         <strong>${escapeHTML(getPersonFullName(person))}</strong>
-        <small>${escapeHTML(person.relation)} · ${person.age} anos</small>
+        <small>${escapeHTML(person.relation)} · ${person.age} anos ${spouseName ? `(Casado/a com ${escapeHTML(spouseName)})` : ""}</small>
       </div>
     `;
     container.appendChild(card);
@@ -846,7 +985,7 @@ function startGame() {
   }
 
   const player = {
-    id: "person_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
+    id: createId(),
     name: $("playerName").value.trim(),
     surname: $("playerSurname").value.trim(),
     sex: $("playerSex").value,
@@ -1011,7 +1150,7 @@ function createBusiness() {
     return;
   }
   game.player.bank -= inv;
-  game.businesses.push({ id: "person_" + Date.now() + "_" + Math.floor(Math.random() * 1000000), name, investment: inv, yearlyProfit: Math.round(inv * 0.2) });
+  game.businesses.push({ id: createId(), name, investment: inv, yearlyProfit: Math.round(inv * 0.2) });
   addEvent(`Criaste o negócio "${name}"!`);
   saveGame();
   renderGame();
@@ -1213,17 +1352,37 @@ function showTab(tabId) {
   document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.tab === tabId));
 }
 
+function refreshSpouseSelect() {
+  const select = $("famSpouseSelect");
+  if (!select) return;
+  select.innerHTML = `<option value="">-- Selecionar Familiar --</option>`;
+  initialFamily.forEach(f => {
+    if (!f.partnerId) {
+      const opt = document.createElement("option");
+      opt.value = f.id;
+      opt.textContent = `${f.name} (${f.relation}, ${f.age} anos)`;
+      select.appendChild(opt);
+    }
+  });
+}
+
 function updateSetupFamilyUI() {
   const container = $("setupFamilyList");
   if (!container) return;
   container.innerHTML = "";
   initialFamily.forEach((f, idx) => {
+    const spouse = f.partnerId ? initialFamily.find(p => p.id === f.partnerId) : null;
+    const statusText = f.relationshipStatus === "Casado/a" && spouse 
+      ? `Casado/a com ${spouse.name}` 
+      : f.relationshipStatus;
+
     const card = document.createElement("div");
     card.className = "person-card";
     card.innerHTML = `
       <div class="person-info">
         <strong>${escapeHTML(f.name)}</strong>
         <small>${escapeHTML(f.relation)} · ${f.age} anos</small>
+        <small>${escapeHTML(statusText)}</small>
       </div>
       <button type="button" class="small-btn danger-btn" data-remove-fam="${idx}">Remover</button>
     `;
@@ -1232,32 +1391,75 @@ function updateSetupFamilyUI() {
 
   container.querySelectorAll("[data-remove-fam]").forEach(btn => {
     btn.onclick = () => {
-      initialFamily.splice(Number(btn.dataset.removeFam), 1);
+      const idx = Number(btn.dataset.removeFam);
+      const removed = initialFamily[idx];
+      if (removed && removed.partnerId) {
+        const partner = initialFamily.find(p => p.id === removed.partnerId);
+        if (partner) {
+          partner.partnerId = null;
+          partner.relationshipStatus = "Solteiro/a";
+        }
+      }
+      initialFamily.splice(idx, 1);
       updateSetupFamilyUI();
+      refreshSpouseSelect();
     };
   });
 }
 
 function boot() {
+  const maritalSelect = $("famMaritalStatus");
+  const spouseGroup = $("famSpouseGroup");
+
+  if (maritalSelect && spouseGroup) {
+    maritalSelect.onchange = () => {
+      const isMarried = maritalSelect.value === "Casado/a";
+      spouseGroup.classList.toggle("hidden", !isMarried);
+      if (isMarried) refreshSpouseSelect();
+    };
+  }
+
   const addFamBtn = $("addFamilyMemberBtn");
   if (addFamBtn) {
     addFamBtn.onclick = () => {
       const name = $("famName").value.trim();
       const relation = $("famRelation").value;
       const age = Number($("famAge").value) || 30;
+      const maritalStatus = $("famMaritalStatus").value;
+      const spouseId = maritalStatus === "Casado/a" ? $("famSpouseSelect").value : null;
+
       if (!name) {
         showToast("Insere o nome do familiar.");
         return;
       }
-      initialFamily.push({
+
+      const newId = createId();
+      const newMember = {
+        id: newId,
         name,
         surname: $("playerSurname").value.trim() || "Silva",
         relation,
         age,
-        sex: relation === "Mãe" ? "Feminino" : relation === "Pai" ? "Masculino" : "Outro"
-      });
+        sex: ["Mãe", "Avó"].includes(relation) ? "Feminino" : ["Pai", "Avô"].includes(relation) ? "Masculino" : "Outro",
+        relationshipStatus: maritalStatus,
+        partnerId: spouseId || null
+      };
+
+      if (spouseId) {
+        const spouse = initialFamily.find(p => p.id === spouseId);
+        if (spouse) {
+          spouse.partnerId = newId;
+          spouse.relationshipStatus = "Casado/a";
+        }
+      }
+
+      initialFamily.push(newMember);
       $("famName").value = "";
+      $("famMaritalStatus").value = "Solteiro/a";
+      spouseGroup.classList.add("hidden");
+      
       updateSetupFamilyUI();
+      refreshSpouseSelect();
     };
   }
 

@@ -70,10 +70,10 @@ p.muted, .muted {
   font-size: 0.9rem;
 }
 
-/* Avatar Preview & Controls HD 3D */
+/* Avatar Preview & Controls BitLife Exact */
 .avatar-preview-box {
-  width: 125px;
-  height: 125px;
+  width: 130px;
+  height: 130px;
   margin: 8px auto 14px auto;
   border-radius: 50%;
   border: 3px solid var(--accent-color);

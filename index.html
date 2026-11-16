@@ -159,4 +159,71 @@
       <section id="businessTab" class="tab-content hidden">
         <div class="panel">
           <h2>🏢 Negócios</h2>
-          <button id="createBusinessBtn" class="primary-btn full-width">Criar Novo Neg
+          <button id="createBusinessBtn" class="primary-btn full-width">Criar Novo Negócio</button>
+        </div>
+        <div id="businessList"></div>
+      </section>
+
+      <!-- Tab: Pessoas / Família -->
+      <section id="peopleTab" class="tab-content hidden">
+        <div class="panel">
+          <h2>👨‍👩‍👧 Família</h2>
+          <div id="peopleList" class="people-list"></div>
+        </div>
+        <div class="panel">
+          <h3>Árvore Genealógica</h3>
+          <div id="familyTree"></div>
+        </div>
+      </section>
+
+      <!-- Tab: Atividades e Saúde -->
+      <section id="activitiesTab" class="tab-content hidden">
+        <div class="panel">
+          <h2>🏥 Centro Médico & Saúde</h2>
+          <p class="muted">Cuida da tua saúde e previne doenças graves.</p>
+          <div class="button-list" style="margin-top: 12px;">
+            <button class="secondary-btn full-width" data-health="familyDoctor">👨‍⚕️ Médico de Família (Check-up)</button>
+            <button class="secondary-btn full-width" data-health="urgency">🚑 Urgências Hospitalares</button>
+            <button class="secondary-btn full-width" data-health="oncology">🎗️ Oncologia (Rastreio de Cancro)</button>
+            <button class="secondary-btn full-width" data-health="specialist">🏥 Especialidades Gerais</button>
+          </div>
+        </div>
+        <div id="healthActionContainer"></div>
+      </section>
+    </main>
+
+    <!-- Navegação Inferior -->
+    <nav id="bottomNav" class="bottom-nav">
+      <button class="nav-btn active" data-tab="homeTab">🏠<span>Início</span></button>
+      <button class="nav-btn" data-tab="patrimonyTab">💰<span>Património</span></button>
+      <button class="nav-btn" data-tab="careerTab">💼<span>Carreira</span></button>
+      <button class="nav-btn" data-tab="businessTab">🏢<span>Negócios</span></button>
+      <button class="nav-btn" data-tab="peopleTab">👨‍👩‍👧<span>Pessoas</span></button>
+      <button class="nav-btn" data-tab="activitiesTab">🏃<span>Atividades</span></button>
+    </nav>
+  </div>
+
+  <!-- Ecrã de Morte / Lápide -->
+  <div id="deathScreen" class="screen hidden" style="justify-content: center; align-items: center; padding: 20px;">
+    <div class="panel" style="width: 100%; max-width: 440px; text-align: center; background: #111827; border: 2px solid #475569;">
+      <h2 style="font-size: 2.5rem; margin-bottom: 5px;">⚰️</h2>
+      <div style="background: #1e293b; padding: 25px; border-radius: 12px; border: 1px dashed #64748b; margin: 15px 0;">
+        <h3 id="tombstoneName" style="font-size: 1.4rem; color: #f8fafc; margin-bottom: 8px;">Nome</h3>
+        <p id="tombstoneYears" class="muted" style="margin-bottom: 15px;">1990 - 2060 (70 anos)</p>
+        <p id="tombstoneQuote" style="font-style: italic; color: #cbd5e1; font-size: 1rem; line-height: 1.4;">"Aqui jaz alguém que viveu intensamente."</p>
+      </div>
+
+      <div style="text-align: left; margin: 15px 0;" id="deathReportStats"></div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 20px;">
+        <button id="newLifeBtn" class="primary-btn full-width">✨ Iniciar Nova Vida</button>
+        <button id="continueChildBtn" class="secondary-btn full-width hidden">👶 Continuar com Filho/a</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

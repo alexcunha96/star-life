@@ -4,7 +4,7 @@
    STARLIFE - MOTOR COMPLETO E SEGURO
 ========================================= */
 
-const SAVE_KEY = "starlife_v5_portuguese_licenses";
+const SAVE_KEY = "starlife_v6_fixed";
 
 let game = null;
 let initialFamily = [];
@@ -71,8 +71,6 @@ function loadGame() {
     if (!saved) return null;
     const loaded = JSON.parse(saved);
     if (!loaded || !loaded.player || !Array.isArray(loaded.family)) return null;
-    
-    // Garantir propriedades de veículos e cartas portuguesas
     loaded.player.licenses ??= { carB: false, bikeAM: false, bikeA1: false, bikeA2: false, bikeA: false };
     loaded.player.bankAccount ??= null;
     loaded.player.activeRental ??= null;
@@ -117,7 +115,7 @@ function addFinanceEvent(message) {
 }
 
 /* =========================================
-   ILUSTRAÇÕES SVG (CASAS E VEÍCULOS)
+   ILUSTRAÇÕES SVG (CASAS)
 ========================================= */
 
 function getHouseSVG(type) {
@@ -398,14 +396,14 @@ function processHousingYear() {
 }
 
 /* =========================================
-   LEGISLAÇÃO PORTUGUESA DE CARTAS & VEÍCULOS (CARROS E MOTAS)
+   LEGISLAÇÃO PORTUGUESA DE CARTAS & VEÍCULOS
 ========================================= */
 
 const licenseRules = {
   bikeAM: { name: "Carta AM (Ciclomotores até 50cc)", minAge: 16, cost: 250 },
   bikeA1: { name: "Carta A1 (Motos até 125cc / 11kW)", minAge: 16, cost: 380 },
-  bikeA2: { name: "Carta A2 (Motos até 35kW / Média cilindrada)", minAge: 18, cost: 500 },
-  bikeA:  { name: "Carta A (Motos Pesadas / Alta cilindrada)", minAge: 24, cost: 650 }, // ou 20 com A2 prévia
+  bikeA2: { name: "Carta A2 (Motos até 35kW)", minAge: 18, cost: 500 },
+  bikeA:  { name: "Carta A (Motos Pesadas)", minAge: 24, cost: 650 },
   carB:   { name: "Carta B (Carros Ligeiros)", minAge: 18, cost: 650 }
 };
 
@@ -428,13 +426,12 @@ function takeLicense(licenseKey) {
   const rule = licenseRules[licenseKey];
   if (!rule) return;
 
-  // Validação de idade portuguesa
-  if (licenseKey === "bikeA" && player.age < 20) {
-    showToast("Para a Carta A precisas de 24 anos (ou 20 se já tiveres A2 há 2 anos).");
+  if (licenseKey === "bikeA" && player.age < 24) {
+    showToast("Para a Carta A precisas de 24 anos.");
     return;
   }
   if (player.age < rule.minAge) {
-    showToast(`Precisas de ter pelo menos ${rule.minAge} anos para esta carta.`);
+    showToast(`Precisas de ter pelo menos ${rule.minAge} anos.`);
     return;
   }
   if (player.bank < rule.cost) {
@@ -444,7 +441,7 @@ function takeLicense(licenseKey) {
 
   player.bank -= rule.cost;
   player.licenses[licenseKey] = true;
-  addEvent(`Obtiviste com sucesso a ${rule.name}! 🚗🏍️`, "positive");
+  addEvent(`Obtiviste a ${rule.name}! 🚗🏍️`, "positive");
   saveGame();
   renderGame();
 }
@@ -454,10 +451,10 @@ function buyVehicle(type, idx) {
   let vehicle = null;
   if (type === "car") {
     vehicle = availableCars[idx];
-    if (!player.licenses[vehicle.reqLicense]) { showToast("Não tens carta de condução para este veículo!"); return; }
+    if (!player.licenses[vehicle.reqLicense]) { showToast("Não tens carta para este carro!"); return; }
   } else {
     vehicle = availableBikes[idx];
-    if (!player.licenses[vehicle.reqLicense]) { showToast("Não tens a carta de mota adequada para esta cilindrada!"); return; }
+    if (!player.licenses[vehicle.reqLicense]) { showToast("Não tens a carta de mota adequada!"); return; }
   }
 
   if (player.bank < vehicle.price) { showToast("Sem saldo na conta."); return; }
@@ -474,12 +471,10 @@ function renderVehiclesSection() {
   const player = game.player;
 
   let html = `<div class="panel"><h3>📜 Cartas de Condução (Legislação PT)</h3><div class="button-list">`;
-  
   Object.keys(licenseRules).forEach(key => {
     const rule = licenseRules[key];
     const hasIt = player.licenses[key];
     const ageOk = player.age >= rule.minAge;
-    
     html += `
       <div class="person-card" style="flex-direction: column; align-items: flex-start; gap: 4px;">
         <strong>${escapeHTML(rule.name)}</strong>
@@ -490,10 +485,8 @@ function renderVehiclesSection() {
   });
   html += `</div></div>`;
 
-  // Secção de veículos comprados e catálogo
   html += `<div class="panel" style="margin-top: 15px;"><h3>🚗🏍️ Garagem & Concessionário</h3>`;
   if (game.vehicles.length > 0) {
-    html.forEach
     html += `<h4>Os Teus Veículos</h4>`;
     game.vehicles.forEach(v => {
       html += `<p style="padding: 4px 0;">• <strong>${escapeHTML(v.name)}</strong> (${money(v.value)})</p>`;
@@ -506,7 +499,7 @@ function renderVehiclesSection() {
   });
   html += `</div>`;
 
-  html += `<h4 style="margin-top: 12px;">Comprar Motas (Todas as Cilindradas)</h4><div class="button-list">`;
+  html += `<h4 style="margin-top: 12px;">Comprar Motas</h4><div class="button-list">`;
   availableBikes.forEach((b, idx) => {
     html += `<button class="secondary-btn full-width" onclick="buyVehicle('bike', ${idx})">${escapeHTML(b.brand)} ${escapeHTML(b.name)} [${b.cc}] (${money(b.price)})</button>`;
   });
@@ -516,7 +509,7 @@ function renderVehiclesSection() {
 }
 
 /* =========================================
-   NEGÓCIOS
+   NEGÓCIOS E SAÚDE
 ========================================= */
 
 function createBusiness() {
@@ -558,6 +551,261 @@ function processBusinessesYear() {
     game.player.bank += b.yearlyProfit;
     addFinanceEvent(`O teu negócio "${b.name}" gerou ${money(b.yearlyProfit)} de lucro.`);
   });
+}
+
+/* =========================================
+   ESCOLA, UNIVERSIDADE E EVENTOS
+========================================= */
+
+const educationStages = [
+  { name: "Creche", start: 0, end: 2, level: 0 },
+  { name: "Jardim de infância", start: 3, end: 5, level: 0 },
+  { name: "1.º Ciclo do Ensino Básico", start: 6, end: 9, level: 1 },
+  { name: "2.º Ciclo do Ensino Básico", start: 10, end: 11, level: 1 },
+  { name: "3.º Ciclo do Ensino Básico", start: 12, end: 14, level: 1 },
+  { name: "Ensino Secundário", start: 15, end: 17, level: 2 }
+];
+
+const universityCourses = [
+  { name: "Medicina", cost: 3500, duration: 6, salary: 42000 },
+  { name: "Direito", cost: 2500, duration: 4, salary: 35000 },
+  { name: "Engenharia", cost: 2800, duration: 5, salary: 32000 },
+  { name: "Gestão", cost: 2300, duration: 3, salary: 30000 }
+];
+
+function getCurrentEducationStage(age) {
+  return educationStages.find(stage => age >= stage.start && age <= stage.end) || null;
+}
+
+function initializeEducation(player) {
+  player.intelligence ??= randomNumber(35, 85);
+  player.schoolGrade ??= 12;
+  player.education ??= "Sem escolaridade";
+  player.educationLevel ??= 0;
+  player.universityCourse ??= null;
+  player.universityProgress ??= 0;
+}
+
+function processSchoolYear() {
+  const player = game.player;
+  const stage = getCurrentEducationStage(player.age);
+  if (!stage || player.age > 17) return;
+  player.schoolGrade = clamp(Math.round(12 + randomNumber(-2, 3)), 5, 20);
+  if (player.age === 14) { player.education = "Ensino básico"; player.educationLevel = 1; }
+  if (player.age === 17) { player.education = "Ensino secundário"; player.educationLevel = 2; }
+}
+
+function studyHarder() {
+  const player = game.player;
+  player.intelligence = clamp(player.intelligence + 2);
+  player.schoolGrade = clamp(player.schoolGrade + 1, 0, 20);
+  addEvent("Estudaste com afinco. 📖");
+  saveGame();
+  renderGame();
+}
+
+function enrollUniversity(index) {
+  const player = game.player;
+  const course = universityCourses[index];
+  if (player.universityCourse) { showToast("Já estás na universidade."); return; }
+  player.universityCourse = course.name;
+  player.universityProgress = 0;
+  addEvent(`Entraste na Universidade para estudar ${course.name}! 🎓`);
+  saveGame();
+  renderGame();
+}
+
+function processFurtherEducation() {
+  const player = game.player;
+  if (player.universityCourse) {
+    player.universityProgress++;
+    const course = universityCourses.find(c => c.name === player.universityCourse);
+    if (player.universityProgress >= (course?.duration || 4)) {
+      player.education = `Licenciatura em ${player.universityCourse}`;
+      player.educationLevel = 3;
+      player.salary = course?.salary || 30000;
+      player.universityCourse = null;
+      addEvent(`🎓 Licenciatura concluída em ${course?.name}!`);
+    }
+  }
+}
+
+function renderSchoolAndUniversitySubmenu() {
+  const player = game.player;
+  const container = $("schoolSectionContainer");
+  if (!container) return;
+  const stage = getCurrentEducationStage(player.age);
+
+  let html = `
+    <div class="panel" style="margin-top: 16px;">
+      <h3>📚 Estatísticas Escolares</h3>
+      <div class="info-row"><span>Etapa atual</span><strong>${escapeHTML(stage?.name || player.education)}</strong></div>
+      <div class="info-row"><span>Média</span><strong>${player.schoolGrade}/20</strong></div>
+      <div class="info-row"><span>Inteligência</span><strong>${player.intelligence}%</strong></div>
+    </div>
+  `;
+
+  if (player.age >= 6 && player.age <= 18) {
+    html += `<div class="panel"><h3>Atividades de Estudante</h3><button class="primary-btn full-width" id="studyBtn">📖 Estudar Mais</button></div>`;
+  }
+
+  if (player.age >= 18 && player.educationLevel >= 2) {
+    html += `
+      <div class="panel">
+        <h3>🏛️ Ensino Superior</h3>
+        ${player.universityCourse ? `<p>Curso atual: <strong>${player.universityCourse}</strong> (${player.universityProgress} anos)</p>` : `<p class="muted">Escolhe um curso:</p>`}
+        ${universityCourses.map((c, idx) => `
+          <div style="margin-top: 8px; padding: 8px; background: var(--panel-light); border-radius: 8px;">
+            <strong>${escapeHTML(c.name)}</strong> (${money(c.cost)}/ano)
+            ${!player.universityCourse ? `<button class="small-btn full-width" style="margin-top:6px;" data-uni-idx="${idx}">Inscrever-se</button>` : ""}
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+  if ($("studyBtn")) $("studyBtn").onclick = studyHarder;
+  container.querySelectorAll("[data-uni-idx]").forEach(b => {
+    b.onclick = () => enrollUniversity(Number(b.dataset.uniIdx));
+  });
+}
+
+const femaleNames = ["Maria", "Ana", "Beatriz", "Inês", "Sofia", "Matilde", "Leonor", "Carolina", "Mariana", "Margarida", "Catarina", "Joana", "Rita", "Francisca", "Marta", "Laura", "Alice", "Diana", "Cláudia", "Raquel", "Teresa", "Isabel", "Helena", "Andreia", "Patrícia", "Eva", "Luísa", "Daniela", "Filipa"];
+const maleNames = ["João", "Pedro", "Miguel", "Francisco", "Tiago", "Diogo", "André", "Rafael", "Gonçalo", "Martim", "Afonso", "Tomás", "Duarte", "Bruno", "Ricardo", "Daniel", "António", "Manuel", "Luís", "Gabriel", "David", "Nuno", "Hugo", "Filipe", "Eduardo", "José", "Rodrigo", "Vasco", "Guilherme"];
+const tombstoneQuotes = [
+  "Viveu intensamente, partiu em paz.",
+  "Deixou saudades em todos os que cruzaram o seu caminho.",
+  "Descansa em paz. A jornada foi longa e bela.",
+  "Amou, riu, aprendeu e agora descansa.",
+  "Uma lenda nunca morre, apenas descansa."
+];
+
+const commonIllnesses = [
+  { name: "Gripe Sazonal", severity: "Baixa", cost: 50, healthImpact: 4, specialty: "familyDoctor" },
+  { name: "Entorse no Tornozelo", severity: "Baixa", cost: 120, healthImpact: 6, specialty: "orthopedics" },
+  { name: "Hipertensão Arterial", severity: "Média", cost: 350, healthImpact: 10, specialty: "cardiology" },
+  { name: "Depressão Crónica", severity: "Média", cost: 500, healthImpact: 12, specialty: "psychiatry" },
+  { name: "Cancro em Estádio Inicial", severity: "Alta", cost: 6000, healthImpact: 30, specialty: "oncology" }
+];
+
+function generateName(sex) {
+  if (sex === "Feminino") return randomFrom(femaleNames);
+  if (sex === "Masculino") return randomFrom(maleNames);
+  return randomFrom([...femaleNames, ...maleNames]);
+}
+
+function createFamilyMember(data) {
+  return {
+    id: data.id || createId("person"),
+    name: data.name || "Sem nome",
+    surname: data.surname || "",
+    relation: data.relation || "Outro",
+    age: Number(data.age) || 0,
+    sex: data.sex || "Outro",
+    alive: true,
+    job: "",
+    salary: 0
+  };
+}
+
+const lifeEventsPool = [
+  { minAge: 0, maxAge: 3, text: "Deste os teus primeiros passos na sala de estar.", options: [{ text: "Sorrir", effect: () => { game.player.happiness = clamp(game.player.happiness + 5); addEvent("Os pais celebraram.", "positive"); } }] },
+  { minAge: 6, maxAge: 11, text: "Participaste numa atividade desportiva na escola.", options: [{ text: "Dar o máximo", effect: () => { game.player.health = clamp(game.player.health + 3); addEvent("Ganhaste uma medalha!", "positive"); } }] },
+  { minAge: 12, maxAge: 17, text: "Tiveste um teste difícil de História e tiraste excelente nota.", options: [{ text: "Celebrar", effect: () => { game.player.intelligence = clamp(game.player.intelligence + 2); addEvent("O esforço valeu a pena.", "positive"); } }] },
+  { minAge: 18, maxAge: 65, text: "Fizeste horas extra no trabalho.", options: [{ text: "Aceitar", effect: () => { game.player.bank += 180; addFinanceEvent("Ganhaste 180 € extra."); addEvent("Recebeste um bónus.", "positive"); } }] }
+];
+
+function triggerRandomEvent() {
+  if (!game || !game.player.alive) return;
+  const age = game.player.age;
+  const validEvents = lifeEventsPool.filter(ev => age >= ev.minAge && age <= ev.maxAge);
+  if (validEvents.length === 0 || Math.random() > 0.4) return;
+  const ev = randomFrom(validEvents);
+  const modal = $("customModal");
+  modal.innerHTML = `
+    <div class="modal-card">
+      <h3>⚠️ Acontecimento</h3>
+      <p>${escapeHTML(ev.text)}</p>
+      <div class="modal-buttons" id="eventOptionsContainer"></div>
+    </div>
+  `;
+  modal.classList.remove("hidden");
+
+  const btnContainer = $("eventOptionsContainer");
+  btnContainer.innerHTML = "";
+  ev.options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "primary-btn full-width";
+    btn.textContent = opt.text;
+    btn.addEventListener("click", () => {
+      opt.effect();
+      modal.classList.add("hidden");
+      saveGame();
+      renderGame();
+    });
+    btnContainer.appendChild(btn);
+  });
+}
+
+function checkRandomIllness() {
+  const player = game.player;
+  if (player.illness || player.age < 12) return;
+  const chance = 0.06 + (player.age * 0.001) - ((player.health - 50) * 0.001);
+  if (Math.random() < chance) {
+    const ill = randomFrom(commonIllnesses);
+    player.illness = { ...ill };
+    addEvent(`⚠️ Foi-te diagnosticado/a: ${ill.name}.`, "negative");
+  }
+}
+
+function openHealthSpecialty(specialty) {
+  const container = $("healthActionContainer");
+  let title = "Centro Clínico";
+  let desc = "Serviços médicos especializados.";
+  let cost = 100;
+  let actionType = "specialist";
+
+  if (specialty === "familyDoctor") { title = "👨‍⚕️ Médico de Família"; desc = "Consulta de rotina."; cost = 40; actionType = "checkup"; }
+  else if (specialty === "urgency") { title = "🚑 Urgências Hospitalares"; desc = "Atendimento imediato."; cost = 100; actionType = "urgency"; }
+  else if (specialty === "cardiology") { title = "❤️ Cardiologia"; desc = "Tratamento cardiovascular."; cost = 250; actionType = "treatment"; }
+  else if (specialty === "orthopedics") { title = "🦴 Ortopedia"; desc = "Tratamento de lesões."; cost = 180; actionType = "treatment"; }
+  else if (specialty === "psychiatry") { title = "🧠 Psiquiatria"; desc = "Saúde mental."; cost = 200; actionType = "treatment"; }
+  else if (specialty === "oncology") { title = "🎗️ Oncologia"; desc = "Tratamento oncológico."; cost = 1500; actionType = "oncology"; }
+
+  container.innerHTML = `
+    <div class="panel" style="margin-top: 12px;">
+      <h3>${title}</h3>
+      <p class="muted">${desc}</p>
+      <button class="primary-btn full-width" style="margin-top: 10px;" id="execHealthBtn">Efetuar Consulta (${money(cost)})</button>
+    </div>
+  `;
+  $("execHealthBtn").onclick = () => executeHealthAction(actionType, cost, specialty);
+}
+
+function executeHealthAction(type, cost, specialty) {
+  const player = game.player;
+  if (player.bank < cost) { showToast(`Precisas de ${money(cost)}.`); return; }
+  player.bank -= cost;
+  if (type === "checkup") {
+    player.health = clamp(player.health + 3);
+    showToast(player.illness ? `Atenção: Tens ${player.illness.name}!` : "Check-up limpo!");
+  } else if (type === "urgency") {
+    player.health = clamp(player.health + 12);
+    showToast("Urgência efetuada.");
+  } else {
+    if (player.illness && (player.illness.specialty === specialty || specialty === "oncology")) {
+      addEvent(`Curaste com sucesso: ${player.illness.name}! 🎉`, "positive");
+      player.illness = null;
+      player.health = clamp(player.health + 25);
+      showToast("Tratamento bem-sucedido!");
+    } else {
+      player.health = clamp(player.health + 10);
+      showToast("Consulta concluída.");
+    }
+  }
+  saveGame();
+  renderGame();
 }
 
 /* =========================================
@@ -624,7 +872,7 @@ function advanceYear() {
 function startGame() {
   const name = $("playerName").value.trim();
   const surname = $("playerSurname").value.trim();
-  if (!name || !surname) { showToast("Preenche os campos."); return; }
+  if (!name || !surname) { showToast("Preenche o nome e apelido."); return; }
 
   const player = {
     id: createId("player"), name, surname,
@@ -732,7 +980,6 @@ function renderCareer() {
       jobContainer.innerHTML = `
         <button class="secondary-btn" onclick="applyJob('Empregado/a', 12000)">Empregado/a · 12 000 €/ano</button>
         <button class="secondary-btn" onclick="applyJob('Assistente', 16500)">Assistente · 16 500 €/ano</button>
-        <button class="secondary-btn" onclick="applyJob('Gestor/a Júnior', 24000)">Gestor/a Júnior · 24 000 €/ano</button>
       `;
     } else {
       jobContainer.innerHTML = `<p class="muted">Procura emprego a partir dos 16 anos.</p>`;
@@ -802,7 +1049,7 @@ function boot() {
   });
 
   $("createBusinessBtn")?.addEventListener("click", createBusiness);
-  $("startForm").addEventListener("submit", e => { e.preventDefault(); startGame(); });
+  $("startBtn")?.addEventListener("click", startGame);
   $("continueGameBtn")?.addEventListener("click", () => {
     const saved = loadGame();
     if (saved) { game = saved; showGame(); renderGame(); }

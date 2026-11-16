@@ -1,15 +1,16 @@
 :root {
-  --bg-color: #0f172a;
-  --panel-bg: #1e293b;
-  --panel-light: #334155;
+  /* Paleta Azul Noite Familiar e Acolhedora */
+  --bg-color: #152238;
+  --panel-bg: #1e3150;
+  --panel-light: #2b446e;
   --text-main: #f8fafc;
-  --text-muted: #94a3b8;
+  --text-muted: #cbd5e1;
   --accent-color: #3b82f6;
   --accent-hover: #2563eb;
   --danger-color: #ef4444;
   --danger-hover: #dc2626;
   --success-color: #22c55e;
-  --border-color: #334155;
+  --border-color: #334e7b;
 }
 
 * {
@@ -20,7 +21,7 @@
 }
 
 body {
-  background-color: var(--bg-color);
+  background-color: #0e1726;
   color: var(--text-main);
   display: flex;
   justify-content: center;
@@ -38,7 +39,7 @@ body {
   display: flex;
   flex-direction: column;
   position: relative;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.45);
   overflow-y: auto;
 }
 
@@ -53,10 +54,11 @@ body {
 
 .panel {
   background-color: var(--panel-bg);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 16px;
   margin-bottom: 12px;
   border: 1px solid var(--border-color);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
 h1, h2, h3, h4 {
@@ -97,7 +99,11 @@ button {
   font-weight: bold;
   border-radius: 8px;
   padding: 10px 16px;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.1s;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 button:disabled {
@@ -120,7 +126,7 @@ button:disabled {
 }
 
 .secondary-btn:hover:not(:disabled) {
-  background-color: #475569;
+  background-color: #365588;
 }
 
 .danger-btn {
@@ -240,7 +246,7 @@ button:disabled {
 }
 
 .nav-btn.active {
-  color: var(--accent-color);
+  color: #60a5fa;
 }
 
 .events-list, .people-list, .button-list {
@@ -252,7 +258,7 @@ button:disabled {
 
 .event-item {
   padding: 10px;
-  border-radius: 6px;
+  border-radius: 8px;
   background-color: var(--bg-color);
   font-size: 0.9rem;
   border-left: 4px solid var(--accent-color);
@@ -279,8 +285,25 @@ button:disabled {
   align-items: center;
   padding: 10px;
   background-color: var(--bg-color);
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
+}
+
+.house-card {
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.house-card:hover {
+  border-color: #60a5fa;
+  background-color: #1b2c47;
+}
+
+.house-illustration {
+  width: 100%;
+  max-width: 90px;
+  height: auto;
+  display: block;
 }
 
 .modal-overlay {
@@ -289,7 +312,7 @@ button:disabled {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(10, 18, 32, 0.78);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -300,10 +323,11 @@ button:disabled {
 .modal-card {
   background-color: var(--panel-bg);
   padding: 20px;
-  border-radius: 12px;
+  border-radius: 14px;
   width: 100%;
   max-width: 400px;
   border: 1px solid var(--border-color);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
 }
 
 .modal-buttons {
@@ -318,11 +342,11 @@ button:disabled {
   bottom: 80px;
   left: 50%;
   transform: translateX(-50%) translateY(20px);
-  background-color: rgba(15, 23, 42, 0.95);
+  background-color: rgba(21, 34, 56, 0.96);
   color: var(--text-main);
   padding: 10px 20px;
   border-radius: 20px;
-  border: 1px solid var(--border-color);
+  border: 1px solid #4a6b9c;
   font-size: 0.9rem;
   opacity: 0;
   visibility: hidden;

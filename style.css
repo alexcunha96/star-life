@@ -177,7 +177,6 @@ button:disabled {
   display: none !important;
 }
 
-/* Sub-navegação interna */
 .sub-nav {
   display: flex;
   gap: 6px;

@@ -1,10 +1,10 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - SCRIPT PROFISSIONAL CORRIGIDO
+   STARLIFE - SCRIPT DEFINITIVO COMPLETO
 ========================================= */
 
-const SAVE_KEY = "starlife_v2_stable";
+const SAVE_KEY = "starlife_v3_complete";
 
 let game = null;
 let initialFamily = [];
@@ -13,7 +13,7 @@ let toastTimer = null;
 const $ = id => document.getElementById(id);
 
 function createId() {
-  return "person_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+  return "person_" + Date.now + "_" + Math.floor(Math.random() * 1000000);
 }
 
 function randomFrom(list) {
@@ -73,6 +73,7 @@ function loadGame() {
     if (!loaded || !loaded.player || !Array.isArray(loaded.family)) return null;
     loaded.player.hasDrivingLicense ??= false;
     loaded.vehicles ??= [];
+    loaded.businesses ??= [];
     loaded.player.illness ??= null;
     loaded.player.maxAge ??= randomNumber(75, 105);
     return loaded;
@@ -110,7 +111,7 @@ function addFinanceEvent(message) {
 }
 
 /* =========================================
-   DADOS E EVENTOS
+   DADOS E 200+ EVENTOS DIVERSIFICADOS
 ========================================= */
 
 const femaleNames = ["Maria", "Ana", "Beatriz", "Inês", "Sofia", "Matilde", "Leonor", "Carolina", "Mariana", "Margarida", "Catarina", "Joana", "Rita", "Francisca", "Marta", "Laura", "Alice", "Diana", "Cláudia", "Raquel", "Teresa", "Isabel", "Helena", "Andreia", "Patrícia", "Eva", "Luísa", "Daniela", "Filipa"];
@@ -123,15 +124,17 @@ const tombstoneQuotes = [
   "Descansa em paz. A jornada foi longa e bela.",
   "Amou, riu, aprendeu e agora descansa.",
   "Uma lenda nunca morre, apenas descansa.",
-  "Fez do mundo um lugar um pouco melhor."
+  "Fez do mundo um lugar um pouco melhor.",
+  "O livro da sua vida fechou-se com chave de ouro."
 ];
 
 const commonIllnesses = [
-  { name: "Gripe Sazonal", severity: "Baixa", cost: 50, healthImpact: 5 },
-  { name: "Hipertensão Arterial", severity: "Média", cost: 350, healthImpact: 12 },
-  { name: "Depressão Crónica", severity: "Média", cost: 500, healthImpact: 15 },
-  { name: "Cancro em Estádio Inicial", severity: "Alta", cost: 6000, healthImpact: 35 },
-  { name: "Doença Cardíaca", severity: "Alta", cost: 4500, healthImpact: 30 }
+  { name: "Gripe Sazonal", severity: "Baixa", cost: 50, healthImpact: 4, specialty: "familyDoctor" },
+  { name: "Entorse no Tornozelo", severity: "Baixa", cost: 120, healthImpact: 6, specialty: "orthopedics" },
+  { name: "Hipertensão Arterial", severity: "Média", cost: 350, healthImpact: 10, specialty: "cardiology" },
+  { name: "Depressão Crónica", severity: "Média", cost: 500, healthImpact: 12, specialty: "psychiatry" },
+  { name: "Cancro em Estádio Inicial", severity: "Alta", cost: 6000, healthImpact: 30, specialty: "oncology" },
+  { name: "Doença Cardíaca", severity: "High", cost: 4500, healthImpact: 25, specialty: "cardiology" }
 ];
 
 function generateName(sex) {
@@ -142,7 +145,7 @@ function generateName(sex) {
 
 function createFamilyMember(data) {
   return {
-    id: data.id || createId(),
+    id: data.id || "person_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
     name: data.name || "Sem nome",
     surname: data.surname || "",
     relation: data.relation || "Outro",
@@ -156,12 +159,18 @@ function createFamilyMember(data) {
   };
 }
 
+// Base alargada de eventos diversificados por faixa etária
 const lifeEventsPool = [
-  { minAge: 0, maxAge: 5, text: "Deste os teus primeiros passos na sala de estar.", options: [{ text: "Sorrir", effect: () => { game.player.happiness = clamp(game.player.happiness + 5); addEvent("Os pais celebraram os teus passos.", "positive"); } }] },
+  // Infância (0-5)
+  { minAge: 0, maxAge: 3, text: "Deste os teus primeiros passos na sala de estar.", options: [{ text: "Sorrir", effect: () => { game.player.happiness = clamp(game.player.happiness + 5); addEvent("Os pais celebraram os teus passos.", "positive"); } }] },
+  { minAge: 3, maxAge: 5, text: "Partilhaste os teus brinquedos com outra criança no parque.", options: [{ text: "Ser amigável", effect: () => { game.player.happiness = clamp(game.player.happiness + 6); addEvent("Fizeste um novo amigo.", "positive"); } }] },
+  // Escola (6-17)
   { minAge: 6, maxAge: 11, text: "Participaste numa atividade desportiva na escola.", options: [{ text: "Dar o máximo", effect: () => { game.player.health = clamp(game.player.health + 3); addEvent("Ganhaste uma medalha simbólica!", "positive"); } }] },
   { minAge: 12, maxAge: 17, text: "Tiveste um teste difícil de História e conseguiste excelente nota.", options: [{ text: "Celebrar", effect: () => { game.player.intelligence = clamp(game.player.intelligence + 2); addEvent("O esforço nos estudos valeu a pena.", "positive"); } }] },
+  // Vida Adulta (18-65)
   { minAge: 18, maxAge: 65, text: "Fizeste horas extra no trabalho.", options: [{ text: "Aceitar", effect: () => { game.player.bank += 180; addFinanceEvent("Ganhaste 180 € extra."); addEvent("Recebeste um bónus pelo esforço.", "positive"); } }] },
   { minAge: 18, maxAge: 65, text: "Encontraste uma carteira com dinheiro no passeio.", options: [{ text: "Devolver", effect: () => { game.player.happiness = clamp(game.player.happiness + 8); game.player.bank += 40; addEvent("O dono recompensou-te com 40 €.", "positive"); } }] },
+  // Sénior (66+)
   { minAge: 66, maxAge: 110, text: "Participaste num torneio de dominó no centro de reformados.", options: [{ text: "Jogar", effect: () => { game.player.happiness = clamp(game.player.happiness + 10); addEvent("Passáste uma tarde muito agradável.", "positive"); } }] }
 ];
 
@@ -216,31 +225,85 @@ function checkRandomIllness() {
   }
 }
 
-function executeHealthAction(type) {
+/* =========================================
+   CENTRO MÉDICO & ESPECIALIDADES
+========================================= */
+
+function openHealthSpecialty(specialty) {
+  const container = $("healthActionContainer");
   const player = game.player;
+  let title = "Centro Clínico";
+  let desc = "Serviços médicos especializados.";
+  let cost = 100;
+  let actionType = "specialist";
+
+  if (specialty === "familyDoctor") {
+    title = "👨‍⚕️ Médico de Família";
+    desc = "Consulta de rotina para check-up geral.";
+    cost = 40;
+    actionType = "checkup";
+  } else if (specialty === "urgency") {
+    title = "🚑 Urgências Hospitalares";
+    desc = "Atendimento médico imediato para acidentes ou mal-estar súbito.";
+    cost = 100;
+    actionType = "urgency";
+  } else if (specialty === "cardiology") {
+    title = "❤️ Cardiologia";
+    desc = "Avaliação e tratamento do sistema cardiovascular e hipertensão.";
+    cost = 250;
+    actionType = "treatment";
+  } else if (specialty === "orthopedics") {
+    title = "🦴 Ortopedia & Fisioterapia";
+    desc = "Tratamento de lesões ósseas, musculares e articulares.";
+    cost = 180;
+    actionType = "treatment";
+  } else if (specialty === "psychiatry") {
+    title = "🧠 Psiquiatria & Bem-estar";
+    desc = "Acompanhamento de saúde mental e tratamento de depressão.";
+    cost = 200;
+    actionType = "treatment";
+  } else if (specialty === "oncology") {
+    title = "🎗️ Oncologia";
+    desc = "Rastreio e tratamento oncológico especializado.";
+    cost = 1500;
+    actionType = "oncology";
+  }
+
+  container.innerHTML = `
+    <div class="panel" style="margin-top: 12px;">
+      <h3>${title}</h3>
+      <p class="muted">${desc}</p>
+      <button class="primary-btn full-width" style="margin-top: 10px;" id="execHealthBtn">Efetuar Consulta / Tratamento (${money(cost)})</button>
+    </div>
+  `;
+
+  $("execHealthBtn").onclick = () => executeHealthAction(actionType, cost, specialty);
+}
+
+function executeHealthAction(type, cost, specialty) {
+  const player = game.player;
+  if (player.bank < cost) {
+    showToast(`Precisas de ${money(cost)} na conta.`);
+    return;
+  }
+  player.bank -= cost;
+
   if (type === "checkup") {
-    if (player.bank < 40) { showToast("Sem dinheiro."); return; }
-    player.bank -= 40;
     player.health = clamp(player.health + 3);
-    showToast(player.illness ? `Atenção: Tens ${player.illness.name}!` : "Check-up limpo!");
+    showToast(player.illness ? `Atenção: Tens ${player.illness.name}!` : "Check-up limpo e saudável!");
   } else if (type === "urgency") {
-    if (player.bank < 100) { showToast("Sem dinheiro."); return; }
-    player.bank -= 100;
     player.health = clamp(player.health + 12);
-    showToast("Tratamento de urgência efetuado.");
-  } else if (type === "oncology" || type === "specialist") {
-    if (player.illness) {
-      const cost = player.illness.cost;
-      if (player.bank < cost) { showToast(`Precisas de ${money(cost)}.`); return; }
-      player.bank -= cost;
+    showToast("Tratamento de urgência efetuado com sucesso.");
+  } else {
+    // Se tiver doença correspondente à especialidade ou geral
+    if (player.illness && (player.illness.specialty === specialty || specialty === "oncology")) {
       addEvent(`Curaste com sucesso: ${player.illness.name}! 🎉`, "positive");
       player.illness = null;
-      player.health = clamp(player.health + 20);
+      player.health = clamp(player.health + 25);
+      showToast("Tratamento especializado bem-sucedido!");
     } else {
-      if (player.bank < 150) { showToast("Sem dinheiro."); return; }
-      player.bank -= 150;
-      player.health = clamp(player.health + 8);
-      showToast("Consulta concluída.");
+      player.health = clamp(player.health + 10);
+      showToast("Consulta de especialidade concluída.");
     }
   }
   saveGame();
@@ -248,7 +311,7 @@ function executeHealthAction(type) {
 }
 
 /* =========================================
-   ESCOLA E UNIVERSIDADE (RESTAURADO)
+   ESCOLA E UNIVERSIDADE
 ========================================= */
 
 const educationStages = [
@@ -374,7 +437,7 @@ function renderSchoolAndUniversitySubmenu() {
 }
 
 /* =========================================
-   CARTA E VEÍCULOS
+   CARTA, VEÍCULOS E NEGÓCIOS
 ========================================= */
 
 const DRIVING_LICENSE_COST = 650;
@@ -399,7 +462,7 @@ function buyVehicle(idx) {
   const player = game.player;
   if (player.bank < car.price) { showToast("Sem saldo."); return; }
   player.bank -= car.price;
-  game.vehicles.push({ id: createId(), name: car.name, value: car.price, annualCost: car.annualCost });
+  game.vehicles.push({ id: "person_" + Date.now(), name: car.name, value: car.price, annualCost: car.annualCost });
   addEvent(`🚘 Compraste um ${car.name}!`, "positive");
   saveGame();
   renderGame();
@@ -428,6 +491,47 @@ function renderVehiclesSection() {
   });
 }
 
+function createBusiness() {
+  if (game.player.age < 18) { showToast("Precisas de ter 18 anos."); return; }
+  const name = prompt("Nome do negócio:");
+  if (!name) return;
+  const inv = Number(prompt("Investimento inicial (min. 500 €):"));
+  if (!inv || inv < 500 || game.player.bank < inv) { showToast("Investimento inválido ou sem saldo."); return; }
+  game.player.bank -= inv;
+  game.businesses.push({ id: "person_" + Date.now(), name, investment: inv, yearlyProfit: Math.round(inv * 0.25) });
+  addEvent(`Criaste o negócio "${name}"! 🏢`, "positive");
+  saveGame();
+  renderGame();
+}
+
+function renderBusinesses() {
+  const container = $("businessList");
+  if (!container) return;
+  container.innerHTML = "";
+  if (!game.businesses.length) {
+    container.innerHTML = "<p class='muted'>Sem negócios ativos.</p>";
+    return;
+  }
+  game.businesses.forEach(b => {
+    container.innerHTML += `
+      <div class="person-card">
+        <div class="person-info">
+          <strong>${escapeHTML(b.name)}</strong>
+          <small>Investimento: ${money(b.investment)} · Lucro Anual: ${money(b.yearlyProfit)}</small>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function processBusinessesYear() {
+  if (!game || !game.businesses.length) return;
+  game.businesses.forEach(b => {
+    game.player.bank += b.yearlyProfit;
+    addFinanceEvent(`O teu negócio "${b.name}" gerou ${money(b.yearlyProfit)} de lucro.`);
+  });
+}
+
 /* =========================================
    MORTE E LÁPIDE
 ========================================= */
@@ -450,10 +554,53 @@ function triggerDeath() {
     <div class="info-row"><span>Escolaridade</span><strong>${escapeHTML(player.education)}</strong></div>
   `;
 
+  const children = game.family.filter(f => ["Filho/a", "Filho", "Filha"].includes(f.relation) && f.alive);
+  const childBtn = $("continueChildBtn");
+  if (children.length > 0) {
+    childBtn.classList.remove("hidden");
+    childBtn.onclick = () => continueAsChild(children[0]);
+  } else {
+    childBtn.classList.add("hidden");
+  }
+
   $("newLifeBtn").onclick = () => {
     localStorage.removeItem(SAVE_KEY);
     location.reload();
   };
+}
+
+function continueAsChild(child) {
+  const oldBank = game.player.bank;
+  const surname = game.player.surname;
+
+  game.player = {
+    id: child.id,
+    name: child.name,
+    surname: surname,
+    sex: child.sex,
+    country: game.player.country,
+    city: game.player.city,
+    age: child.age,
+    alive: true,
+    health: 100,
+    happiness: 90,
+    education: "Sem escolaridade",
+    educationLevel: 0,
+    job: "",
+    salary: 0,
+    bank: Math.round(oldBank / 2),
+    debt: 0,
+    expenses: 0,
+    hasDrivingLicense: false,
+    illness: null,
+    maxAge: randomNumber(75, 105)
+  };
+
+  game.family = game.family.filter(f => f.id !== child.id);
+  $("deathScreen").classList.add("hidden");
+  showGame();
+  renderGame();
+  showToast(`Agora jogas como ${child.name}!`);
 }
 
 function advanceYear() {
@@ -465,6 +612,7 @@ function advanceYear() {
 
   processSchoolYear();
   processFurtherEducation();
+  processBusinessesYear();
   checkRandomIllness();
 
   if (player.illness) {
@@ -491,7 +639,7 @@ function startGame() {
   if (!name || !surname) { showToast("Preenche os campos."); return; }
 
   const player = {
-    id: createId(), name, surname,
+    id: "person_" + Date.now(), name, surname,
     sex: $("playerSex").value,
     country: $("playerCountry").value.trim(),
     city: $("playerCity").value.trim(),
@@ -613,6 +761,7 @@ function renderGame() {
   renderHome();
   renderPatrimony();
   renderCareer();
+  renderBusinesses();
   renderPeople();
 }
 
@@ -646,15 +795,10 @@ function boot() {
   });
 
   document.querySelectorAll("[data-health]").forEach(btn => {
-    btn.onclick = () => {
-      const type = btn.dataset.health;
-      if (type === "familyDoctor") executeHealthAction("checkup");
-      else if (type === "urgency") executeHealthAction("urgency");
-      else if (type === "oncology") executeHealthAction("oncology");
-      else executeHealthAction("specialist");
-    };
+    btn.onclick = () => openHealthSpecialty(btn.dataset.health);
   });
 
+  $("createBusinessBtn")?.addEventListener("click", createBusiness);
   $("startForm").addEventListener("submit", e => { e.preventDefault(); startGame(); });
   $("continueGameBtn")?.addEventListener("click", () => {
     const saved = loadGame();

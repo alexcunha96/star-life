@@ -1,10 +1,10 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - MOTOR GRÁFICO FIDEDIGNO AO BITLIFE
+   STARLIFE - MOTOR GRÁFICO IDÊNTICO AO BITLIFE (CORRIGIDO)
 ========================================= */
 
-const SAVE_KEY = "starlife_v17_bitlife_exact_render";
+const SAVE_KEY = "starlife_v18_bitlife_perfect";
 
 let game = null;
 let initialFamily = [];
@@ -65,7 +65,7 @@ function showToast(message) {
 }
 
 /* =========================================
-   GERADOR DE AVATAR SVG EXATO AO BITLIFE
+   GERADOR DE AVATAR SVG - PROPORÇÕES EXATAS BITLIFE
 ========================================= */
 
 function generateAvatarSVG(avatar, age = 25, happiness = 80) {
@@ -73,15 +73,15 @@ function generateAvatarSVG(avatar, age = 25, happiness = 80) {
   const hairCol = age >= 65 ? "#cbd5e1" : av.hairColor;
   const showBeard = age >= 16 && av.beard !== "none";
 
-  // Cabelo espigado texturizado idêntico à referência do BitLife
+  // Cabelo espigado perfeitamente alinhado com o topo da cabeça
   let hairHTML = "";
   if (av.hairStyle === "spiky") {
     hairHTML = `
-      <path d="M 22 36 Q 16 18, 30 22 Q 40 8, 50 15 Q 60 8, 70 22 Q 84 18, 78 36 Q 88 46, 76 54 Q 62 38, 50 42 Q 38 38, 24 54 Q 12 46, 22 36 Z" fill="${hairCol}" />
-      <path d="M 32 22 Q 50 6, 68 22 Q 50 32, 32 22 Z" fill="rgba(255,255,255,0.35)" />
+      <path d="M 28 32 C 26 14, 38 6, 50 12 C 62 6, 74 14, 72 32 C 78 30, 84 38, 76 46 C 70 38, 62 40, 50 40 C 38 40, 30 38, 24 46 C 16 38, 22 30, 28 32 Z" fill="${hairCol}" />
+      <path d="M 33 24 Q 50 12, 67 24 Q 50 28, 33 24 Z" fill="rgba(255,255,255,0.3)" />
     `;
   } else if (av.hairStyle === "short") {
-    hairHTML = `<path d="M 26 38 C 24 16, 76 16, 74 38 C 70 24, 30 24, 26 38 Z" fill="${hairCol}" />`;
+    hairHTML = `<path d="M 27 34 C 25 15, 75 15, 73 34 C 68 22, 32 22, 27 34 Z" fill="${hairCol}" />`;
   } else if (av.hairStyle === "curly") {
     hairHTML = `
       <circle cx="33" cy="26" r="11" fill="${hairCol}" />
@@ -91,49 +91,49 @@ function generateAvatarSVG(avatar, age = 25, happiness = 80) {
     `;
   }
 
-  // Pêlo facial (Pera / Goatee)
+  // Pêlo facial (Pera / Goatee idêntico à referência)
   let beardHTML = "";
   if (showBeard) {
     if (av.beard === "goatee") {
       beardHTML = `
-        <path d="M 42 55 Q 50 50 58 55 Q 54 69, 50 74 Q 46 69, 42 55 Z" fill="#7c2d12" />
-        <path d="M 38 56 Q 50 51 62 56 Q 50 59, 38 56 Z" fill="#7c2d12" />
+        <path d="M 43 57 Q 50 53 57 57 Q 54 68, 50 72 Q 46 68, 43 57 Z" fill="#7c2d12" />
+        <path d="M 40 58 Q 50 54 60 58 Q 50 60, 40 58 Z" fill="#7c2d12" />
       `;
     } else if (av.beard === "full") {
-      beardHTML = `<path d="M 29 46 C 29 76, 71 76, 71 46 C 66 66, 34 66, 29 46 Z" fill="${hairCol}" />`;
+      beardHTML = `<path d="M 30 46 C 30 74, 70 74, 70 46 C 65 64, 35 64, 30 46 Z" fill="${hairCol}" />`;
     }
   }
 
   // Boca
-  let mouthHTML = `<path d="M 40 63 Q 50 72 60 63" stroke="#7f1d1d" stroke-width="3" fill="none" stroke-linecap="round" />`;
+  let mouthHTML = `<path d="M 41 62 Q 50 70 59 62" stroke="#7f1d1d" stroke-width="2.8" fill="none" stroke-linecap="round" />`;
   if (happiness < 40) {
-    mouthHTML = `<path d="M 40 68 Q 50 58 60 68" stroke="#7f1d1d" stroke-width="3" fill="none" stroke-linecap="round" />`;
+    mouthHTML = `<path d="M 41 66 Q 50 57 59 66" stroke="#7f1d1d" stroke-width="2.8" fill="none" stroke-linecap="round" />`;
   } else if (happiness < 65) {
-    mouthHTML = `<line x1="41" y1="64" x2="59" y2="64" stroke="#7f1d1d" stroke-width="3" stroke-linecap="round" />`;
+    mouthHTML = `<line x1="42" y1="63" x2="58" y2="63" stroke="#7f1d1d" stroke-width="2.8" stroke-linecap="round" />`;
   }
 
   // Óculos
   let glassesHTML = "";
   if (av.glasses === "round") {
     glassesHTML = `
-      <circle cx="38" cy="45" r="8" stroke="#0f172a" stroke-width="2.5" fill="rgba(255,255,255,0.2)" />
-      <circle cx="62" cy="45" r="8" stroke="#0f172a" stroke-width="2.5" fill="rgba(255,255,255,0.2)" />
-      <line x1="46" y1="45" x2="54" y2="45" stroke="#0f172a" stroke-width="2.5" />
+      <circle cx="39" cy="44" r="7.5" stroke="#0f172a" stroke-width="2.2" fill="rgba(255,255,255,0.2)" />
+      <circle cx="61" cy="44" r="7.5" stroke="#0f172a" stroke-width="2.2" fill="rgba(255,255,255,0.2)" />
+      <line x1="46.5" y1="44" x2="53.5" y2="44" stroke="#0f172a" stroke-width="2.2" />
     `;
   } else if (av.glasses === "sunglasses") {
     glassesHTML = `
-      <rect x="30" y="39" width="17" height="12" rx="3" fill="#0f172a" />
-      <rect x="53" y="39" width="17" height="12" rx="3" fill="#0f172a" />
-      <line x1="47" y1="44" x2="53" y2="44" stroke="#0f172a" stroke-width="3" />
+      <rect x="31" y="38" width="16" height="11" rx="2.5" fill="#0f172a" />
+      <rect x="53" y="38" width="16" height="11" rx="2.5" fill="#0f172a" />
+      <line x1="47" y1="43" x2="53" y2="43" stroke="#0f172a" stroke-width="2.5" />
     `;
   }
 
   return `
     <svg viewBox="0 0 100 100" class="avatar-svg" style="width:100%;height:100%;display:block;">
       <defs>
-        <radialGradient id="faceGrad" cx="50%" cy="35%" r="60%">
+        <radialGradient id="faceGrad" cx="50%" cy="35%" r="65%">
           <stop offset="0%" stop-color="${av.skin}" />
-          <stop offset="100%" stop-color="#9a3412" stop-opacity="0.3" />
+          <stop offset="100%" stop-color="#9a3412" stop-opacity="0.25" />
         </radialGradient>
       </defs>
       
@@ -141,33 +141,33 @@ function generateAvatarSVG(avatar, age = 25, happiness = 80) {
       <circle cx="50" cy="50" r="48" fill="#111c30" />
       
       <!-- Pescoço -->
-      <rect x="41" y="66" width="18" height="22" fill="url(#faceGrad)" />
+      <rect x="42" y="66" width="16" height="22" fill="url(#faceGrad)" />
       
       <!-- T-shirt azul -->
-      <path d="M 20 96 C 22 75, 78 75, 80 96 Z" fill="#2563eb" />
+      <path d="M 22 96 C 24 76, 76 76, 78 96 Z" fill="#2563eb" />
       
-      <!-- Orelhas -->
-      <circle cx="26" cy="46" r="6" fill="${av.skin}" />
-      <circle cx="74" cy="46" r="6" fill="${av.skin}" />
+      <!-- Orelhas nas laterais corretas -->
+      <circle cx="28" cy="45" r="5.5" fill="${av.skin}" />
+      <circle cx="72" cy="45" r="5.5" fill="${av.skin}" />
       
-      <!-- Rosto Principal -->
-      <rect x="28" y="24" width="44" height="48" rx="20" fill="url(#faceGrad)" />
+      <!-- Rosto Proporcional (Largura 44, Altura 46) -->
+      <rect x="28" y="24" width="44" height="46" rx="20" fill="url(#faceGrad)" />
       
       <!-- Sobrancelhas grossas expressivas BitLife -->
-      <path d="M 32 37 Q 38 32, 45 37" stroke="${hairCol}" stroke-width="3.5" stroke-linecap="round" fill="none" />
-      <path d="M 55 37 Q 62 32, 68 37" stroke="${hairCol}" stroke-width="3.5" stroke-linecap="round" fill="none" />
+      <path d="M 33 37 Q 39 33, 45 37" stroke="${hairCol}" stroke-width="3" stroke-linecap="round" fill="none" />
+      <path d="M 55 37 Q 61 33, 67 37" stroke="${hairCol}" stroke-width="3" stroke-linecap="round" fill="none" />
       
       <!-- Olhos detalhados -->
-      <ellipse cx="38" cy="45" rx="4.5" ry="5" fill="#ffffff" />
-      <circle cx="38" cy="45" r="2.8" fill="${av.eyeColor}" />
-      <circle cx="37" cy="44" r="1.1" fill="#ffffff" />
+      <ellipse cx="39" cy="44" rx="4" ry="4.5" fill="#ffffff" />
+      <circle cx="39" cy="44" r="2.5" fill="${av.eyeColor}" />
+      <circle cx="38" cy="43" r="1" fill="#ffffff" />
       
-      <ellipse cx="62" cy="45" rx="4.5" ry="5" fill="#ffffff" />
-      <circle cx="62" cy="45" r="2.8" fill="${av.eyeColor}" />
-      <circle cx="61" cy="44" r="1.1" fill="#ffffff" />
+      <ellipse cx="61" cy="44" rx="4" ry="4.5" fill="#ffffff" />
+      <circle cx="61" cy="44" r="2.5" fill="${av.eyeColor}" />
+      <circle cx="60" cy="43" r="1" fill="#ffffff" />
       
-      <!-- Nariz -->
-      <path d="M 50 44 L 47 52 L 53 52" stroke="rgba(0,0,0,0.25)" stroke-width="2" fill="none" stroke-linecap="round" />
+      <!-- Nariz centralizado -->
+      <path d="M 50 43 L 47.5 51 L 52.5 51" stroke="rgba(0,0,0,0.22)" stroke-width="1.8" fill="none" stroke-linecap="round" />
       
       ${beardHTML}
       ${mouthHTML}
@@ -186,6 +186,8 @@ function updateSetupAvatarPreview() {
 /* =========================================
    GUARDAR / CARREGAR JOGO
 ========================================= */
+
+const SAVE_KEY = "starlife_v18_bitlife_perfect";
 
 function saveGame() {
   if (!game) return;

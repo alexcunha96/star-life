@@ -177,6 +177,33 @@ button:disabled {
   display: none !important;
 }
 
+/* Sub-navegação interna */
+.sub-nav {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.sub-btn {
+  flex: 1;
+  background-color: var(--bg-color);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  padding: 8px;
+  font-size: 0.85rem;
+  border-radius: 8px;
+}
+
+.sub-btn.active {
+  background-color: var(--accent-color);
+  color: white;
+  border-color: var(--accent-color);
+}
+
+.sub-content.hidden {
+  display: none !important;
+}
+
 .stat-bar {
   margin-bottom: 10px;
 }

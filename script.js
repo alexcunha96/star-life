@@ -1,10 +1,10 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - MOTOR COM AVATAR REALISTA HD
+   STARLIFE - MOTOR COM AVATAR ESTILO BITLIFE CLÁSSICO
 ========================================= */
 
-const SAVE_KEY = "starlife_v12_avatar_hd";
+const SAVE_KEY = "starlife_v14_bitlife_style";
 
 let game = null;
 let initialFamily = [];
@@ -65,118 +65,97 @@ function showToast(message) {
 }
 
 /* =========================================
-   GERADOR DE AVATAR SVG REALISTA (ESTILO BITLIFE MELHORADO)
+   GERADOR DE AVATAR SVG (ESTILO BITLIFE IDÊNTICO)
 ========================================= */
 
 function generateAvatarSVG(avatar, age = 25, happiness = 80) {
   const av = avatar || setupAvatar;
   const effectiveHairColor = age >= 65 ? "#cbd5e1" : av.hairColor;
   const showBeard = age >= 16 && av.beard !== "none";
-  const showWrinkles = age >= 52;
 
-  // Cabelo de trás detalhado
+  // Cabelo de trás
   let backHair = "";
   if (av.hairStyle === "long") {
-    backHair = `<path d="M 24 35 Q 20 70, 30 88 Q 50 92, 70 88 Q 80 70, 76 35 Z" fill="${effectiveHairColor}" />`;
+    backHair = `<path d="M 24 35 Q 20 70, 32 85 Q 50 90, 68 85 Q 80 70, 76 35 Z" fill="${effectiveHairColor}" />`;
   } else if (av.hairStyle === "ponytail") {
-    backHair = `<circle cx="78" cy="42" r="14" fill="${effectiveHairColor}" /><path d="M 78 42 Q 92 50, 95 68" stroke="${effectiveHairColor}" stroke-width="8" stroke-linecap="round" fill="none" />`;
+    backHair = `<circle cx="78" cy="40" r="13" fill="${effectiveHairColor}" /><path d="M 78 40 Q 90 48, 92 64" stroke="${effectiveHairColor}" stroke-width="7" stroke-linecap="round" fill="none" />`;
   }
 
-  // Cabelo da frente / topo com volume
+  // Cabelo da frente estilo BitLife
   let frontHair = "";
   if (av.hairStyle === "short") {
-    frontHair = `<path d="M 24 40 Q 24 14, 50 14 Q 76 14, 76 40 Q 72 24, 50 20 Q 28 24, 24 40 Z" fill="${effectiveHairColor}" />`;
+    frontHair = `<path d="M 28 38 C 26 15, 74 15, 72 38 C 68 24, 32 24, 28 38 Z" fill="${effectiveHairColor}" />`;
   } else if (av.hairStyle === "long") {
-    frontHair = `<path d="M 22 42 Q 20 16, 50 14 Q 80 16, 78 42 Q 74 24, 50 22 Q 26 24, 22 42 Z" fill="${effectiveHairColor}" />`;
+    frontHair = `<path d="M 26 40 C 24 14, 76 14, 74 40 C 70 24, 30 24, 26 40 Z" fill="${effectiveHairColor}" />`;
   } else if (av.hairStyle === "ponytail") {
-    frontHair = `<path d="M 24 40 Q 24 15, 50 15 Q 76 15, 76 40 Q 70 24, 50 22 Q 30 24, 24 40 Z" fill="${effectiveHairColor}" />`;
+    frontHair = `<path d="M 28 38 C 26 15, 74 15, 72 38 C 68 24, 32 24, 28 38 Z" fill="${effectiveHairColor}" />`;
   } else if (av.hairStyle === "curly") {
     frontHair = `
-      <circle cx="30" cy="30" r="11" fill="${effectiveHairColor}" />
-      <circle cx="42" cy="22" r="13" fill="${effectiveHairColor}" />
-      <circle cx="56" cy="22" r="13" fill="${effectiveHairColor}" />
-      <circle cx="70" cy="30" r="11" fill="${effectiveHairColor}" />
-      <circle cx="24" cy="42" r="9" fill="${effectiveHairColor}" />
-      <circle cx="76" cy="42" r="9" fill="${effectiveHairColor}" />
+      <circle cx="33" cy="28" r="10" fill="${effectiveHairColor}" />
+      <circle cx="44" cy="21" r="11" fill="${effectiveHairColor}" />
+      <circle cx="56" cy="21" r="11" fill="${effectiveHairColor}" />
+      <circle cx="67" cy="28" r="10" fill="${effectiveHairColor}" />
     `;
   }
 
-  // Barba realista
+  // Barba estilo BitLife
   let beardSVG = "";
   if (showBeard) {
     if (av.beard === "mustache") {
-      beardSVG = `<path d="M 38 60 Q 50 54 62 60 Q 50 65 38 60 Z" fill="${effectiveHairColor}" />`;
+      beardSVG = `<path d="M 39 58 Q 50 53 61 58 Q 50 63 39 58 Z" fill="${effectiveHairColor}" />`;
     } else if (av.beard === "full") {
-      beardSVG = `<path d="M 28 50 Q 28 82, 50 82 Q 72 82, 72 50 Q 68 76, 50 78 Q 32 76, 28 50 Z" fill="${effectiveHairColor}" opacity="0.95" />`;
+      beardSVG = `<path d="M 31 50 C 31 74, 69 74, 69 50 C 64 64, 36 64, 31 50 Z" fill="${effectiveHairColor}" />`;
     }
   }
 
-  // Expressão da boca baseada na felicidade
-  let mouthSVG = `<path d="M 40 68 Q 50 76 60 68" stroke="#7f1d1d" stroke-width="2.5" fill="none" stroke-linecap="round" />`;
+  // Boca limpa
+  let mouthSVG = `<path d="M 42 63 Q 50 70 58 63" stroke="#2c1810" stroke-width="2.5" fill="none" stroke-linecap="round" />`;
   if (happiness < 40) {
-    mouthSVG = `<path d="M 40 72 Q 50 63 60 72" stroke="#7f1d1d" stroke-width="2.5" fill="none" stroke-linecap="round" />`;
+    mouthSVG = `<path d="M 42 67 Q 50 59 58 67" stroke="#2c1810" stroke-width="2.5" fill="none" stroke-linecap="round" />`;
   } else if (happiness < 65) {
-    mouthSVG = `<line x1="41" y1="69" x2="59" y2="69" stroke="#7f1d1d" stroke-width="2.5" stroke-linecap="round" />`;
+    mouthSVG = `<line x1="43" y1="64" x2="57" y2="64" stroke="#2c1810" stroke-width="2.5" stroke-linecap="round" />`;
   }
 
-  // Óculos modernos
+  // Óculos
   let glassesSVG = "";
   if (av.glasses === "round") {
     glassesSVG = `
-      <rect x="30" y="42" width="18" height="15" rx="4" stroke="#0f172a" stroke-width="2.2" fill="rgba(255,255,255,0.15)" />
-      <rect x="52" y="42" width="18" height="15" rx="4" stroke="#0f172a" stroke-width="2.2" fill="rgba(255,255,255,0.15)" />
-      <line x1="48" y1="48" x2="52" y2="48" stroke="#0f172a" stroke-width="2.2" />
+      <circle cx="40" cy="46" r="7.5" stroke="#111827" stroke-width="2.2" fill="rgba(255,255,255,0.25)" />
+      <circle cx="60" cy="46" r="7.5" stroke="#111827" stroke-width="2.2" fill="rgba(255,255,255,0.25)" />
+      <line x1="47.5" y1="46" x2="52.5" y2="46" stroke="#111827" stroke-width="2.2" />
     `;
   } else if (av.glasses === "sunglasses") {
     glassesSVG = `
-      <path d="M 30 42 L 48 44 L 48 55 L 30 52 Z" fill="#0f172a" />
-      <path d="M 52 44 L 70 42 L 70 52 L 52 55 Z" fill="#0f172a" />
-      <line x1="48" y1="46" x2="52" y2="46" stroke="#0f172a" stroke-width="3" />
+      <rect x="32" y="41" width="16" height="11" rx="3" fill="#111827" />
+      <rect x="52" y="41" width="16" height="11" rx="3" fill="#111827" />
+      <line x1="48" y1="45" x2="52" y2="45" stroke="#111827" stroke-width="2.5" />
     `;
   }
 
-  // Rugas / Detalhes de envelhecimento
-  const wrinklesSVG = showWrinkles
-    ? `<path d="M 36 34 Q 50 31 64 34" stroke="rgba(0,0,0,0.18)" stroke-width="1.2" fill="none" /><path d="M 38 63 Q 50 67 62 63" stroke="rgba(0,0,0,0.15)" stroke-width="1.2" fill="none" />`
-    : "";
-
   return `
     <svg viewBox="0 0 100 100" class="avatar-svg">
-      <defs>
-        <radialGradient id="faceGrad" cx="50%" cy="40%" r="55%">
-          <stop offset="0%" stop-color="${av.skin}" />
-          <stop offset="100%" stop-color="rgba(0,0,0,0.12)" stop-opacity="0.8" />
-        </radialGradient>
-      </defs>
-      <circle cx="50" cy="50" r="48" fill="#14233c" />
+      <!-- Fundo circular do perfil (estilo BitLife) -->
+      <circle cx="50" cy="50" r="48" fill="#1b2a4a" />
       ${backHair}
-      <!-- Pescoço e Roupa -->
-      <rect x="40" y="68" width="20" height="20" fill="url(#faceGrad)" />
-      <path d="M 18 96 Q 50 74, 82 96 Z" fill="#2563eb" />
-      <path d="M 38 84 Q 50 92, 62 84 Z" fill="#1d4ed8" />
-      <!-- Orelhas com detalhe -->
-      <circle cx="26" cy="50" r="6" fill="${av.skin}" />
-      <circle cx="26" cy="50" r="3" fill="rgba(0,0,0,0.08)" />
-      <circle cx="74" cy="50" r="6" fill="${av.skin}" />
-      <circle cx="74" cy="50" r="3" fill="rgba(0,0,0,0.08)" />
-      <!-- Rosto com formato HD e sombreamento -->
-      <path d="M 28 38 C 28 20, 72 20, 72 38 C 72 64, 62 80, 50 80 C 38 80, 28 64, 28 38 Z" fill="url(#faceGrad)" />
-      ${wrinklesSVG}
-      <!-- Sobrancelhas naturais -->
-      <path d="M 33 40 Q 39 37, 45 40" stroke="${effectiveHairColor}" stroke-width="2.5" stroke-linecap="round" fill="none" />
-      <path d="M 55 40 Q 61 37, 67 40" stroke="${effectiveHairColor}" stroke-width="2.5" stroke-linecap="round" fill="none" />
-      <!-- Olhos HD com brilho e pupila -->
-      <ellipse cx="39" cy="48" rx="4.5" ry="3.5" fill="#ffffff" />
-      <circle cx="39" cy="48" r="2.5" fill="${av.eyeColor}" />
-      <circle cx="38" cy="47" r="1" fill="#ffffff" />
-      
-      <ellipse cx="61" cy="48" rx="4.5" ry="3.5" fill="#ffffff" />
-      <circle cx="61" cy="48" r="2.5" fill="${av.eyeColor}" />
-      <circle cx="60" cy="47" r="1" fill="#ffffff" />
-      <!-- Nariz refinado -->
-      <path d="M 50 45 L 47 56 L 53 56" stroke="rgba(0,0,0,0.22)" stroke-width="1.8" fill="none" stroke-linecap="round" />
-      <ellipse cx="48" cy="56" rx="1" ry="0.6" fill="rgba(0,0,0,0.2)" />
-      <ellipse cx="52" cy="56" rx="1" ry="0.6" fill="rgba(0,0,0,0.2)" />
+      <!-- Pescoço -->
+      <rect x="42" y="68" width="16" height="18" fill="${av.skin}" />
+      <!-- Roupa / T-shirt -->
+      <path d="M 20 96 C 22 78, 78 78, 80 96 Z" fill="#2563eb" />
+      <!-- Orelhas clássicas -->
+      <circle cx="28" cy="48" r="5.5" fill="${av.skin}" />
+      <circle cx="72" cy="48" r="5.5" fill="${av.skin}" />
+      <!-- Cabeça / Rosto Oval BitLife -->
+      <rect x="30" y="25" width="40" height="48" rx="20" fill="${av.skin}" />
+      <!-- Sobrancelhas finas -->
+      <line x1="35" y1="40" x2="44" y2="40" stroke="${effectiveHairColor}" stroke-width="2" stroke-linecap="round" />
+      <line x1="56" y1="40" x2="65" y2="40" stroke="${effectiveHairColor}" stroke-width="2" stroke-linecap="round" />
+      <!-- Olhos ovais simples e limpos -->
+      <ellipse cx="39" cy="46" rx="3.2" ry="4" fill="#ffffff" />
+      <ellipse cx="39" cy="46" rx="1.8" ry="2.2" fill="${av.eyeColor}" />
+      <ellipse cx="61" cy="46" rx="3.2" ry="4" fill="#ffffff" />
+      <ellipse cx="61" cy="46" rx="1.8" ry="2.2" fill="${av.eyeColor}" />
+      <!-- Nariz estilo BitLife (ponto suave) -->
+      <circle cx="50" cy="52" r="1.8" fill="rgba(0,0,0,0.2)" />
       ${beardSVG}
       ${mouthSVG}
       ${glassesSVG}

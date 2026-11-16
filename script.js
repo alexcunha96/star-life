@@ -1,10 +1,10 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - MOTOR REORGANIZADO & COMPLETO
+   STARLIFE - MOTOR CORRIGIDO (LOJA & PATRIMÓNIO)
 ========================================= */
 
-const SAVE_KEY = "starlife_v9_shop_assets";
+const SAVE_KEY = "starlife_v10_fixed";
 
 let game = null;
 let initialFamily = [];
@@ -162,15 +162,12 @@ function renderBankSection() {
         <div class="person-card" style="flex-direction: column; align-items: flex-start; gap: 6px;">
           <strong>${escapeHTML(b.name)}</strong>
           <small>${escapeHTML(b.desc)} (Taxa Crédito: ${(b.interestRate * 100).toFixed(1)}%)</small>
-          <button class="primary-btn full-width" data-open-bank="${b.id}">Abrir Conta</button>
+          <button class="primary-btn full-width" onclick="openBankAccount('${b.id}')">Abrir Conta</button>
         </div>
       `;
     });
     html += `</div></div>`;
     container.innerHTML = html;
-    container.querySelectorAll("[data-open-bank]").forEach(btn => {
-      btn.onclick = () => openBankAccount(btn.dataset.openBank);
-    });
   } else {
     container.innerHTML = `
       <div class="panel">
@@ -404,7 +401,7 @@ function sellVehicle(vehId) {
   const idx = game.vehicles.findIndex(v => v.id === vehId);
   if (idx === -1) return;
   const veh = game.vehicles[idx];
-  const sellPrice = Math.round(veh.value * 0.75); // depreciação ligeira
+  const sellPrice = Math.round(veh.value * 0.75);
   if (!confirm(`Queres vender "${veh.name}" por ${money(sellPrice)}?`)) return;
 
   game.player.bank += sellPrice;
@@ -1008,7 +1005,8 @@ function renderHome() {
 function renderPatrimony() {
   const player = game.player;
   const propsVal = game.properties.reduce((sum, p) => sum + p.value, 0);
-  $("totalWealth").textContent = money(player.bank + propsVal - player.debt);
+  const vehVal = game.vehicles.reduce((sum, v) => sum + v.value, 0);
+  $("totalWealth").textContent = money(player.bank + propsVal + vehVal - player.debt);
   $("bankBalance").textContent = money(player.bank);
   $("currentBankName").textContent = player.bankAccount ? player.bankAccount.bankName : "Sem conta aberta";
   $("annualSalary").textContent = money(player.salary);

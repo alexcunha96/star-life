@@ -1,10 +1,10 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - MOTOR COMPLETO E SEGURO
+   STARLIFE - MOTOR ORGANIZADO & COMPLETO
 ========================================= */
 
-const SAVE_KEY = "starlife_v7_fixed";
+const SAVE_KEY = "starlife_v8_organized";
 
 let game = null;
 let initialFamily = [];
@@ -337,7 +337,7 @@ function renderHousingSection() {
   if (!container) return;
   const player = game.player;
 
-  let html = `<div class="panel"><h3>🏡 Habitação & Mercado Imobiliário</h3>`;
+  let html = `<div class="panel"><h3>🏡 Imobiliário & Mercado</h3>`;
   if (player.activeRental) {
     html += `<div class="person-card" style="flex-direction: column; align-items: flex-start; margin-bottom: 10px; border-left: 4px solid var(--accent-color);"><strong>Arrendado: ${escapeHTML(player.activeRental.title)}</strong><small>📍 ${escapeHTML(player.activeRental.address)}</small><small>Renda: ${money(player.activeRental.rentMonthly)}/mês (${player.activeRental.monthsRemaining} meses restantes)</small></div>`;
   }
@@ -356,7 +356,7 @@ function renderHousingSection() {
       `;
     });
   }
-  html += `<h4 style="margin-top: 12px;">Imóveis à Disposição (Clica para ver)</h4><div class="button-list">`;
+  html += `<h4 style="margin-top: 12px;">Imóveis Disponíveis (Clica para ver)</h4><div class="button-list">`;
   game.marketListings.forEach(h => {
     html += `
       <div class="person-card house-card" onclick="openPropertyModal('${h.id}')">
@@ -637,7 +637,7 @@ function renderSchoolAndUniversitySubmenu() {
   const stage = getCurrentEducationStage(player.age);
 
   let html = `
-    <div class="panel" style="margin-top: 16px;">
+    <div class="panel" style="margin-top: 6px;">
       <h3>📚 Estatísticas Escolares</h3>
       <div class="info-row"><span>Etapa atual</span><strong>${escapeHTML(stage?.name || player.education)}</strong></div>
       <div class="info-row"><span>Média</span><strong>${player.schoolGrade}/20</strong></div>
@@ -959,7 +959,6 @@ function renderPatrimony() {
   $("bankBalance").textContent = money(player.bank);
   $("currentBankName").textContent = player.bankAccount ? player.bankAccount.bankName : "Sem conta aberta";
   $("annualSalary").textContent = money(player.salary);
-  $("annualExpenses").textContent = money(player.expenses);
   $("debtValue").textContent = money(player.debt);
 
   renderBankSection();
@@ -1022,6 +1021,18 @@ function showTab(tabId) {
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tabId));
 }
 
+function showSubTab(subId) {
+  const parentTab = document.querySelector(".tab-content:not(.hidden)");
+  if (!parentTab) return;
+  parentTab.querySelectorAll(".sub-content").forEach(c => c.classList.add("hidden"));
+  parentTab.querySelectorAll(".sub-btn").forEach(b => b.classList.remove("active"));
+
+  const target = $(subId);
+  if (target) target.classList.remove("hidden");
+  const activeBtn = parentTab.querySelector(`[data-sub="${subId}"]`);
+  if (activeBtn) activeBtn.classList.add("active");
+}
+
 function updateSetupFamilyUI() {
   const container = $("setupFamilyList");
   if (!container) return;
@@ -1046,6 +1057,10 @@ function boot() {
 
   document.querySelectorAll("[data-health]").forEach(btn => {
     btn.onclick = () => openHealthSpecialty(btn.dataset.health);
+  });
+
+  document.querySelectorAll(".sub-btn").forEach(btn => {
+    btn.onclick = () => showSubTab(btn.dataset.sub);
   });
 
   $("createBusinessBtn")?.addEventListener("click", createBusiness);

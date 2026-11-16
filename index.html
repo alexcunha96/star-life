@@ -14,7 +14,7 @@
       <h1>⭐ StarLife</h1>
       <p>A tua vida. As tuas escolhas.</p>
       
-      <form id="startForm">
+      <div id="startForm">
         <div class="input-group">
           <label>Nome</label>
           <input type="text" id="playerName" placeholder="Ex: João" required>
@@ -73,8 +73,8 @@
           <div id="setupFamilyList" style="margin-top: 10px;" class="people-list"></div>
         </div>
 
-        <button type="submit" class="primary-btn full-width" style="margin-top: 15px;">Nova Vida</button>
-      </form>
+        <button type="button" id="startBtn" class="primary-btn full-width" style="margin-top: 15px;">Nova Vida</button>
+      </div>
 
       <div id="continuePanel" class="hidden" style="margin-top: 15px;">
         <button id="continueGameBtn" class="secondary-btn full-width">Continuar Jogo</button>
@@ -135,13 +135,8 @@
           <div class="info-row"><span>Dívidas / Crédito</span><strong id="debtValue">0 €</strong></div>
         </div>
 
-        <!-- Secção Bancária -->
         <div id="bankSectionContainer"></div>
-
-        <!-- Secção de Habitação & Imobiliário -->
         <div id="housingSectionContainer"></div>
-
-        <!-- Secção de Veículos e Cartas (Carros e Motas) -->
         <div id="vehiclesSectionContainer"></div>
       </section>
 
@@ -213,7 +208,6 @@
     </nav>
   </div>
 
-  <!-- Modal Dinâmico -->
   <div id="customModal" class="modal-overlay hidden"></div>
 
   <!-- Ecrã de Morte / Lápide -->

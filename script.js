@@ -1,10 +1,10 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - MOTOR ORGANIZADO & COMPLETO
+   STARLIFE - MOTOR REORGANIZADO & COMPLETO
 ========================================= */
 
-const SAVE_KEY = "starlife_v8_organized";
+const SAVE_KEY = "starlife_v9_shop_assets";
 
 let game = null;
 let initialFamily = [];
@@ -183,7 +183,7 @@ function renderBankSection() {
 }
 
 /* =========================================
-   MERCADO IMOBILIÁRIO & HABITAÇÃO
+   MERCADO IMOBILIÁRIO & LOJA DE CASAS
 ========================================= */
 
 const streetNames = ["Rua das Flores", "Avenida da Liberdade", "Travessa do Sol", "Alameda dos Oceanos", "Rua da Bela Vista", "Praceta das Oliveiras", "Avenida Central", "Rua do Miradouro"];
@@ -229,7 +229,7 @@ function openPropertyModal(listingId) {
       <div class="info-row"><span>Renda Mensal</span><strong>${money(house.rentMonthly)}/mês</strong></div>
       
       <div style="margin-top: 14px;">
-        <h4>Opções de Arrendamento</h4>
+        <h4>Arrendar Contrato</h4>
         <div style="display: flex; gap: 6px; margin-top: 6px;">
           <button class="secondary-btn" style="flex:1" onclick="rentProperty('${house.id}', 12)">12 Meses</button>
           <button class="secondary-btn" style="flex:1" onclick="rentProperty('${house.id}', 24)">24 Meses</button>
@@ -238,7 +238,7 @@ function openPropertyModal(listingId) {
       </div>
 
       <div style="margin-top: 14px;">
-        <h4>Opções de Compra</h4>
+        <h4>Comprar Imóvel</h4>
         <div class="modal-buttons" style="margin-top: 6px;">
           <button class="primary-btn full-width" onclick="buyPropertyTransfer('${house.id}')">💳 Transferência (${money(house.buyPrice)})</button>
           <button class="secondary-btn full-width" onclick="buyPropertyMortgage('${house.id}')">🏦 Crédito Habitação</button>
@@ -317,46 +317,16 @@ function buyPropertyMortgage(listingId) {
   renderGame();
 }
 
-function togglePropertyStatus(propId) {
-  const prop = game.properties.find(p => p.id === propId);
-  if (!prop) return;
-  if (prop.status === "primary") {
-    prop.status = "rented_out";
-    addEvent(`Colocaste "${prop.title}" a arrendar.`, "positive");
-  } else {
-    game.properties.forEach(p => { if (p.status === "primary") p.status = "rented_out"; });
-    prop.status = "primary";
-    addEvent(`Definiste "${prop.title}" como tua moradia principal.`, "positive");
-  }
-  saveGame();
-  renderGame();
-}
-
 function renderHousingSection() {
   const container = $("housingSectionContainer");
   if (!container) return;
   const player = game.player;
 
-  let html = `<div class="panel"><h3>🏡 Imobiliário & Mercado</h3>`;
+  let html = `<div class="panel"><h3>🏡 Loja de Imobiliário</h3>`;
   if (player.activeRental) {
     html += `<div class="person-card" style="flex-direction: column; align-items: flex-start; margin-bottom: 10px; border-left: 4px solid var(--accent-color);"><strong>Arrendado: ${escapeHTML(player.activeRental.title)}</strong><small>📍 ${escapeHTML(player.activeRental.address)}</small><small>Renda: ${money(player.activeRental.rentMonthly)}/mês (${player.activeRental.monthsRemaining} meses restantes)</small></div>`;
   }
-  if (game.properties.length > 0) {
-    html += `<h4 style="margin-top: 8px;">Os Teus Imóveis</h4>`;
-    game.properties.forEach(p => {
-      const statusLbl = p.status === "primary" ? "🏠 Moradia Principal" : `💰 A Arrendar (+${money(p.rentalIncomeAnnual)}/ano)`;
-      html += `
-        <div class="person-card" style="flex-direction: column; align-items: flex-start; margin-bottom: 8px;">
-          <div style="display:flex; align-items:center; gap:10px; width:100%;">
-            <div style="width:55px;">${getHouseSVG(p.type)}</div>
-            <div style="flex:1;"><strong>${escapeHTML(p.title)}</strong><small style="display:block;">${escapeHTML(p.address)}</small><small style="color: var(--success-color);">${statusLbl}</small></div>
-          </div>
-          <button class="small-btn full-width" style="margin-top:6px;" onclick="togglePropertyStatus('${p.id}')">${p.status === "primary" ? "Colocar a Arrendar" : "Definir como Moradia Principal"}</button>
-        </div>
-      `;
-    });
-  }
-  html += `<h4 style="margin-top: 12px;">Imóveis Disponíveis (Clica para ver)</h4><div class="button-list">`;
+  html += `<h4 style="margin-top: 8px;">Imóveis Disponíveis (Clica para ver e comprar)</h4><div class="button-list">`;
   game.marketListings.forEach(h => {
     html += `
       <div class="person-card house-card" onclick="openPropertyModal('${h.id}')">
@@ -396,7 +366,97 @@ function processHousingYear() {
 }
 
 /* =========================================
-   LEGISLAÇÃO PORTUGUESA DE CARTAS & VEÍCULOS
+   GESTÃO DE BENS NO PATRIMÓNIO (ALTERAR E VENDER)
+========================================= */
+
+function togglePropertyStatus(propId) {
+  const prop = game.properties.find(p => p.id === propId);
+  if (!prop) return;
+  if (prop.status === "primary") {
+    prop.status = "rented_out";
+    addEvent(`Colocaste "${prop.title}" a arrendar.`, "positive");
+  } else {
+    game.properties.forEach(p => { if (p.status === "primary") p.status = "rented_out"; });
+    prop.status = "primary";
+    addEvent(`Definiste "${prop.title}" como tua moradia principal.`, "positive");
+  }
+  saveGame();
+  renderGame();
+}
+
+function sellProperty(propId) {
+  const idx = game.properties.findIndex(p => p.id === propId);
+  if (idx === -1) return;
+  const prop = game.properties[idx];
+  if (!confirm(`Tens a certeza de que queres vender "${prop.title}" por ${money(prop.value)}?`)) return;
+
+  game.player.bank += prop.value;
+  if (prop.mortgageRemaining > 0) {
+    game.player.debt = Math.max(0, game.player.debt - prop.mortgageRemaining);
+  }
+  game.properties.splice(idx, 1);
+  addEvent(`Vendeste o imóvel "${prop.title}" por ${money(prop.value)}.`, "positive");
+  saveGame();
+  renderGame();
+}
+
+function sellVehicle(vehId) {
+  const idx = game.vehicles.findIndex(v => v.id === vehId);
+  if (idx === -1) return;
+  const veh = game.vehicles[idx];
+  const sellPrice = Math.round(veh.value * 0.75); // depreciação ligeira
+  if (!confirm(`Queres vender "${veh.name}" por ${money(sellPrice)}?`)) return;
+
+  game.player.bank += sellPrice;
+  game.vehicles.splice(idx, 1);
+  addEvent(`Vendeste o veículo "${veh.name}" por ${money(sellPrice)}.`, "positive");
+  saveGame();
+  renderGame();
+}
+
+function renderMyAssets() {
+  const container = $("myAssetsContainer");
+  if (!container) return;
+  
+  let html = `<div class="panel"><h3>🏡 Os Teus Imóveis & Bens</h3>`;
+  if (game.properties.length === 0 && game.vehicles.length === 0) {
+    html += `<p class="muted">Ainda não tens imóveis nem veículos comprados. Visita a Loja!</p>`;
+  }
+
+  game.properties.forEach(p => {
+    const statusLbl = p.status === "primary" ? "🏠 Moradia Principal" : `💰 A Arrendar (+${money(p.rentalIncomeAnnual)}/ano)`;
+    html += `
+      <div class="person-card" style="flex-direction: column; align-items: flex-start; margin-bottom: 8px;">
+        <div style="display:flex; align-items:center; gap:10px; width:100%;">
+          <div style="width:55px;">${getHouseSVG(p.type)}</div>
+          <div style="flex:1;"><strong>${escapeHTML(p.title)}</strong><small style="display:block;">${escapeHTML(p.address)}</small><small style="color: var(--success-color);">${statusLbl}</small></div>
+        </div>
+        <div style="display: flex; gap: 6px; width: 100%; margin-top: 6px;">
+          <button class="small-btn" style="flex: 1;" onclick="togglePropertyStatus('${p.id}')">${p.status === "primary" ? "Arrendar" : "Tornar Principal"}</button>
+          <button class="small-btn danger-btn" style="flex: 1;" onclick="sellProperty('${p.id}')">Vender (${money(p.value)})</button>
+        </div>
+      </div>
+    `;
+  });
+
+  if (game.vehicles.length > 0) {
+    html += `<h4 style="margin-top: 15px;">Veículos na Garagem</h4>`;
+    game.vehicles.forEach(v => {
+      html += `
+        <div class="person-card" style="margin-bottom: 6px;">
+          <div><strong>${escapeHTML(v.name)}</strong><small style="display:block;">Valor: ${money(v.value)}</small></div>
+          <button class="small-btn danger-btn" onclick="sellVehicle('${v.id}')">Vender</button>
+        </div>
+      `;
+    });
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+/* =========================================
+   LEGISLAÇÃO PORTUGUESA DE CARTAS & VEÍCULOS (LOJA)
 ========================================= */
 
 const licenseRules = {
@@ -485,21 +545,14 @@ function renderVehiclesSection() {
   });
   html += `</div></div>`;
 
-  html += `<div class="panel" style="margin-top: 15px;"><h3>🚗🏍️ Garagem & Concessionário</h3>`;
-  if (game.vehicles.length > 0) {
-    html += `<h4>Os Teus Veículos</h4>`;
-    game.vehicles.forEach(v => {
-      html += `<p style="padding: 4px 0;">• <strong>${escapeHTML(v.name)}</strong> (${money(v.value)})</p>`;
-    });
-  }
-
-  html += `<h4 style="margin-top: 10px;">Comprar Carros</h4><div class="button-list">`;
+  html += `<div class="panel" style="margin-top: 15px;"><h3>🚗🏍️ Concessionário de Veículos</h3>`;
+  html += `<h4 style="margin-top: 4px;">Comprar Carros</h4><div class="button-list">`;
   availableCars.forEach((c, idx) => {
     html += `<button class="secondary-btn full-width" onclick="buyVehicle('car', ${idx})">${escapeHTML(c.brand)} ${escapeHTML(c.name)} (${money(c.price)})</button>`;
   });
   html += `</div>`;
 
-  html += `<h4 style="margin-top: 12px;">Comprar Motas</h4><div class="button-list">`;
+  html += `<h4 style="margin-top: 12px;">Comprar Motas (Todas as Cilindradas)</h4><div class="button-list">`;
   availableBikes.forEach((b, idx) => {
     html += `<button class="secondary-btn full-width" onclick="buyVehicle('bike', ${idx})">${escapeHTML(b.brand)} ${escapeHTML(b.name)} [${b.cc}] (${money(b.price)})</button>`;
   });
@@ -509,7 +562,7 @@ function renderVehiclesSection() {
 }
 
 /* =========================================
-   NEGÓCIOS E SAÚDE
+   NEGÓCIOS (DENTRO DE CARREIRA)
 ========================================= */
 
 function createBusiness() {
@@ -554,7 +607,7 @@ function processBusinessesYear() {
 }
 
 /* =========================================
-   ESCOLA, UNIVERSIDADE E EVENTOS
+   ESCOLA E UNIVERSIDADE
 ========================================= */
 
 const educationStages = [
@@ -962,8 +1015,7 @@ function renderPatrimony() {
   $("debtValue").textContent = money(player.debt);
 
   renderBankSection();
-  renderHousingSection();
-  renderVehiclesSection();
+  renderMyAssets();
 }
 
 function renderCareer() {
@@ -986,6 +1038,7 @@ function renderCareer() {
   }
 
   renderSchoolAndUniversitySubmenu();
+  renderBusinesses();
 }
 
 function applyJob(name, salary) {
@@ -1010,7 +1063,8 @@ function renderGame() {
   renderHome();
   renderPatrimony();
   renderCareer();
-  renderBusinesses();
+  renderHousingSection();
+  renderVehiclesSection();
   renderPeople();
 }
 

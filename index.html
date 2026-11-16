@@ -17,11 +17,11 @@
       <div id="startForm">
         <div class="input-group">
           <label>Nome</label>
-          <input type="text" id="playerName" placeholder="Ex: João" required>
+          <input type="text" id="playerName" placeholder="Ex: João" value="João" required>
         </div>
         <div class="input-group">
           <label>Apelido</label>
-          <input type="text" id="playerSurname" placeholder="Ex: Silva" required>
+          <input type="text" id="playerSurname" placeholder="Ex: Silva" value="Silva" required>
         </div>
         <div class="input-group">
           <label>Género</label>
@@ -73,7 +73,8 @@
           <div id="setupFamilyList" style="margin-top: 10px;" class="people-list"></div>
         </div>
 
-        <button type="button" id="startBtn" class="primary-btn full-width" style="margin-top: 15px;">Nova Vida</button>
+        <!-- Botão com onclick direto para garantir que funciona sempre -->
+        <button type="button" onclick="startGame()" class="primary-btn full-width" style="margin-top: 15px;">Nova Vida</button>
       </div>
 
       <div id="continuePanel" class="hidden" style="margin-top: 15px;">

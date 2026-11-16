@@ -70,24 +70,26 @@ p.muted, .muted {
   font-size: 0.9rem;
 }
 
-/* Avatar Preview & Controls */
+/* Avatar Preview & Controls HD */
 .avatar-preview-box {
-  width: 110px;
-  height: 110px;
-  margin: 8px auto 14px auto;
+  width: 120px;
+  height: 120px;
+  margin: 10px auto 16px auto;
   border-radius: 50%;
   border: 3px solid var(--accent-color);
   overflow: hidden;
-  box-shadow: 0 6px 15px rgba(0,0,0,0.35);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  background-color: #0e1726;
 }
 
 .header-avatar {
-  width: 48px;
-  height: 48px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   border: 2px solid var(--accent-color);
   overflow: hidden;
   flex-shrink: 0;
+  background-color: #0e1726;
 }
 
 .avatar-svg {

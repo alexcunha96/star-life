@@ -4,7 +4,7 @@
    STARLIFE - MOTOR COMPLETO E SEGURO
 ========================================= */
 
-const SAVE_KEY = "starlife_v6_fixed";
+const SAVE_KEY = "starlife_v7_fixed";
 
 let game = null;
 let initialFamily = [];
@@ -1049,7 +1049,6 @@ function boot() {
   });
 
   $("createBusinessBtn")?.addEventListener("click", createBusiness);
-  $("startBtn")?.addEventListener("click", startGame);
   $("continueGameBtn")?.addEventListener("click", () => {
     const saved = loadGame();
     if (saved) { game = saved; showGame(); renderGame(); }

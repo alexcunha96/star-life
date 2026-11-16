@@ -73,7 +73,6 @@
           <div id="setupFamilyList" style="margin-top: 10px;" class="people-list"></div>
         </div>
 
-        <!-- Botão com onclick direto para garantir que funciona sempre -->
         <button type="button" onclick="startGame()" class="primary-btn full-width" style="margin-top: 15px;">Nova Vida</button>
       </div>
 
@@ -124,21 +123,33 @@
         </div>
       </section>
 
-      <!-- Tab: Património, Bancos, Habitação e Veículos -->
+      <!-- Tab: Património (Com Sub-menus Limpos) -->
       <section id="patrimonyTab" class="tab-content hidden">
         <div class="panel">
-          <h2>💰 Património & Finanças</h2>
+          <h2>💰 Finanças & Património</h2>
           <div class="info-row"><span>Património Total</span><strong id="totalWealth">0 €</strong></div>
-          <div class="info-row"><span>Conta Bancária</span><strong id="bankBalance">0 €</strong></div>
-          <div class="info-row"><span>Banco Atual</span><strong id="currentBankName">Sem conta aberta</strong></div>
+          <div class="info-row"><span>Dinheiro Líquido</span><strong id="bankBalance">0 €</strong></div>
+          <div class="info-row"><span>Banco</span><strong id="currentBankName">Sem conta</strong></div>
           <div class="info-row"><span>Salário Anual</span><strong id="annualSalary">0 €</strong></div>
-          <div class="info-row"><span>Despesas Anuais</span><strong id="annualExpenses">0 €</strong></div>
           <div class="info-row"><span>Dívidas / Crédito</span><strong id="debtValue">0 €</strong></div>
         </div>
 
-        <div id="bankSectionContainer"></div>
-        <div id="housingSectionContainer"></div>
-        <div id="vehiclesSectionContainer"></div>
+        <!-- Sub-navegação de Património -->
+        <div class="sub-nav">
+          <button class="sub-btn active" data-sub="subBank">🏦 Banco</button>
+          <button class="sub-btn" data-sub="subHousing">🏡 Imobiliário</button>
+          <button class="sub-btn" data-sub="subVehicles">🚗 Veículos</button>
+        </div>
+
+        <div id="subBank" class="sub-content">
+          <div id="bankSectionContainer"></div>
+        </div>
+        <div id="subHousing" class="sub-content hidden">
+          <div id="housingSectionContainer"></div>
+        </div>
+        <div id="subVehicles" class="sub-content hidden">
+          <div id="vehiclesSectionContainer"></div>
+        </div>
       </section>
 
       <!-- Tab: Carreira e Educação -->
@@ -150,13 +161,21 @@
           <div class="info-row"><span>Escolaridade</span><strong id="careerEducation">Sem escolaridade</strong></div>
         </div>
 
-        <div class="panel">
-          <h3>💼 Oportunidades de Trabalho</h3>
-          <p class="muted">Procura emprego a partir dos 16 anos.</p>
-          <div id="jobOptions" class="button-list"></div>
+        <div class="sub-nav">
+          <button class="sub-btn active" data-sub="subJob">💼 Empregos</button>
+          <button class="sub-btn" data-sub="subSchool">📚 Escola / Univ.</button>
         </div>
 
-        <div id="schoolSectionContainer"></div>
+        <div id="subJob" class="sub-content">
+          <div class="panel">
+            <h3>💼 Oportunidades de Trabalho</h3>
+            <p class="muted">Procura emprego a partir dos 16 anos.</p>
+            <div id="jobOptions" class="button-list"></div>
+          </div>
+        </div>
+        <div id="subSchool" class="sub-content hidden">
+          <div id="schoolSectionContainer"></div>
+        </div>
       </section>
 
       <!-- Tab: Negócios -->

@@ -8,13 +8,83 @@
 </head>
 <body>
 
-  <!-- Ecrã Inicial / Criação de Personagem e Família -->
+  <!-- Ecrã Inicial / Criação de Personagem, Avatar e Família -->
   <div id="setupScreen" class="screen">
     <div class="panel setup-panel">
       <h1>⭐ StarLife</h1>
       <p>A tua vida. As tuas escolhas.</p>
       
       <div id="startForm">
+        <!-- Pré-visualização e Personalização do Avatar -->
+        <div class="panel" style="margin-top: 12px; background: rgba(0,0,0,0.22); text-align: center;">
+          <h3>🎨 Personalizar Aparência</h3>
+          <div id="avatarPreviewContainer" class="avatar-preview-box"></div>
+          
+          <div class="avatar-controls">
+            <div class="input-group">
+              <label>Tom de Pele</label>
+              <div class="color-swatches" id="skinSwatches">
+                <button type="button" class="swatch active" data-skin="#fde0c3" style="background:#fde0c3;"></button>
+                <button type="button" class="swatch" data-skin="#f1c27d" style="background:#f1c27d;"></button>
+                <button type="button" class="swatch" data-skin="#e0ac69" style="background:#e0ac69;"></button>
+                <button type="button" class="swatch" data-skin="#8d5524" style="background:#8d5524;"></button>
+                <button type="button" class="swatch" data-skin="#4b2c20" style="background:#4b2c20;"></button>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label>Estilo de Cabelo</label>
+              <select id="avatarHairStyle">
+                <option value="short">Curto Clássico</option>
+                <option value="curly">Caracóis</option>
+                <option value="long">Comprido</option>
+                <option value="ponytail">Rabo-de-cavalo</option>
+                <option value="bald">Careca</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label>Cor do Cabelo</label>
+              <div class="color-swatches" id="hairSwatches">
+                <button type="button" class="swatch active" data-hair="#1f1a17" style="background:#1f1a17;"></button>
+                <button type="button" class="swatch" data-hair="#5c3824" style="background:#5c3824;"></button>
+                <button type="button" class="swatch" data-hair="#e6be6a" style="background:#e6be6a;"></button>
+                <button type="button" class="swatch" data-hair="#a63a24" style="background:#a63a24;"></button>
+                <button type="button" class="swatch" data-hair="#2563eb" style="background:#2563eb;"></button>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label>Cor dos Olhos</label>
+              <div class="color-swatches" id="eyeSwatches">
+                <button type="button" class="swatch active" data-eye="#4a3121" style="background:#4a3121;"></button>
+                <button type="button" class="swatch" data-eye="#2563eb" style="background:#2563eb;"></button>
+                <button type="button" class="swatch" data-eye="#16a34a" style="background:#16a34a;"></button>
+                <button type="button" class="swatch" data-eye="#b45309" style="background:#b45309;"></button>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <div class="input-group" style="flex: 1;">
+                <label>Barba</label>
+                <select id="avatarBeard">
+                  <option value="none">Sem barba</option>
+                  <option value="mustache">Bigode</option>
+                  <option value="full">Barba Cheia</option>
+                </select>
+              </div>
+              <div class="input-group" style="flex: 1;">
+                <label>Óculos</label>
+                <select id="avatarGlasses">
+                  <option value="none">Sem óculos</option>
+                  <option value="round">Óculos Graduados</option>
+                  <option value="sunglasses">Óculos de Sol</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="input-group">
           <label>Nome</label>
           <input type="text" id="playerName" placeholder="Ex: João" value="João" required>
@@ -86,9 +156,12 @@
   <!-- Ecrã Principal do Jogo -->
   <div id="gameScreen" class="screen hidden">
     <header class="game-header">
-      <div class="player-info-main">
-        <h2 id="homePlayerName">Nome</h2>
-        <p id="homePlayerLocation">Localização</p>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div id="headerAvatarContainer" class="header-avatar"></div>
+        <div class="player-info-main">
+          <h2 id="homePlayerName">Nome</h2>
+          <p id="homePlayerLocation">Localização</p>
+        </div>
       </div>
       <div class="age-display">
         <span>Idade: <strong id="homeAge">0</strong></span>

@@ -17,7 +17,7 @@
       <div id="startForm">
         <!-- Pré-visualização e Personalização do Avatar -->
         <div class="panel" style="margin-top: 12px; background: rgba(0,0,0,0.22); text-align: center;">
-          <h3>🎨 Personalizar Aparência</h3>
+          <h3>🎨 Personalizar Aparência (HD 3D)</h3>
           <div id="avatarPreviewContainer" class="avatar-preview-box"></div>
           
           <div class="avatar-controls">
@@ -35,10 +35,10 @@
             <div class="input-group">
               <label>Estilo de Cabelo</label>
               <select id="avatarHairStyle">
+                <option value="spiky">Espigado Moderno (BitLife Style)</option>
                 <option value="short">Curto Clássico</option>
-                <option value="curly">Caracóis</option>
+                <option value="curly">Caracóis Texturizados</option>
                 <option value="long">Comprido</option>
-                <option value="ponytail">Rabo-de-cavalo</option>
                 <option value="bald">Careca</option>
               </select>
             </div>
@@ -46,9 +46,9 @@
             <div class="input-group">
               <label>Cor do Cabelo</label>
               <div class="color-swatches" id="hairSwatches">
-                <button type="button" class="swatch active" data-hair="#1f1a17" style="background:#1f1a17;"></button>
+                <button type="button" class="swatch active" data-hair="#d97706" style="background:#d97706;"></button>
+                <button type="button" class="swatch" data-hair="#1f1a17" style="background:#1f1a17;"></button>
                 <button type="button" class="swatch" data-hair="#5c3824" style="background:#5c3824;"></button>
-                <button type="button" class="swatch" data-hair="#e6be6a" style="background:#e6be6a;"></button>
                 <button type="button" class="swatch" data-hair="#a63a24" style="background:#a63a24;"></button>
                 <button type="button" class="swatch" data-hair="#2563eb" style="background:#2563eb;"></button>
               </div>
@@ -57,8 +57,8 @@
             <div class="input-group">
               <label>Cor dos Olhos</label>
               <div class="color-swatches" id="eyeSwatches">
-                <button type="button" class="swatch active" data-eye="#4a3121" style="background:#4a3121;"></button>
-                <button type="button" class="swatch" data-eye="#2563eb" style="background:#2563eb;"></button>
+                <button type="button" class="swatch active" data-eye="#2563eb" style="background:#2563eb;"></button>
+                <button type="button" class="swatch" data-eye="#4a3121" style="background:#4a3121;"></button>
                 <button type="button" class="swatch" data-eye="#16a34a" style="background:#16a34a;"></button>
                 <button type="button" class="swatch" data-eye="#b45309" style="background:#b45309;"></button>
               </div>
@@ -66,18 +66,18 @@
 
             <div style="display: flex; gap: 8px;">
               <div class="input-group" style="flex: 1;">
-                <label>Barba</label>
+                <label>Barba / Pêlo Facial</label>
                 <select id="avatarBeard">
                   <option value="none">Sem barba</option>
-                  <option value="mustache">Bigode</option>
-                  <option value="full">Barba Cheia</option>
+                  <option value="goatee">Pêlo / Pera (Estilo Referência)</option>
+                  <option value="full">Barba Completa</option>
                 </select>
               </div>
               <div class="input-group" style="flex: 1;">
                 <label>Óculos</label>
                 <select id="avatarGlasses">
                   <option value="none">Sem óculos</option>
-                  <option value="round">Óculos Graduados</option>
+                  <option value="round">Óculos Modernos</option>
                   <option value="sunglasses">Óculos de Sol</option>
                 </select>
               </div>

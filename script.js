@@ -4,7 +4,7 @@
    STARLIFE - MOTOR COMPLETO E SEGURO
 ========================================= */
 
-const SAVE_KEY = "starlife_v4_housing_banks";
+const SAVE_KEY = "starlife_v5_portuguese_licenses";
 
 let game = null;
 let initialFamily = [];
@@ -71,7 +71,9 @@ function loadGame() {
     if (!saved) return null;
     const loaded = JSON.parse(saved);
     if (!loaded || !loaded.player || !Array.isArray(loaded.family)) return null;
-    loaded.player.hasDrivingLicense ??= false;
+    
+    // Garantir propriedades de veículos e cartas portuguesas
+    loaded.player.licenses ??= { carB: false, bikeAM: false, bikeA1: false, bikeA2: false, bikeA: false };
     loaded.player.bankAccount ??= null;
     loaded.player.activeRental ??= null;
     loaded.properties ??= [];
@@ -115,66 +117,36 @@ function addFinanceEvent(message) {
 }
 
 /* =========================================
-   ILUSTRAÇÕES SVG DAS CASAS
+   ILUSTRAÇÕES SVG (CASAS E VEÍCULOS)
 ========================================= */
 
 function getHouseSVG(type) {
   if (type === "studio") {
-    return `
-      <svg viewBox="0 0 120 80" class="house-illustration">
-        <rect x="30" y="25" width="60" height="45" rx="4" fill="#3b82f6" />
-        <polygon points="25,25 60,8 95,25" fill="#1d4ed8" />
-        <rect x="52" y="45" width="16" height="25" fill="#93c5fd" />
-        <rect x="36" y="34" width="12" height="12" fill="#fde047" />
-      </svg>`;
+    return `<svg viewBox="0 0 120 80" class="house-illustration"><rect x="30" y="25" width="60" height="45" rx="4" fill="#3b82f6"/><polygon points="25,25 60,8 95,25" fill="#1d4ed8"/><rect x="52" y="45" width="16" height="25" fill="#93c5fd"/><rect x="36" y="34" width="12" height="12" fill="#fde047"/></svg>`;
   }
   if (type === "apartment") {
-    return `
-      <svg viewBox="0 0 120 80" class="house-illustration">
-        <rect x="25" y="12" width="70" height="58" rx="3" fill="#6366f1" />
-        <rect x="35" y="20" width="14" height="12" fill="#fef08a" />
-        <rect x="71" y="20" width="14" height="12" fill="#fef08a" />
-        <rect x="35" y="38" width="14" height="12" fill="#fef08a" />
-        <rect x="71" y="38" width="14" height="12" fill="#fef08a" />
-        <rect x="52" y="52" width="16" height="18" fill="#c7d2fe" />
-      </svg>`;
+    return `<svg viewBox="0 0 120 80" class="house-illustration"><rect x="25" y="12" width="70" height="58" rx="3" fill="#6366f1"/><rect x="35" y="20" width="14" height="12" fill="#fef08a"/><rect x="71" y="20" width="14" height="12" fill="#fef08a"/><rect x="35" y="38" width="14" height="12" fill="#fef08a"/><rect x="71" y="38" width="14" height="12" fill="#fef08a"/><rect x="52" y="52" width="16" height="18" fill="#c7d2fe"/></svg>`;
   }
   if (type === "house") {
-    return `
-      <svg viewBox="0 0 120 80" class="house-illustration">
-        <rect x="18" y="30" width="84" height="40" rx="3" fill="#10b981" />
-        <polygon points="12,30 60,8 108,30" fill="#047857" />
-        <rect x="52" y="45" width="16" height="25" fill="#d1fae5" />
-        <rect x="26" y="40" width="16" height="14" fill="#fef08a" />
-        <rect x="78" y="40" width="16" height="14" fill="#fef08a" />
-      </svg>`;
+    return `<svg viewBox="0 0 120 80" class="house-illustration"><rect x="18" y="30" width="84" height="40" rx="3" fill="#10b981"/><polygon points="12,30 60,8 108,30" fill="#047857"/><rect x="52" y="45" width="16" height="25" fill="#d1fae5"/><rect x="26" y="40" width="16" height="14" fill="#fef08a"/><rect x="78" y="40" width="16" height="14" fill="#fef08a"/></svg>`;
   }
-  // Mansion
-  return `
-    <svg viewBox="0 0 120 80" class="house-illustration">
-      <rect x="10" y="28" width="100" height="42" rx="4" fill="#f59e0b" />
-      <polygon points="5,28 60,5 115,28" fill="#b45309" />
-      <rect x="50" y="42" width="20" height="28" fill="#fef3c7" />
-      <rect x="20" y="36" width="18" height="14" fill="#fef08a" />
-      <rect x="82" y="36" width="18" height="14" fill="#fef08a" />
-      <circle cx="60" cy="20" r="4" fill="#fde047" />
-    </svg>`;
+  return `<svg viewBox="0 0 120 80" class="house-illustration"><rect x="10" y="28" width="100" height="42" rx="4" fill="#f59e0b"/><polygon points="5,28 60,5 115,28" fill="#b45309"/><rect x="50" y="42" width="20" height="28" fill="#fef3c7"/><rect x="20" y="36" width="18" height="14" fill="#fef08a"/><rect x="82" y="36" width="18" height="14" fill="#fef08a"/></svg>`;
 }
 
 /* =========================================
-   3 BANCOS E SISTEMA BANCÁRIO
+   BANCOS
 ========================================= */
 
 const banksList = [
-  { id: "atlantico", name: "Banco Atlântico", interestRate: 0.045, maxMortgageMultiplier: 4.5, desc: "Taxas competitivas para crédito habitação." },
-  { id: "caixa", name: "Caixa Popular", interestRate: 0.052, maxMortgageMultiplier: 5.0, desc: "Aprovação facilitada para jovens." },
-  { id: "novafinanca", name: "Nova Finança Digital", interestRate: 0.038, maxMortgageMultiplier: 4.0, desc: "Juros baixos para clientes com boa poupança." }
+  { id: "atlantico", name: "Banco Atlântico", interestRate: 0.045, desc: "Taxas competitivas para crédito habitação." },
+  { id: "caixa", name: "Caixa Popular", interestRate: 0.052, desc: "Aprovação facilitada para jovens." },
+  { id: "novafinanca", name: "Nova Finança Digital", interestRate: 0.038, desc: "Juros baixos para clientes com boa poupança." }
 ];
 
 function openBankAccount(bankId) {
   const bank = banksList.find(b => b.id === bankId);
   if (!bank) return;
-  game.player.bankAccount = { bankId: bank.id, bankName: bank.name, interestRate: bank.interestRate, openedAge: game.player.age };
+  game.player.bankAccount = { bankId: bank.id, bankName: bank.name, interestRate: bank.interestRate };
   addEvent(`Abriste conta bancária no ${bank.name}! 🏦`, "positive");
   saveGame();
   renderGame();
@@ -213,11 +185,10 @@ function renderBankSection() {
 }
 
 /* =========================================
-   MERCADO IMOBILIÁRIO DINÂMICO & HABITAÇÃO
+   MERCADO IMOBILIÁRIO & HABITAÇÃO
 ========================================= */
 
 const streetNames = ["Rua das Flores", "Avenida da Liberdade", "Travessa do Sol", "Alameda dos Oceanos", "Rua da Bela Vista", "Praceta das Oliveiras", "Avenida Central", "Rua do Miradouro"];
-
 const propertyTemplates = [
   { title: "Estúdio T0 Acolhedor", type: "studio", buyPrice: 75000, rentMonthly: 480, happiness: 4 },
   { title: "Apartamento T1 Moderno", type: "apartment", buyPrice: 135000, rentMonthly: 720, happiness: 8 },
@@ -234,15 +205,13 @@ function generateYearlyMarket() {
   for (let i = 0; i < count; i++) {
     const tpl = randomFrom(propertyTemplates);
     const variance = 0.9 + Math.random() * 0.25;
-    const price = Math.round((tpl.buyPrice * variance) / 500) * 500;
-    const rent = Math.round((tpl.rentMonthly * variance) / 10) * 10;
     listings.push({
       id: createId("house"),
       title: tpl.title,
       type: tpl.type,
       address: `${randomFrom(streetNames)}, n.º ${randomNumber(1, 240)}, ${game.player.city}`,
-      buyPrice: price,
-      rentMonthly: rent,
+      buyPrice: Math.round((tpl.buyPrice * variance) / 500) * 500,
+      rentMonthly: Math.round((tpl.rentMonthly * variance) / 10) * 10,
       happiness: tpl.happiness
     });
   }
@@ -273,8 +242,8 @@ function openPropertyModal(listingId) {
       <div style="margin-top: 14px;">
         <h4>Opções de Compra</h4>
         <div class="modal-buttons" style="margin-top: 6px;">
-          <button class="primary-btn full-width" onclick="buyPropertyTransfer('${house.id}')">💳 Transferência Bancária (${money(house.buyPrice)})</button>
-          <button class="secondary-btn full-width" onclick="buyPropertyMortgage('${house.id}')">🏦 Crédito Habitação (Banco)</button>
+          <button class="primary-btn full-width" onclick="buyPropertyTransfer('${house.id}')">💳 Transferência (${money(house.buyPrice)})</button>
+          <button class="secondary-btn full-width" onclick="buyPropertyMortgage('${house.id}')">🏦 Crédito Habitação</button>
         </div>
       </div>
 
@@ -291,17 +260,11 @@ function closeCustomModal() {
 function rentProperty(listingId, months) {
   const house = game.marketListings.find(h => h.id === listingId);
   if (!house) return;
-  if (game.player.age < 18) { showToast("Precisas de ter 18 anos para assinar contrato."); return; }
-  if (game.player.bank < house.rentMonthly * 2) { showToast("Precisas de 2 meses de caução na conta."); return; }
+  if (game.player.age < 18) { showToast("Precisas de ter 18 anos."); return; }
+  if (game.player.bank < house.rentMonthly * 2) { showToast("Precisas de 2 meses de caução."); return; }
 
   game.player.bank -= house.rentMonthly * 2;
-  game.player.activeRental = {
-    title: house.title,
-    address: house.address,
-    rentMonthly: house.rentMonthly,
-    monthsRemaining: months,
-    happiness: house.happiness
-  };
+  game.player.activeRental = { title: house.title, address: house.address, rentMonthly: house.rentMonthly, monthsRemaining: months, happiness: house.happiness };
   addEvent(`Assinaste contrato de arrendamento (${months} meses) em ${house.address}! 🔑`, "positive");
   closeCustomModal();
   saveGame();
@@ -312,24 +275,17 @@ function buyPropertyTransfer(listingId) {
   const house = game.marketListings.find(h => h.id === listingId);
   if (!house) return;
   if (!game.player.bankAccount) { showToast("Abre primeiro uma conta bancária!"); return; }
-  if (game.player.bank < house.buyPrice) { showToast("Saldo insuficiente para transferência."); return; }
+  if (game.player.bank < house.buyPrice) { showToast("Saldo insuficiente."); return; }
 
   game.player.bank -= house.buyPrice;
   const isFirst = game.properties.length === 0;
   game.properties.push({
-    id: createId("prop"),
-    title: house.title,
-    type: house.type,
-    address: house.address,
-    value: house.buyPrice,
-    mortgageRemaining: 0,
-    annualPayment: 0,
-    status: isFirst ? "primary" : "rented_out",
-    rentalIncomeAnnual: house.rentMonthly * 12,
-    happiness: house.happiness
+    id: createId("prop"), title: house.title, type: house.type, address: house.address,
+    value: house.buyPrice, mortgageRemaining: 0, annualPayment: 0,
+    status: isFirst ? "primary" : "rented_out", rentalIncomeAnnual: house.rentMonthly * 12, happiness: house.happiness
   });
   game.marketListings = game.marketListings.filter(h => h.id !== listingId);
-  addEvent(`Compraste a pronto "${house.title}" em ${house.address}! 🏡`, "positive");
+  addEvent(`Compraste "${house.title}" a pronto! 🏡`, "positive");
   closeCustomModal();
   saveGame();
   renderGame();
@@ -338,37 +294,26 @@ function buyPropertyTransfer(listingId) {
 function buyPropertyMortgage(listingId) {
   const house = game.marketListings.find(h => h.id === listingId);
   if (!house) return;
-  if (!game.player.bankAccount) { showToast("Abre primeiro uma conta bancária no teu banco!"); return; }
+  if (!game.player.bankAccount) { showToast("Abre primeiro uma conta bancária!"); return; }
   if (game.player.age < 18) { showToast("Precisas de ter 18 anos."); return; }
 
   const downPayment = Math.round(house.buyPrice * 0.15);
-  if (game.player.bank < downPayment) {
-    showToast(`Precisas de ${money(downPayment)} (15% de entrada).`);
-    return;
-  }
+  if (game.player.bank < downPayment) { showToast(`Precisas de ${money(downPayment)} de entrada (15%).`); return; }
 
   const loanAmount = house.buyPrice - downPayment;
-  const annualRate = game.player.bankAccount.interestRate;
-  const annualPayment = Math.round((loanAmount / 25) * (1 + annualRate));
+  const annualPayment = Math.round((loanAmount / 25) * (1 + game.player.bankAccount.interestRate));
 
   game.player.bank -= downPayment;
   game.player.debt += loanAmount;
-
   const isFirst = game.properties.length === 0;
+
   game.properties.push({
-    id: createId("prop"),
-    title: house.title,
-    type: house.type,
-    address: house.address,
-    value: house.buyPrice,
-    mortgageRemaining: loanAmount,
-    annualPayment,
-    status: isFirst ? "primary" : "rented_out",
-    rentalIncomeAnnual: house.rentMonthly * 12,
-    happiness: house.happiness
+    id: createId("prop"), title: house.title, type: house.type, address: house.address,
+    value: house.buyPrice, mortgageRemaining: loanAmount, annualPayment,
+    status: isFirst ? "primary" : "rented_out", rentalIncomeAnnual: house.rentMonthly * 12, happiness: house.happiness
   });
   game.marketListings = game.marketListings.filter(h => h.id !== listingId);
-  addEvent(`Crédito Habitação aprovado no ${game.player.bankAccount.bankName} para "${house.title}"! 🏦🏡`, "positive");
+  addEvent(`Crédito Habitação aprovado para "${house.title}"! 🏦🏡`, "positive");
   closeCustomModal();
   saveGame();
   renderGame();
@@ -379,11 +324,11 @@ function togglePropertyStatus(propId) {
   if (!prop) return;
   if (prop.status === "primary") {
     prop.status = "rented_out";
-    addEvent(`Colocaste "${prop.title}" a arrendar (${money(prop.rentalIncomeAnnual)}/ano).`, "positive");
+    addEvent(`Colocaste "${prop.title}" a arrendar.`, "positive");
   } else {
     game.properties.forEach(p => { if (p.status === "primary") p.status = "rented_out"; });
     prop.status = "primary";
-    addEvent(`Mudaste a tua morada principal para "${prop.title}".`, "positive");
+    addEvent(`Definiste "${prop.title}" como tua moradia principal.`, "positive");
   }
   saveGame();
   renderGame();
@@ -395,51 +340,30 @@ function renderHousingSection() {
   const player = game.player;
 
   let html = `<div class="panel"><h3>🏡 Habitação & Mercado Imobiliário</h3>`;
-
-  // Moradia arrendada ativa
   if (player.activeRental) {
-    html += `
-      <div class="person-card" style="flex-direction: column; align-items: flex-start; margin-bottom: 10px; border-left: 4px solid var(--accent-color);">
-        <strong>Arrendamento Ativo: ${escapeHTML(player.activeRental.title)}</strong>
-        <small>📍 ${escapeHTML(player.activeRental.address)}</small>
-        <small>Renda: ${money(player.activeRental.rentMonthly)}/mês · Faltam ${player.activeRental.monthsRemaining} meses</small>
-      </div>
-    `;
+    html += `<div class="person-card" style="flex-direction: column; align-items: flex-start; margin-bottom: 10px; border-left: 4px solid var(--accent-color);"><strong>Arrendado: ${escapeHTML(player.activeRental.title)}</strong><small>📍 ${escapeHTML(player.activeRental.address)}</small><small>Renda: ${money(player.activeRental.rentMonthly)}/mês (${player.activeRental.monthsRemaining} meses restantes)</small></div>`;
   }
-
-  // Propriedades compradas
   if (game.properties.length > 0) {
     html += `<h4 style="margin-top: 8px;">Os Teus Imóveis</h4>`;
     game.properties.forEach(p => {
-      const statusLabel = p.status === "primary" ? "🏠 Moradia Principal" : `💰 A Arrendar (+${money(p.rentalIncomeAnnual)}/ano)`;
+      const statusLbl = p.status === "primary" ? "🏠 Moradia Principal" : `💰 A Arrendar (+${money(p.rentalIncomeAnnual)}/ano)`;
       html += `
         <div class="person-card" style="flex-direction: column; align-items: flex-start; margin-bottom: 8px;">
           <div style="display:flex; align-items:center; gap:10px; width:100%;">
             <div style="width:55px;">${getHouseSVG(p.type)}</div>
-            <div style="flex:1;">
-              <strong>${escapeHTML(p.title)}</strong>
-              <small style="display:block;">${escapeHTML(p.address)}</small>
-              <small style="color: var(--success-color);">${statusLabel}</small>
-            </div>
+            <div style="flex:1;"><strong>${escapeHTML(p.title)}</strong><small style="display:block;">${escapeHTML(p.address)}</small><small style="color: var(--success-color);">${statusLbl}</small></div>
           </div>
-          <button class="small-btn full-width" style="margin-top:6px;" onclick="togglePropertyStatus('${p.id}')">
-            ${p.status === "primary" ? "Colocar a Arrendar" : "Definir como Minha Moradia"}
-          </button>
+          <button class="small-btn full-width" style="margin-top:6px;" onclick="togglePropertyStatus('${p.id}')">${p.status === "primary" ? "Colocar a Arrendar" : "Definir como Moradia Principal"}</button>
         </div>
       `;
     });
   }
-
-  // Mercado Imobiliário Atual
-  html += `<h4 style="margin-top: 12px;">Anúncios Disponíveis Este Ano (Clica para ver)</h4><div class="button-list">`;
+  html += `<h4 style="margin-top: 12px;">Imóveis à Disposição (Clica para ver)</h4><div class="button-list">`;
   game.marketListings.forEach(h => {
     html += `
       <div class="person-card house-card" onclick="openPropertyModal('${h.id}')">
         <div style="width: 65px; flex-shrink: 0;">${getHouseSVG(h.type)}</div>
-        <div style="flex: 1; margin-left: 10px;">
-          <strong>${escapeHTML(h.title)}</strong>
-          <small style="display:block;">Compra: ${money(h.buyPrice)} | Renda: ${money(h.rentMonthly)}/mês</small>
-        </div>
+        <div style="flex: 1; margin-left: 10px;"><strong>${escapeHTML(h.title)}</strong><small style="display:block;">Compra: ${money(h.buyPrice)} | Renda: ${money(h.rentMonthly)}/mês</small></div>
       </div>
     `;
   });
@@ -449,10 +373,8 @@ function renderHousingSection() {
 
 function processHousingYear() {
   const player = game.player;
-  // Renda ativa
   if (player.activeRental) {
-    const annualRent = player.activeRental.rentMonthly * 12;
-    player.bank -= annualRent;
+    player.bank -= player.activeRental.rentMonthly * 12;
     player.activeRental.monthsRemaining -= 12;
     player.happiness = clamp(player.happiness + 2);
     if (player.activeRental.monthsRemaining <= 0) {
@@ -460,8 +382,6 @@ function processHousingYear() {
       player.activeRental = null;
     }
   }
-
-  // Imóveis próprios
   game.properties.forEach(p => {
     if (p.mortgageRemaining > 0) {
       player.bank -= p.annualPayment;
@@ -470,7 +390,7 @@ function processHousingYear() {
     }
     if (p.status === "rented_out") {
       player.bank += p.rentalIncomeAnnual;
-      addFinanceEvent(`Recebeste ${money(p.rentalIncomeAnnual)} de renda pelo imóvel "${p.title}".`);
+      addFinanceEvent(`Recebeste ${money(p.rentalIncomeAnnual)} de rendas.`);
     } else if (p.status === "primary") {
       player.happiness = clamp(player.happiness + 3);
     }
@@ -478,295 +398,72 @@ function processHousingYear() {
 }
 
 /* =========================================
-   EVENTOS, SAÚDE, ESCOLA, VEÍCULOS E NEGÓCIOS
+   LEGISLAÇÃO PORTUGUESA DE CARTAS & VEÍCULOS (CARROS E MOTAS)
 ========================================= */
 
-const femaleNames = ["Maria", "Ana", "Beatriz", "Inês", "Sofia", "Matilde", "Leonor", "Carolina", "Mariana", "Margarida", "Catarina", "Joana", "Rita", "Francisca", "Marta", "Laura", "Alice", "Diana", "Cláudia", "Raquel", "Teresa", "Isabel", "Helena", "Andreia", "Patrícia", "Eva", "Luísa", "Daniela", "Filipa"];
-const maleNames = ["João", "Pedro", "Miguel", "Francisco", "Tiago", "Diogo", "André", "Rafael", "Gonçalo", "Martim", "Afonso", "Tomás", "Duarte", "Bruno", "Ricardo", "Daniel", "António", "Manuel", "Luís", "Gabriel", "David", "Nuno", "Hugo", "Filipe", "Eduardo", "José", "Rodrigo", "Vasco", "Guilherme"];
+const licenseRules = {
+  bikeAM: { name: "Carta AM (Ciclomotores até 50cc)", minAge: 16, cost: 250 },
+  bikeA1: { name: "Carta A1 (Motos até 125cc / 11kW)", minAge: 16, cost: 380 },
+  bikeA2: { name: "Carta A2 (Motos até 35kW / Média cilindrada)", minAge: 18, cost: 500 },
+  bikeA:  { name: "Carta A (Motos Pesadas / Alta cilindrada)", minAge: 24, cost: 650 }, // ou 20 com A2 prévia
+  carB:   { name: "Carta B (Carros Ligeiros)", minAge: 18, cost: 650 }
+};
 
-const tombstoneQuotes = [
-  "Viveu intensamente, partiu em paz.",
-  "Deixou saudades em todos os que cruzaram o seu caminho.",
-  "Descansa em paz. A jornada foi longa e bela.",
-  "Amou, riu, aprendeu e agora descansa.",
-  "Uma lenda nunca morre, apenas descansa.",
-  "Fez do mundo um lugar um pouco melhor."
+const availableCars = [
+  { name: "Yaris City", brand: "Toyo", price: 2500, annualCost: 450, reqLicense: "carB" },
+  { name: "Golf GTI", brand: "Volks", price: 12000, annualCost: 750, reqLicense: "carB" },
+  { name: "Série 3 Desportivo", brand: "BWM", price: 28000, annualCost: 1300, reqLicense: "carB" }
 ];
 
-const commonIllnesses = [
-  { name: "Gripe Sazonal", severity: "Baixa", cost: 50, healthImpact: 4, specialty: "familyDoctor" },
-  { name: "Entorse no Tornozelo", severity: "Baixa", cost: 120, healthImpact: 6, specialty: "orthopedics" },
-  { name: "Hipertensão Arterial", severity: "Média", cost: 350, healthImpact: 10, specialty: "cardiology" },
-  { name: "Depressão Crónica", severity: "Média", cost: 500, healthImpact: 12, specialty: "psychiatry" },
-  { name: "Cancro em Estádio Inicial", severity: "Alta", cost: 6000, healthImpact: 30, specialty: "oncology" },
-  { name: "Doença Cardíaca", severity: "Alta", cost: 4500, healthImpact: 25, specialty: "cardiology" }
+const availableBikes = [
+  { name: "Scooter Urban 50", brand: "Yamah", cc: "50cc", price: 1800, annualCost: 200, reqLicense: "bikeAM" },
+  { name: "CBR 125R", brand: "Hona", cc: "125cc", price: 3400, annualCost: 320, reqLicense: "bikeA1" },
+  { name: "Ninja 400 Sport", brand: "Kawas", cc: "400cc", price: 6200, annualCost: 480, reqLicense: "bikeA2" },
+  { name: "Monster 821 Naked", brand: "Ducati", cc: "821cc", price: 10500, annualCost: 700, reqLicense: "bikeA2" },
+  { name: "R1 Superbike", brand: "Yamah", cc: "1000cc", price: 17500, annualCost: 1100, reqLicense: "bikeA" }
 ];
 
-function generateName(sex) {
-  if (sex === "Feminino") return randomFrom(femaleNames);
-  if (sex === "Masculino") return randomFrom(maleNames);
-  return randomFrom([...femaleNames, ...maleNames]);
-}
-
-function createFamilyMember(data) {
-  return {
-    id: data.id || createId("person"),
-    name: data.name || "Sem nome",
-    surname: data.surname || "",
-    relation: data.relation || "Outro",
-    age: Number(data.age) || 0,
-    sex: data.sex || "Outro",
-    alive: true,
-    job: "",
-    salary: 0,
-    partnerId: data.partnerId || null,
-    relationshipStatus: data.relationshipStatus || "Solteiro/a"
-  };
-}
-
-const lifeEventsPool = [
-  { minAge: 0, maxAge: 3, text: "Deste os teus primeiros passos na sala de estar.", options: [{ text: "Sorrir", effect: () => { game.player.happiness = clamp(game.player.happiness + 5); addEvent("Os pais celebraram os teus passos.", "positive"); } }] },
-  { minAge: 6, maxAge: 11, text: "Participaste numa atividade desportiva na escola.", options: [{ text: "Dar o máximo", effect: () => { game.player.health = clamp(game.player.health + 3); addEvent("Ganhaste uma medalha simbólica!", "positive"); } }] },
-  { minAge: 12, maxAge: 17, text: "Tiveste um teste difícil de História e conseguiste excelente nota.", options: [{ text: "Celebrar", effect: () => { game.player.intelligence = clamp(game.player.intelligence + 2); addEvent("O esforço nos estudos valeu a pena.", "positive"); } }] },
-  { minAge: 18, maxAge: 65, text: "Fizeste horas extra no trabalho.", options: [{ text: "Aceitar", effect: () => { game.player.bank += 180; addFinanceEvent("Ganhaste 180 € extra."); addEvent("Recebeste um bónus pelo esforço.", "positive"); } }] },
-  { minAge: 18, maxAge: 65, text: "Encontraste uma carteira com dinheiro no passeio.", options: [{ text: "Devolver", effect: () => { game.player.happiness = clamp(game.player.happiness + 8); game.player.bank += 40; addEvent("O dono recompensou-te com 40 €.", "positive"); } }] },
-  { minAge: 66, maxAge: 110, text: "Participaste num torneio de dominó no centro de reformados.", options: [{ text: "Jogar", effect: () => { game.player.happiness = clamp(game.player.happiness + 10); addEvent("Passáste uma tarde muito agradável.", "positive"); } }] }
-];
-
-function triggerRandomEvent() {
-  if (!game || !game.player.alive) return;
-  const age = game.player.age;
-  const validEvents = lifeEventsPool.filter(ev => age >= ev.minAge && age <= ev.maxAge);
-  if (validEvents.length === 0 || Math.random() > 0.4) return;
-  const ev = randomFrom(validEvents);
-  const modal = $("customModal");
-  modal.innerHTML = `
-    <div class="modal-card">
-      <h3>⚠️ Acontecimento</h3>
-      <p>${escapeHTML(ev.text)}</p>
-      <div class="modal-buttons" id="eventOptionsContainer"></div>
-    </div>
-  `;
-  modal.classList.remove("hidden");
-
-  const btnContainer = $("eventOptionsContainer");
-  btnContainer.innerHTML = "";
-  ev.options.forEach(opt => {
-    const btn = document.createElement("button");
-    btn.className = "primary-btn full-width";
-    btn.textContent = opt.text;
-    btn.addEventListener("click", () => {
-      opt.effect();
-      modal.classList.add("hidden");
-      saveGame();
-      renderGame();
-    });
-    btnContainer.appendChild(btn);
-  });
-}
-
-function checkRandomIllness() {
+function takeLicense(licenseKey) {
   const player = game.player;
-  if (player.illness || player.age < 12) return;
-  const chance = 0.06 + (player.age * 0.001) - ((player.health - 50) * 0.001);
-  if (Math.random() < chance) {
-    const ill = randomFrom(commonIllnesses);
-    player.illness = { ...ill };
-    addEvent(`⚠️ Foi-te diagnosticado/a: ${ill.name}.`, "negative");
+  const rule = licenseRules[licenseKey];
+  if (!rule) return;
+
+  // Validação de idade portuguesa
+  if (licenseKey === "bikeA" && player.age < 20) {
+    showToast("Para a Carta A precisas de 24 anos (ou 20 se já tiveres A2 há 2 anos).");
+    return;
   }
+  if (player.age < rule.minAge) {
+    showToast(`Precisas de ter pelo menos ${rule.minAge} anos para esta carta.`);
+    return;
+  }
+  if (player.bank < rule.cost) {
+    showToast(`Sem saldo suficiente (${money(rule.cost)}).`);
+    return;
+  }
+
+  player.bank -= rule.cost;
+  player.licenses[licenseKey] = true;
+  addEvent(`Obtiviste com sucesso a ${rule.name}! 🚗🏍️`, "positive");
+  saveGame();
+  renderGame();
 }
 
-function openHealthSpecialty(specialty) {
-  const container = $("healthActionContainer");
-  let title = "Centro Clínico";
-  let desc = "Serviços médicos especializados.";
-  let cost = 100;
-  let actionType = "specialist";
-
-  if (specialty === "familyDoctor") { title = "👨‍⚕️ Médico de Família"; desc = "Consulta de rotina para check-up geral."; cost = 40; actionType = "checkup"; }
-  else if (specialty === "urgency") { title = "🚑 Urgências Hospitalares"; desc = "Atendimento médico imediato."; cost = 100; actionType = "urgency"; }
-  else if (specialty === "cardiology") { title = "❤️ Cardiologia"; desc = "Tratamento cardiovascular e hipertensão."; cost = 250; actionType = "treatment"; }
-  else if (specialty === "orthopedics") { title = "🦴 Ortopedia & Fisioterapia"; desc = "Tratamento de lesões ósseas e articulares."; cost = 180; actionType = "treatment"; }
-  else if (specialty === "psychiatry") { title = "🧠 Psiquiatria & Bem-estar"; desc = "Acompanhamento de saúde mental."; cost = 200; actionType = "treatment"; }
-  else if (specialty === "oncology") { title = "🎗️ Oncologia"; desc = "Rastreio e tratamento oncológico."; cost = 1500; actionType = "oncology"; }
-
-  container.innerHTML = `
-    <div class="panel" style="margin-top: 12px;">
-      <h3>${title}</h3>
-      <p class="muted">${desc}</p>
-      <button class="primary-btn full-width" style="margin-top: 10px;" id="execHealthBtn">Efetuar Consulta / Tratamento (${money(cost)})</button>
-    </div>
-  `;
-  $("execHealthBtn").onclick = () => executeHealthAction(actionType, cost, specialty);
-}
-
-function executeHealthAction(type, cost, specialty) {
+function buyVehicle(type, idx) {
   const player = game.player;
-  if (player.bank < cost) { showToast(`Precisas de ${money(cost)} na conta.`); return; }
-  player.bank -= cost;
-  if (type === "checkup") {
-    player.health = clamp(player.health + 3);
-    showToast(player.illness ? `Atenção: Tens ${player.illness.name}!` : "Check-up limpo!");
-  } else if (type === "urgency") {
-    player.health = clamp(player.health + 12);
-    showToast("Tratamento de urgência efetuado.");
+  let vehicle = null;
+  if (type === "car") {
+    vehicle = availableCars[idx];
+    if (!player.licenses[vehicle.reqLicense]) { showToast("Não tens carta de condução para este veículo!"); return; }
   } else {
-    if (player.illness && (player.illness.specialty === specialty || specialty === "oncology")) {
-      addEvent(`Curaste com sucesso: ${player.illness.name}! 🎉`, "positive");
-      player.illness = null;
-      player.health = clamp(player.health + 25);
-      showToast("Tratamento bem-sucedido!");
-    } else {
-      player.health = clamp(player.health + 10);
-      showToast("Consulta concluída.");
-    }
-  }
-  saveGame();
-  renderGame();
-}
-
-/* =========================================
-   ESCOLA, UNIVERSIDADE, VEÍCULOS E NEGÓCIOS
-========================================= */
-
-const educationStages = [
-  { name: "Creche", start: 0, end: 2, level: 0 },
-  { name: "Jardim de infância", start: 3, end: 5, level: 0 },
-  { name: "1.º Ciclo do Ensino Básico", start: 6, end: 9, level: 1 },
-  { name: "2.º Ciclo do Ensino Básico", start: 10, end: 11, level: 1 },
-  { name: "3.º Ciclo do Ensino Básico", start: 12, end: 14, level: 1 },
-  { name: "Ensino Secundário", start: 15, end: 17, level: 2 }
-];
-
-const universityCourses = [
-  { name: "Medicina", cost: 3500, duration: 6, salary: 42000 },
-  { name: "Direito", cost: 2500, duration: 4, salary: 35000 },
-  { name: "Engenharia", cost: 2800, duration: 5, salary: 32000 },
-  { name: "Gestão", cost: 2300, duration: 3, salary: 30000 }
-];
-
-function getCurrentEducationStage(age) {
-  return educationStages.find(stage => age >= stage.start && age <= stage.end) || null;
-}
-
-function initializeEducation(player) {
-  player.intelligence ??= randomNumber(35, 85);
-  player.schoolGrade ??= 12;
-  player.education ??= "Sem escolaridade";
-  player.educationLevel ??= 0;
-  player.universityCourse ??= null;
-  player.universityProgress ??= 0;
-}
-
-function processSchoolYear() {
-  const player = game.player;
-  const stage = getCurrentEducationStage(player.age);
-  if (!stage || player.age > 17) return;
-  player.schoolGrade = clamp(Math.round(12 + randomNumber(-2, 3)), 5, 20);
-  if (player.age === 14) { player.education = "Ensino básico"; player.educationLevel = 1; }
-  if (player.age === 17) { player.education = "Ensino secundário"; player.educationLevel = 2; }
-}
-
-function studyHarder() {
-  const player = game.player;
-  player.intelligence = clamp(player.intelligence + 2);
-  player.schoolGrade = clamp(player.schoolGrade + 1, 0, 20);
-  addEvent("Estudaste com afinco. 📖");
-  saveGame();
-  renderGame();
-}
-
-function enrollUniversity(index) {
-  const player = game.player;
-  const course = universityCourses[index];
-  if (player.universityCourse) { showToast("Já estás na universidade."); return; }
-  player.universityCourse = course.name;
-  player.universityProgress = 0;
-  addEvent(`Entraste na Universidade para estudar ${course.name}! 🎓`);
-  saveGame();
-  renderGame();
-}
-
-function processFurtherEducation() {
-  const player = game.player;
-  if (player.universityCourse) {
-    player.universityProgress++;
-    const course = universityCourses.find(c => c.name === player.universityCourse);
-    if (player.universityProgress >= (course?.duration || 4)) {
-      player.education = `Licenciatura em ${player.universityCourse}`;
-      player.educationLevel = 3;
-      player.salary = course?.salary || 30000;
-      player.universityCourse = null;
-      addEvent(`🎓 Licenciatura concluída em ${course?.name}!`);
-    }
-  }
-}
-
-function renderSchoolAndUniversitySubmenu() {
-  const player = game.player;
-  const container = $("schoolSectionContainer");
-  if (!container) return;
-  const stage = getCurrentEducationStage(player.age);
-
-  let html = `
-    <div class="panel" style="margin-top: 16px;">
-      <h3>📚 Estatísticas Escolares</h3>
-      <div class="info-row"><span>Etapa atual</span><strong>${escapeHTML(stage?.name || player.education)}</strong></div>
-      <div class="info-row"><span>Média</span><strong>${player.schoolGrade}/20</strong></div>
-      <div class="info-row"><span>Inteligência</span><strong>${player.intelligence}%</strong></div>
-    </div>
-  `;
-
-  if (player.age >= 6 && player.age <= 18) {
-    html += `<div class="panel"><h3>Atividades de Estudante</h3><button class="primary-btn full-width" id="studyBtn">📖 Estudar Mais</button></div>`;
+    vehicle = availableBikes[idx];
+    if (!player.licenses[vehicle.reqLicense]) { showToast("Não tens a carta de mota adequada para esta cilindrada!"); return; }
   }
 
-  if (player.age >= 18 && player.educationLevel >= 2) {
-    html += `
-      <div class="panel">
-        <h3>🏛️ Ensino Superior (Universidade)</h3>
-        ${player.universityCourse ? `<p>Curso atual: <strong>${player.universityCourse}</strong> (${player.universityProgress} anos concl.)</p>` : `<p class="muted">Escolhe um curso superior:</p>`}
-        ${universityCourses.map((c, idx) => `
-          <div style="margin-top: 8px; padding: 8px; background: var(--panel-light); border-radius: 8px;">
-            <strong>${escapeHTML(c.name)}</strong> (${money(c.cost)}/ano)
-            ${!player.universityCourse ? `<button class="small-btn full-width" style="margin-top:6px;" data-uni-idx="${idx}">Inscrever-se</button>` : ""}
-          </div>
-        `).join("")}
-      </div>
-    `;
-  }
-
-  container.innerHTML = html;
-  if ($("studyBtn")) $("studyBtn").onclick = studyHarder;
-  container.querySelectorAll("[data-uni-idx]").forEach(b => {
-    b.onclick = () => enrollUniversity(Number(b.dataset.uniIdx));
-  });
-}
-
-const DRIVING_LICENSE_COST = 650;
-const availableVehicles = [
-  { name: "Citadino Usado", price: 2500, annualCost: 450 },
-  { name: "Utilitário Compacto", price: 8500, annualCost: 650 },
-  { name: "SUV Familiar", price: 25000, annualCost: 1200 }
-];
-
-function takeDrivingLicense() {
-  const player = game.player;
-  if (player.bank < DRIVING_LICENSE_COST) { showToast("Sem saldo."); return; }
-  player.bank -= DRIVING_LICENSE_COST;
-  player.hasDrivingLicense = true;
-  addEvent("🚗 Tiraste a Carta de Condução!", "positive");
-  saveGame();
-  renderGame();
-}
-
-function buyVehicle(idx) {
-  const car = availableVehicles[idx];
-  const player = game.player;
-  if (player.bank < car.price) { showToast("Sem saldo."); return; }
-  player.bank -= car.price;
-  game.vehicles.push({ id: createId("car"), name: car.name, value: car.price, annualCost: car.annualCost });
-  addEvent(`🚘 Compraste um ${car.name}!`, "positive");
+  if (player.bank < vehicle.price) { showToast("Sem saldo na conta."); return; }
+  player.bank -= vehicle.price;
+  game.vehicles.push({ id: createId("veh"), name: `${vehicle.brand} ${vehicle.name}`, type: type, value: vehicle.price, annualCost: vehicle.annualCost });
+  addEvent(`Compraste o veículo ${vehicle.brand} ${vehicle.name}! 🚘🏍️`, "positive");
   saveGame();
   renderGame();
 }
@@ -775,24 +472,52 @@ function renderVehiclesSection() {
   const container = $("vehiclesSectionContainer");
   if (!container) return;
   const player = game.player;
-  let html = `<div class="panel"><h3>🚗 Condução e Veículos</h3>`;
-  if (!player.hasDrivingLicense) {
-    html += `<button class="primary-btn full-width" id="takeLicenseBtn">Tirar Carta (${money(DRIVING_LICENSE_COST)})</button>`;
-  } else {
-    html += `<p class="muted">Carta de Condução ativa.</p>`;
-    game.vehicles.forEach(v => { html += `<p>• ${escapeHTML(v.name)} (${money(v.value)})</p>`; });
-    availableVehicles.forEach((c, idx) => {
-      html += `<button class="secondary-btn full-width" style="margin-top:6px;" data-buy-car="${idx}">Comprar ${escapeHTML(c.name)} (${money(c.price)})</button>`;
+
+  let html = `<div class="panel"><h3>📜 Cartas de Condução (Legislação PT)</h3><div class="button-list">`;
+  
+  Object.keys(licenseRules).forEach(key => {
+    const rule = licenseRules[key];
+    const hasIt = player.licenses[key];
+    const ageOk = player.age >= rule.minAge;
+    
+    html += `
+      <div class="person-card" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+        <strong>${escapeHTML(rule.name)}</strong>
+        <small>Idade mín: ${rule.minAge} anos | Custo: ${money(rule.cost)}</small>
+        ${hasIt ? `<span style="color: var(--success-color); font-weight:bold;">✔ Obtida</span>` : `<button class="secondary-btn full-width" ${!ageOk ? 'disabled' : ''} onclick="takeLicense('${key}')">Tirar Carta (${money(rule.cost)})</button>`}
+      </div>
+    `;
+  });
+  html += `</div></div>`;
+
+  // Secção de veículos comprados e catálogo
+  html += `<div class="panel" style="margin-top: 15px;"><h3>🚗🏍️ Garagem & Concessionário</h3>`;
+  if (game.vehicles.length > 0) {
+    html.forEach
+    html += `<h4>Os Teus Veículos</h4>`;
+    game.vehicles.forEach(v => {
+      html += `<p style="padding: 4px 0;">• <strong>${escapeHTML(v.name)}</strong> (${money(v.value)})</p>`;
     });
   }
-  html += `</div>`;
-  container.innerHTML = html;
 
-  if ($("takeLicenseBtn")) $("takeLicenseBtn").onclick = takeDrivingLicense;
-  container.querySelectorAll("[data-buy-car]").forEach(b => {
-    b.onclick = () => buyVehicle(Number(b.dataset.buyCar));
+  html += `<h4 style="margin-top: 10px;">Comprar Carros</h4><div class="button-list">`;
+  availableCars.forEach((c, idx) => {
+    html += `<button class="secondary-btn full-width" onclick="buyVehicle('car', ${idx})">${escapeHTML(c.brand)} ${escapeHTML(c.name)} (${money(c.price)})</button>`;
   });
+  html += `</div>`;
+
+  html += `<h4 style="margin-top: 12px;">Comprar Motas (Todas as Cilindradas)</h4><div class="button-list">`;
+  availableBikes.forEach((b, idx) => {
+    html += `<button class="secondary-btn full-width" onclick="buyVehicle('bike', ${idx})">${escapeHTML(b.brand)} ${escapeHTML(b.name)} [${b.cc}] (${money(b.price)})</button>`;
+  });
+  html += `</div></div>`;
+
+  container.innerHTML = html;
 }
+
+/* =========================================
+   NEGÓCIOS
+========================================= */
 
 function createBusiness() {
   if (game.player.age < 18) { showToast("Precisas de ter 18 anos."); return; }
@@ -910,7 +635,8 @@ function startGame() {
     health: 100, happiness: 80,
     education: "Sem escolaridade", educationLevel: 0,
     job: "", salary: 0, bank: 1000, debt: 0, expenses: 0,
-    hasDrivingLicense: false, bankAccount: null, activeRental: null,
+    licenses: { carB: false, bikeAM: false, bikeA1: false, bikeA2: false, bikeA: false },
+    bankAccount: null, activeRental: null,
     illness: null,
     maxAge: randomNumber(78, 108)
   };

@@ -40,7 +40,7 @@
         </div>
 
         <!-- Secção para Adicionar Família Manualmente -->
-        <div class="panel" style="margin-top: 15px; background: rgba(0,0,0,0.2);">
+        <div class="panel" style="margin-top: 15px; background: rgba(0,0,0,0.18);">
           <h3>👨‍👩‍👧 Adicionar Familiar (Opcional)</h3>
           <div class="input-group">
             <label>Nome do Familiar</label>
@@ -111,6 +111,7 @@
             <div class="bar"><div id="happinessBar" class="fill"></div></div>
             <strong id="happinessValue">80%</strong>
           </div>
+          <div class="info-row"><span>Morada Atual</span><strong id="housingSummary">Casa dos Pais</strong></div>
           <div class="info-row"><span>Escolaridade</span><strong id="educationValue">Sem escolaridade</strong></div>
           <div class="info-row"><span>Profissão</span><strong id="jobValue">Sem profissão</strong></div>
           <div class="info-row"><span>Doença Atual</span><strong id="illnessValue" style="color: var(--danger-color);">Nenhuma</strong></div>
@@ -122,17 +123,25 @@
         </div>
       </section>
 
-      <!-- Tab: Património e Veículos -->
+      <!-- Tab: Património, Bancos, Habitação e Veículos -->
       <section id="patrimonyTab" class="tab-content hidden">
         <div class="panel">
-          <h2>💰 Património</h2>
+          <h2>💰 Património & Finanças</h2>
           <div class="info-row"><span>Património Total</span><strong id="totalWealth">0 €</strong></div>
           <div class="info-row"><span>Conta Bancária</span><strong id="bankBalance">0 €</strong></div>
+          <div class="info-row"><span>Banco Atual</span><strong id="currentBankName">Sem conta aberta</strong></div>
           <div class="info-row"><span>Salário Anual</span><strong id="annualSalary">0 €</strong></div>
           <div class="info-row"><span>Despesas Anuais</span><strong id="annualExpenses">0 €</strong></div>
-          <div class="info-row"><span>Dívidas</span><strong id="debtValue">0 €</strong></div>
+          <div class="info-row"><span>Dívidas / Crédito</span><strong id="debtValue">0 €</strong></div>
         </div>
 
+        <!-- Secção Bancária -->
+        <div id="bankSectionContainer"></div>
+
+        <!-- Secção de Habitação & Imobiliário -->
+        <div id="housingSectionContainer"></div>
+
+        <!-- Secção de Veículos -->
         <div id="vehiclesSectionContainer"></div>
       </section>
 
@@ -204,11 +213,14 @@
     </nav>
   </div>
 
+  <!-- Modal Dinâmico para Imóveis e Eventos -->
+  <div id="customModal" class="modal-overlay hidden"></div>
+
   <!-- Ecrã de Morte / Lápide -->
   <div id="deathScreen" class="screen hidden" style="justify-content: center; align-items: center; padding: 20px;">
-    <div class="panel" style="width: 100%; max-width: 440px; text-align: center; background: #111827; border: 2px solid #475569;">
+    <div class="panel" style="width: 100%; max-width: 440px; text-align: center; background: #142136; border: 2px solid #4a6b9c;">
       <h2 style="font-size: 2.5rem; margin-bottom: 5px;">⚰️</h2>
-      <div style="background: #1e293b; padding: 25px; border-radius: 12px; border: 1px dashed #64748b; margin: 15px 0;">
+      <div style="background: #1d3150; padding: 25px; border-radius: 12px; border: 1px dashed #6085bd; margin: 15px 0;">
         <h3 id="tombstoneName" style="font-size: 1.4rem; color: #f8fafc; margin-bottom: 8px;">Nome</h3>
         <p id="tombstoneYears" class="muted" style="margin-bottom: 15px;">1990 - 2060 (70 anos)</p>
         <p id="tombstoneQuote" style="font-style: italic; color: #cbd5e1; font-size: 1rem; line-height: 1.4;">"Aqui jaz alguém que viveu intensamente."</p>

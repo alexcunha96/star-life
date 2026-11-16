@@ -1,16 +1,15 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - MOTOR COMPLETO COM CRIADOR DE AVATAR
+   STARLIFE - MOTOR COM AVATAR REALISTA HD
 ========================================= */
 
-const SAVE_KEY = "starlife_v11_avatar";
+const SAVE_KEY = "starlife_v12_avatar_hd";
 
 let game = null;
 let initialFamily = [];
 let toastTimer = null;
 
-// Estado temporário do avatar na criação
 let setupAvatar = {
   skin: "#fde0c3",
   hairStyle: "short",
@@ -66,102 +65,118 @@ function showToast(message) {
 }
 
 /* =========================================
-   GERADOR DE AVATAR SVG (ESTILO BITLIFE)
+   GERADOR DE AVATAR SVG REALISTA (ESTILO BITLIFE MELHORADO)
 ========================================= */
 
 function generateAvatarSVG(avatar, age = 25, happiness = 80) {
   const av = avatar || setupAvatar;
   const effectiveHairColor = age >= 65 ? "#cbd5e1" : av.hairColor;
   const showBeard = age >= 16 && av.beard !== "none";
-  const showWrinkles = age >= 55;
+  const showWrinkles = age >= 52;
 
-  // Cabelo de trás (para comprido ou rabo-de-cavalo)
+  // Cabelo de trás detalhado
   let backHair = "";
   if (av.hairStyle === "long") {
-    backHair = `<rect x="24" y="34" width="52" height="54" rx="18" fill="${effectiveHairColor}" />`;
+    backHair = `<path d="M 24 35 Q 20 70, 30 88 Q 50 92, 70 88 Q 80 70, 76 35 Z" fill="${effectiveHairColor}" />`;
   } else if (av.hairStyle === "ponytail") {
-    backHair = `<circle cx="76" cy="42" r="14" fill="${effectiveHairColor}" />`;
+    backHair = `<circle cx="78" cy="42" r="14" fill="${effectiveHairColor}" /><path d="M 78 42 Q 92 50, 95 68" stroke="${effectiveHairColor}" stroke-width="8" stroke-linecap="round" fill="none" />`;
   }
 
-  // Cabelo da frente / topo
+  // Cabelo da frente / topo com volume
   let frontHair = "";
-  if (av.hairStyle === "short" || av.hairStyle === "ponytail") {
-    frontHair = `<path d="M 28 42 C 28 18, 72 18, 72 42 C 68 30, 32 30, 28 42 Z" fill="${effectiveHairColor}" />`;
+  if (av.hairStyle === "short") {
+    frontHair = `<path d="M 24 40 Q 24 14, 50 14 Q 76 14, 76 40 Q 72 24, 50 20 Q 28 24, 24 40 Z" fill="${effectiveHairColor}" />`;
   } else if (av.hairStyle === "long") {
-    frontHair = `<path d="M 26 45 C 26 16, 74 16, 74 45 C 68 28, 32 28, 26 45 Z" fill="${effectiveHairColor}" />`;
+    frontHair = `<path d="M 22 42 Q 20 16, 50 14 Q 80 16, 78 42 Q 74 24, 50 22 Q 26 24, 22 42 Z" fill="${effectiveHairColor}" />`;
+  } else if (av.hairStyle === "ponytail") {
+    frontHair = `<path d="M 24 40 Q 24 15, 50 15 Q 76 15, 76 40 Q 70 24, 50 22 Q 30 24, 24 40 Z" fill="${effectiveHairColor}" />`;
   } else if (av.hairStyle === "curly") {
     frontHair = `
-      <circle cx="32" cy="28" r="10" fill="${effectiveHairColor}" />
-      <circle cx="44" cy="22" r="11" fill="${effectiveHairColor}" />
-      <circle cx="56" cy="22" r="11" fill="${effectiveHairColor}" />
-      <circle cx="68" cy="28" r="10" fill="${effectiveHairColor}" />
-      <circle cx="28" cy="38" r="8" fill="${effectiveHairColor}" />
-      <circle cx="72" cy="38" r="8" fill="${effectiveHairColor}" />
+      <circle cx="30" cy="30" r="11" fill="${effectiveHairColor}" />
+      <circle cx="42" cy="22" r="13" fill="${effectiveHairColor}" />
+      <circle cx="56" cy="22" r="13" fill="${effectiveHairColor}" />
+      <circle cx="70" cy="30" r="11" fill="${effectiveHairColor}" />
+      <circle cx="24" cy="42" r="9" fill="${effectiveHairColor}" />
+      <circle cx="76" cy="42" r="9" fill="${effectiveHairColor}" />
     `;
   }
 
-  // Barba
+  // Barba realista
   let beardSVG = "";
   if (showBeard) {
     if (av.beard === "mustache") {
-      beardSVG = `<path d="M 41 61 Q 50 57 59 61 Q 50 64 41 61 Z" fill="${effectiveHairColor}" />`;
+      beardSVG = `<path d="M 38 60 Q 50 54 62 60 Q 50 65 38 60 Z" fill="${effectiveHairColor}" />`;
     } else if (av.beard === "full") {
-      beardSVG = `<path d="M 30 52 C 30 78, 70 78, 70 52 C 66 64, 34 64, 30 52 Z" fill="${effectiveHairColor}" opacity="0.9" />`;
+      beardSVG = `<path d="M 28 50 Q 28 82, 50 82 Q 72 82, 72 50 Q 68 76, 50 78 Q 32 76, 28 50 Z" fill="${effectiveHairColor}" opacity="0.95" />`;
     }
   }
 
-  // Expressão da boca conforme felicidade
-  let mouthSVG = `<path d="M 43 65 Q 50 71 57 65" stroke="#7f1d1d" stroke-width="2.5" fill="none" stroke-linecap="round" />`;
+  // Expressão da boca baseada na felicidade
+  let mouthSVG = `<path d="M 40 68 Q 50 76 60 68" stroke="#7f1d1d" stroke-width="2.5" fill="none" stroke-linecap="round" />`;
   if (happiness < 40) {
-    mouthSVG = `<path d="M 43 69 Q 50 63 57 69" stroke="#7f1d1d" stroke-width="2.5" fill="none" stroke-linecap="round" />`;
+    mouthSVG = `<path d="M 40 72 Q 50 63 60 72" stroke="#7f1d1d" stroke-width="2.5" fill="none" stroke-linecap="round" />`;
   } else if (happiness < 65) {
-    mouthSVG = `<line x1="44" y1="66" x2="56" y2="66" stroke="#7f1d1d" stroke-width="2.5" stroke-linecap="round" />`;
+    mouthSVG = `<line x1="41" y1="69" x2="59" y2="69" stroke="#7f1d1d" stroke-width="2.5" stroke-linecap="round" />`;
   }
 
-  // Óculos
+  // Óculos modernos
   let glassesSVG = "";
   if (av.glasses === "round") {
     glassesSVG = `
-      <circle cx="40" cy="48" r="7.5" stroke="#1e293b" stroke-width="2" fill="rgba(255,255,255,0.2)" />
-      <circle cx="60" cy="48" r="7.5" stroke="#1e293b" stroke-width="2" fill="rgba(255,255,255,0.2)" />
-      <line x1="47.5" y1="48" x2="52.5" y2="48" stroke="#1e293b" stroke-width="2" />
+      <rect x="30" y="42" width="18" height="15" rx="4" stroke="#0f172a" stroke-width="2.2" fill="rgba(255,255,255,0.15)" />
+      <rect x="52" y="42" width="18" height="15" rx="4" stroke="#0f172a" stroke-width="2.2" fill="rgba(255,255,255,0.15)" />
+      <line x1="48" y1="48" x2="52" y2="48" stroke="#0f172a" stroke-width="2.2" />
     `;
   } else if (av.glasses === "sunglasses") {
     glassesSVG = `
-      <rect x="32" y="42" width="16" height="11" rx="3" fill="#0f172a" />
-      <rect x="52" y="42" width="16" height="11" rx="3" fill="#0f172a" />
-      <line x1="48" y1="46" x2="52" y2="46" stroke="#0f172a" stroke-width="2.5" />
+      <path d="M 30 42 L 48 44 L 48 55 L 30 52 Z" fill="#0f172a" />
+      <path d="M 52 44 L 70 42 L 70 52 L 52 55 Z" fill="#0f172a" />
+      <line x1="48" y1="46" x2="52" y2="46" stroke="#0f172a" stroke-width="3" />
     `;
   }
 
-  // Rugas de idade
+  // Rugas / Detalhes de envelhecimento
   const wrinklesSVG = showWrinkles
-    ? `<path d="M 38 35 Q 50 33 62 35" stroke="rgba(0,0,0,0.18)" stroke-width="1.2" fill="none" />`
+    ? `<path d="M 36 34 Q 50 31 64 34" stroke="rgba(0,0,0,0.18)" stroke-width="1.2" fill="none" /><path d="M 38 63 Q 50 67 62 63" stroke="rgba(0,0,0,0.15)" stroke-width="1.2" fill="none" />`
     : "";
 
   return `
     <svg viewBox="0 0 100 100" class="avatar-svg">
-      <circle cx="50" cy="50" r="48" fill="#1e3a5f" />
+      <defs>
+        <radialGradient id="faceGrad" cx="50%" cy="40%" r="55%">
+          <stop offset="0%" stop-color="${av.skin}" />
+          <stop offset="100%" stop-color="rgba(0,0,0,0.12)" stop-opacity="0.8" />
+        </radialGradient>
+      </defs>
+      <circle cx="50" cy="50" r="48" fill="#14233c" />
       ${backHair}
-      <!-- Pescoço e Camisola -->
-      <rect x="42" y="70" width="16" height="16" fill="${av.skin}" />
-      <path d="M 22 96 C 24 80, 76 80, 78 96 Z" fill="#3b82f6" />
-      <!-- Orelhas -->
-      <circle cx="28" cy="50" r="5" fill="${av.skin}" />
-      <circle cx="72" cy="50" r="5" fill="${av.skin}" />
-      <!-- Rosto -->
-      <rect x="29" y="24" width="42" height="52" rx="21" fill="${av.skin}" />
+      <!-- Pescoço e Roupa -->
+      <rect x="40" y="68" width="20" height="20" fill="url(#faceGrad)" />
+      <path d="M 18 96 Q 50 74, 82 96 Z" fill="#2563eb" />
+      <path d="M 38 84 Q 50 92, 62 84 Z" fill="#1d4ed8" />
+      <!-- Orelhas com detalhe -->
+      <circle cx="26" cy="50" r="6" fill="${av.skin}" />
+      <circle cx="26" cy="50" r="3" fill="rgba(0,0,0,0.08)" />
+      <circle cx="74" cy="50" r="6" fill="${av.skin}" />
+      <circle cx="74" cy="50" r="3" fill="rgba(0,0,0,0.08)" />
+      <!-- Rosto com formato HD e sombreamento -->
+      <path d="M 28 38 C 28 20, 72 20, 72 38 C 72 64, 62 80, 50 80 C 38 80, 28 64, 28 38 Z" fill="url(#faceGrad)" />
       ${wrinklesSVG}
-      <!-- Sobrancelhas -->
-      <line x1="35" y1="41" x2="44" y2="41" stroke="${effectiveHairColor}" stroke-width="2.2" stroke-linecap="round" />
-      <line x1="56" y1="41" x2="65" y2="41" stroke="${effectiveHairColor}" stroke-width="2.2" stroke-linecap="round" />
-      <!-- Olhos -->
-      <circle cx="40" cy="48" r="3.5" fill="#ffffff" />
-      <circle cx="40" cy="48" r="2.2" fill="${av.eyeColor}" />
-      <circle cx="60" cy="48" r="3.5" fill="#ffffff" />
-      <circle cx="60" cy="48" r="2.2" fill="${av.eyeColor}" />
-      <!-- Nariz -->
-      <path d="M 50 49 L 48 56 L 52 56" stroke="rgba(0,0,0,0.25)" stroke-width="1.8" fill="none" stroke-linecap="round" />
+      <!-- Sobrancelhas naturais -->
+      <path d="M 33 40 Q 39 37, 45 40" stroke="${effectiveHairColor}" stroke-width="2.5" stroke-linecap="round" fill="none" />
+      <path d="M 55 40 Q 61 37, 67 40" stroke="${effectiveHairColor}" stroke-width="2.5" stroke-linecap="round" fill="none" />
+      <!-- Olhos HD com brilho e pupila -->
+      <ellipse cx="39" cy="48" rx="4.5" ry="3.5" fill="#ffffff" />
+      <circle cx="39" cy="48" r="2.5" fill="${av.eyeColor}" />
+      <circle cx="38" cy="47" r="1" fill="#ffffff" />
+      
+      <ellipse cx="61" cy="48" rx="4.5" ry="3.5" fill="#ffffff" />
+      <circle cx="61" cy="48" r="2.5" fill="${av.eyeColor}" />
+      <circle cx="60" cy="47" r="1" fill="#ffffff" />
+      <!-- Nariz refinado -->
+      <path d="M 50 45 L 47 56 L 53 56" stroke="rgba(0,0,0,0.22)" stroke-width="1.8" fill="none" stroke-linecap="round" />
+      <ellipse cx="48" cy="56" rx="1" ry="0.6" fill="rgba(0,0,0,0.2)" />
+      <ellipse cx="52" cy="56" rx="1" ry="0.6" fill="rgba(0,0,0,0.2)" />
       ${beardSVG}
       ${mouthSVG}
       ${glassesSVG}
@@ -258,7 +273,7 @@ function getHouseSVG(type) {
 }
 
 /* =========================================
-   BANCOS
+   BANCOS E MERCADO
 ========================================= */
 
 const banksList = [
@@ -304,10 +319,6 @@ function renderBankSection() {
     `;
   }
 }
-
-/* =========================================
-   MERCADO IMOBILIÁRIO & LOJA DE CASAS
-========================================= */
 
 const streetNames = ["Rua das Flores", "Avenida da Liberdade", "Travessa do Sol", "Alameda dos Oceanos", "Rua da Bela Vista", "Praceta das Oliveiras", "Avenida Central", "Rua do Miradouro"];
 const propertyTemplates = [
@@ -489,7 +500,7 @@ function processHousingYear() {
 }
 
 /* =========================================
-   GESTÃO DE BENS NO PATRIMÓNIO (ALTERAR E VENDER)
+   GESTÃO DE BENS E PATRIMÓNIO
 ========================================= */
 
 function togglePropertyStatus(propId) {
@@ -579,7 +590,7 @@ function renderMyAssets() {
 }
 
 /* =========================================
-   LEGISLAÇÃO PORTUGUESA DE CARTAS & VEÍCULOS (LOJA)
+   CARTAS E VEÍCULOS
 ========================================= */
 
 const licenseRules = {
@@ -675,7 +686,7 @@ function renderVehiclesSection() {
   });
   html += `</div>`;
 
-  html += `<h4 style="margin-top: 12px;">Comprar Motas (Todas as Cilindradas)</h4><div class="button-list">`;
+  html += `<h4 style="margin-top: 12px;">Comprar Motas</h4><div class="button-list">`;
   availableBikes.forEach((b, idx) => {
     html += `<button class="secondary-btn full-width" onclick="buyVehicle('bike', ${idx})">${escapeHTML(b.brand)} ${escapeHTML(b.name)} [${b.cc}] (${money(b.price)})</button>`;
   });
@@ -685,7 +696,7 @@ function renderVehiclesSection() {
 }
 
 /* =========================================
-   NEGÓCIOS (DENTRO DE CARREIRA)
+   NEGÓCIOS E ESCOLA
 ========================================= */
 
 function createBusiness() {
@@ -728,10 +739,6 @@ function processBusinessesYear() {
     addFinanceEvent(`O teu negócio "${b.name}" gerou ${money(b.yearlyProfit)} de lucro.`);
   });
 }
-
-/* =========================================
-   ESCOLA E UNIVERSIDADE
-========================================= */
 
 const educationStages = [
   { name: "Creche", start: 0, end: 2, level: 0 },

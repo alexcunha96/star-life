@@ -1,10 +1,10 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - SCRIPT DEFINITIVO COMPLETO
+   STARLIFE - MOTOR COMPLETO E SEGURO
 ========================================= */
 
-const SAVE_KEY = "starlife_v3_complete";
+const SAVE_KEY = "starlife_v4_housing_banks";
 
 let game = null;
 let initialFamily = [];
@@ -12,8 +12,8 @@ let toastTimer = null;
 
 const $ = id => document.getElementById(id);
 
-function createId() {
-  return "person_" + Date.now + "_" + Math.floor(Math.random() * 1000000);
+function createId(prefix = "id") {
+  return prefix + "_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
 }
 
 function randomFrom(list) {
@@ -72,10 +72,14 @@ function loadGame() {
     const loaded = JSON.parse(saved);
     if (!loaded || !loaded.player || !Array.isArray(loaded.family)) return null;
     loaded.player.hasDrivingLicense ??= false;
+    loaded.player.bankAccount ??= null;
+    loaded.player.activeRental ??= null;
+    loaded.properties ??= [];
+    loaded.marketListings ??= [];
     loaded.vehicles ??= [];
     loaded.businesses ??= [];
     loaded.player.illness ??= null;
-    loaded.player.maxAge ??= randomNumber(75, 105);
+    loaded.player.maxAge ??= randomNumber(78, 108);
     return loaded;
   } catch (error) {
     return null;
@@ -111,12 +115,374 @@ function addFinanceEvent(message) {
 }
 
 /* =========================================
-   DADOS E 200+ EVENTOS DIVERSIFICADOS
+   ILUSTRAÇÕES SVG DAS CASAS
+========================================= */
+
+function getHouseSVG(type) {
+  if (type === "studio") {
+    return `
+      <svg viewBox="0 0 120 80" class="house-illustration">
+        <rect x="30" y="25" width="60" height="45" rx="4" fill="#3b82f6" />
+        <polygon points="25,25 60,8 95,25" fill="#1d4ed8" />
+        <rect x="52" y="45" width="16" height="25" fill="#93c5fd" />
+        <rect x="36" y="34" width="12" height="12" fill="#fde047" />
+      </svg>`;
+  }
+  if (type === "apartment") {
+    return `
+      <svg viewBox="0 0 120 80" class="house-illustration">
+        <rect x="25" y="12" width="70" height="58" rx="3" fill="#6366f1" />
+        <rect x="35" y="20" width="14" height="12" fill="#fef08a" />
+        <rect x="71" y="20" width="14" height="12" fill="#fef08a" />
+        <rect x="35" y="38" width="14" height="12" fill="#fef08a" />
+        <rect x="71" y="38" width="14" height="12" fill="#fef08a" />
+        <rect x="52" y="52" width="16" height="18" fill="#c7d2fe" />
+      </svg>`;
+  }
+  if (type === "house") {
+    return `
+      <svg viewBox="0 0 120 80" class="house-illustration">
+        <rect x="18" y="30" width="84" height="40" rx="3" fill="#10b981" />
+        <polygon points="12,30 60,8 108,30" fill="#047857" />
+        <rect x="52" y="45" width="16" height="25" fill="#d1fae5" />
+        <rect x="26" y="40" width="16" height="14" fill="#fef08a" />
+        <rect x="78" y="40" width="16" height="14" fill="#fef08a" />
+      </svg>`;
+  }
+  // Mansion
+  return `
+    <svg viewBox="0 0 120 80" class="house-illustration">
+      <rect x="10" y="28" width="100" height="42" rx="4" fill="#f59e0b" />
+      <polygon points="5,28 60,5 115,28" fill="#b45309" />
+      <rect x="50" y="42" width="20" height="28" fill="#fef3c7" />
+      <rect x="20" y="36" width="18" height="14" fill="#fef08a" />
+      <rect x="82" y="36" width="18" height="14" fill="#fef08a" />
+      <circle cx="60" cy="20" r="4" fill="#fde047" />
+    </svg>`;
+}
+
+/* =========================================
+   3 BANCOS E SISTEMA BANCÁRIO
+========================================= */
+
+const banksList = [
+  { id: "atlantico", name: "Banco Atlântico", interestRate: 0.045, maxMortgageMultiplier: 4.5, desc: "Taxas competitivas para crédito habitação." },
+  { id: "caixa", name: "Caixa Popular", interestRate: 0.052, maxMortgageMultiplier: 5.0, desc: "Aprovação facilitada para jovens." },
+  { id: "novafinanca", name: "Nova Finança Digital", interestRate: 0.038, maxMortgageMultiplier: 4.0, desc: "Juros baixos para clientes com boa poupança." }
+];
+
+function openBankAccount(bankId) {
+  const bank = banksList.find(b => b.id === bankId);
+  if (!bank) return;
+  game.player.bankAccount = { bankId: bank.id, bankName: bank.name, interestRate: bank.interestRate, openedAge: game.player.age };
+  addEvent(`Abriste conta bancária no ${bank.name}! 🏦`, "positive");
+  saveGame();
+  renderGame();
+}
+
+function renderBankSection() {
+  const container = $("bankSectionContainer");
+  if (!container) return;
+  const player = game.player;
+
+  if (!player.bankAccount) {
+    let html = `<div class="panel"><h3>🏦 Abrir Conta Bancária</h3><p class="muted">Escolhe um banco para gerir dinheiro e pedir crédito habitação:</p><div class="button-list">`;
+    banksList.forEach(b => {
+      html += `
+        <div class="person-card" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+          <strong>${escapeHTML(b.name)}</strong>
+          <small>${escapeHTML(b.desc)} (Taxa Crédito: ${(b.interestRate * 100).toFixed(1)}%)</small>
+          <button class="primary-btn full-width" data-open-bank="${b.id}">Abrir Conta</button>
+        </div>
+      `;
+    });
+    html += `</div></div>`;
+    container.innerHTML = html;
+    container.querySelectorAll("[data-open-bank]").forEach(btn => {
+      btn.onclick = () => openBankAccount(btn.dataset.openBank);
+    });
+  } else {
+    container.innerHTML = `
+      <div class="panel">
+        <h3>🏦 O Teu Banco</h3>
+        <div class="info-row"><span>Instituição</span><strong>${escapeHTML(player.bankAccount.bankName)}</strong></div>
+        <div class="info-row"><span>Taxa de Juro Crédito</span><strong>${(player.bankAccount.interestRate * 100).toFixed(1)}%</strong></div>
+      </div>
+    `;
+  }
+}
+
+/* =========================================
+   MERCADO IMOBILIÁRIO DINÂMICO & HABITAÇÃO
+========================================= */
+
+const streetNames = ["Rua das Flores", "Avenida da Liberdade", "Travessa do Sol", "Alameda dos Oceanos", "Rua da Bela Vista", "Praceta das Oliveiras", "Avenida Central", "Rua do Miradouro"];
+
+const propertyTemplates = [
+  { title: "Estúdio T0 Acolhedor", type: "studio", buyPrice: 75000, rentMonthly: 480, happiness: 4 },
+  { title: "Apartamento T1 Moderno", type: "apartment", buyPrice: 135000, rentMonthly: 720, happiness: 8 },
+  { title: "Apartamento T2 Familiar", type: "apartment", buyPrice: 195000, rentMonthly: 950, happiness: 12 },
+  { title: "Moradia Geminada T3", type: "house", buyPrice: 310000, rentMonthly: 1350, happiness: 18 },
+  { title: "Moradia Isolada com Jardim", type: "house", buyPrice: 480000, rentMonthly: 1900, happiness: 24 },
+  { title: "Mansão de Luxo Vista Mar", type: "mansion", buyPrice: 950000, rentMonthly: 3500, happiness: 35 }
+];
+
+function generateYearlyMarket() {
+  if (!game) return;
+  const listings = [];
+  const count = randomNumber(3, 4);
+  for (let i = 0; i < count; i++) {
+    const tpl = randomFrom(propertyTemplates);
+    const variance = 0.9 + Math.random() * 0.25;
+    const price = Math.round((tpl.buyPrice * variance) / 500) * 500;
+    const rent = Math.round((tpl.rentMonthly * variance) / 10) * 10;
+    listings.push({
+      id: createId("house"),
+      title: tpl.title,
+      type: tpl.type,
+      address: `${randomFrom(streetNames)}, n.º ${randomNumber(1, 240)}, ${game.player.city}`,
+      buyPrice: price,
+      rentMonthly: rent,
+      happiness: tpl.happiness
+    });
+  }
+  game.marketListings = listings;
+}
+
+function openPropertyModal(listingId) {
+  const house = game.marketListings.find(h => h.id === listingId);
+  if (!house) return;
+  const modal = $("customModal");
+  modal.innerHTML = `
+    <div class="modal-card">
+      <div style="text-align: center; margin-bottom: 10px;">${getHouseSVG(house.type)}</div>
+      <h3>${escapeHTML(house.title)}</h3>
+      <p class="muted" style="margin-bottom: 10px;">📍 ${escapeHTML(house.address)}</p>
+      <div class="info-row"><span>Preço de Compra</span><strong>${money(house.buyPrice)}</strong></div>
+      <div class="info-row"><span>Renda Mensal</span><strong>${money(house.rentMonthly)}/mês</strong></div>
+      
+      <div style="margin-top: 14px;">
+        <h4>Opções de Arrendamento</h4>
+        <div style="display: flex; gap: 6px; margin-top: 6px;">
+          <button class="secondary-btn" style="flex:1" onclick="rentProperty('${house.id}', 12)">12 Meses</button>
+          <button class="secondary-btn" style="flex:1" onclick="rentProperty('${house.id}', 24)">24 Meses</button>
+          <button class="secondary-btn" style="flex:1" onclick="rentProperty('${house.id}', 36)">36 Meses</button>
+        </div>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <h4>Opções de Compra</h4>
+        <div class="modal-buttons" style="margin-top: 6px;">
+          <button class="primary-btn full-width" onclick="buyPropertyTransfer('${house.id}')">💳 Transferência Bancária (${money(house.buyPrice)})</button>
+          <button class="secondary-btn full-width" onclick="buyPropertyMortgage('${house.id}')">🏦 Crédito Habitação (Banco)</button>
+        </div>
+      </div>
+
+      <button class="danger-btn full-width" style="margin-top: 14px;" onclick="closeCustomModal()">Fechar</button>
+    </div>
+  `;
+  modal.classList.remove("hidden");
+}
+
+function closeCustomModal() {
+  $("customModal").classList.add("hidden");
+}
+
+function rentProperty(listingId, months) {
+  const house = game.marketListings.find(h => h.id === listingId);
+  if (!house) return;
+  if (game.player.age < 18) { showToast("Precisas de ter 18 anos para assinar contrato."); return; }
+  if (game.player.bank < house.rentMonthly * 2) { showToast("Precisas de 2 meses de caução na conta."); return; }
+
+  game.player.bank -= house.rentMonthly * 2;
+  game.player.activeRental = {
+    title: house.title,
+    address: house.address,
+    rentMonthly: house.rentMonthly,
+    monthsRemaining: months,
+    happiness: house.happiness
+  };
+  addEvent(`Assinaste contrato de arrendamento (${months} meses) em ${house.address}! 🔑`, "positive");
+  closeCustomModal();
+  saveGame();
+  renderGame();
+}
+
+function buyPropertyTransfer(listingId) {
+  const house = game.marketListings.find(h => h.id === listingId);
+  if (!house) return;
+  if (!game.player.bankAccount) { showToast("Abre primeiro uma conta bancária!"); return; }
+  if (game.player.bank < house.buyPrice) { showToast("Saldo insuficiente para transferência."); return; }
+
+  game.player.bank -= house.buyPrice;
+  const isFirst = game.properties.length === 0;
+  game.properties.push({
+    id: createId("prop"),
+    title: house.title,
+    type: house.type,
+    address: house.address,
+    value: house.buyPrice,
+    mortgageRemaining: 0,
+    annualPayment: 0,
+    status: isFirst ? "primary" : "rented_out",
+    rentalIncomeAnnual: house.rentMonthly * 12,
+    happiness: house.happiness
+  });
+  game.marketListings = game.marketListings.filter(h => h.id !== listingId);
+  addEvent(`Compraste a pronto "${house.title}" em ${house.address}! 🏡`, "positive");
+  closeCustomModal();
+  saveGame();
+  renderGame();
+}
+
+function buyPropertyMortgage(listingId) {
+  const house = game.marketListings.find(h => h.id === listingId);
+  if (!house) return;
+  if (!game.player.bankAccount) { showToast("Abre primeiro uma conta bancária no teu banco!"); return; }
+  if (game.player.age < 18) { showToast("Precisas de ter 18 anos."); return; }
+
+  const downPayment = Math.round(house.buyPrice * 0.15);
+  if (game.player.bank < downPayment) {
+    showToast(`Precisas de ${money(downPayment)} (15% de entrada).`);
+    return;
+  }
+
+  const loanAmount = house.buyPrice - downPayment;
+  const annualRate = game.player.bankAccount.interestRate;
+  const annualPayment = Math.round((loanAmount / 25) * (1 + annualRate));
+
+  game.player.bank -= downPayment;
+  game.player.debt += loanAmount;
+
+  const isFirst = game.properties.length === 0;
+  game.properties.push({
+    id: createId("prop"),
+    title: house.title,
+    type: house.type,
+    address: house.address,
+    value: house.buyPrice,
+    mortgageRemaining: loanAmount,
+    annualPayment,
+    status: isFirst ? "primary" : "rented_out",
+    rentalIncomeAnnual: house.rentMonthly * 12,
+    happiness: house.happiness
+  });
+  game.marketListings = game.marketListings.filter(h => h.id !== listingId);
+  addEvent(`Crédito Habitação aprovado no ${game.player.bankAccount.bankName} para "${house.title}"! 🏦🏡`, "positive");
+  closeCustomModal();
+  saveGame();
+  renderGame();
+}
+
+function togglePropertyStatus(propId) {
+  const prop = game.properties.find(p => p.id === propId);
+  if (!prop) return;
+  if (prop.status === "primary") {
+    prop.status = "rented_out";
+    addEvent(`Colocaste "${prop.title}" a arrendar (${money(prop.rentalIncomeAnnual)}/ano).`, "positive");
+  } else {
+    game.properties.forEach(p => { if (p.status === "primary") p.status = "rented_out"; });
+    prop.status = "primary";
+    addEvent(`Mudaste a tua morada principal para "${prop.title}".`, "positive");
+  }
+  saveGame();
+  renderGame();
+}
+
+function renderHousingSection() {
+  const container = $("housingSectionContainer");
+  if (!container) return;
+  const player = game.player;
+
+  let html = `<div class="panel"><h3>🏡 Habitação & Mercado Imobiliário</h3>`;
+
+  // Moradia arrendada ativa
+  if (player.activeRental) {
+    html += `
+      <div class="person-card" style="flex-direction: column; align-items: flex-start; margin-bottom: 10px; border-left: 4px solid var(--accent-color);">
+        <strong>Arrendamento Ativo: ${escapeHTML(player.activeRental.title)}</strong>
+        <small>📍 ${escapeHTML(player.activeRental.address)}</small>
+        <small>Renda: ${money(player.activeRental.rentMonthly)}/mês · Faltam ${player.activeRental.monthsRemaining} meses</small>
+      </div>
+    `;
+  }
+
+  // Propriedades compradas
+  if (game.properties.length > 0) {
+    html += `<h4 style="margin-top: 8px;">Os Teus Imóveis</h4>`;
+    game.properties.forEach(p => {
+      const statusLabel = p.status === "primary" ? "🏠 Moradia Principal" : `💰 A Arrendar (+${money(p.rentalIncomeAnnual)}/ano)`;
+      html += `
+        <div class="person-card" style="flex-direction: column; align-items: flex-start; margin-bottom: 8px;">
+          <div style="display:flex; align-items:center; gap:10px; width:100%;">
+            <div style="width:55px;">${getHouseSVG(p.type)}</div>
+            <div style="flex:1;">
+              <strong>${escapeHTML(p.title)}</strong>
+              <small style="display:block;">${escapeHTML(p.address)}</small>
+              <small style="color: var(--success-color);">${statusLabel}</small>
+            </div>
+          </div>
+          <button class="small-btn full-width" style="margin-top:6px;" onclick="togglePropertyStatus('${p.id}')">
+            ${p.status === "primary" ? "Colocar a Arrendar" : "Definir como Minha Moradia"}
+          </button>
+        </div>
+      `;
+    });
+  }
+
+  // Mercado Imobiliário Atual
+  html += `<h4 style="margin-top: 12px;">Anúncios Disponíveis Este Ano (Clica para ver)</h4><div class="button-list">`;
+  game.marketListings.forEach(h => {
+    html += `
+      <div class="person-card house-card" onclick="openPropertyModal('${h.id}')">
+        <div style="width: 65px; flex-shrink: 0;">${getHouseSVG(h.type)}</div>
+        <div style="flex: 1; margin-left: 10px;">
+          <strong>${escapeHTML(h.title)}</strong>
+          <small style="display:block;">Compra: ${money(h.buyPrice)} | Renda: ${money(h.rentMonthly)}/mês</small>
+        </div>
+      </div>
+    `;
+  });
+  html += `</div></div>`;
+  container.innerHTML = html;
+}
+
+function processHousingYear() {
+  const player = game.player;
+  // Renda ativa
+  if (player.activeRental) {
+    const annualRent = player.activeRental.rentMonthly * 12;
+    player.bank -= annualRent;
+    player.activeRental.monthsRemaining -= 12;
+    player.happiness = clamp(player.happiness + 2);
+    if (player.activeRental.monthsRemaining <= 0) {
+      addEvent(`O contrato de arrendamento de "${player.activeRental.title}" terminou.`, "neutral");
+      player.activeRental = null;
+    }
+  }
+
+  // Imóveis próprios
+  game.properties.forEach(p => {
+    if (p.mortgageRemaining > 0) {
+      player.bank -= p.annualPayment;
+      p.mortgageRemaining = Math.max(0, p.mortgageRemaining - p.annualPayment);
+      player.debt = Math.max(0, player.debt - p.annualPayment);
+    }
+    if (p.status === "rented_out") {
+      player.bank += p.rentalIncomeAnnual;
+      addFinanceEvent(`Recebeste ${money(p.rentalIncomeAnnual)} de renda pelo imóvel "${p.title}".`);
+    } else if (p.status === "primary") {
+      player.happiness = clamp(player.happiness + 3);
+    }
+  });
+}
+
+/* =========================================
+   EVENTOS, SAÚDE, ESCOLA, VEÍCULOS E NEGÓCIOS
 ========================================= */
 
 const femaleNames = ["Maria", "Ana", "Beatriz", "Inês", "Sofia", "Matilde", "Leonor", "Carolina", "Mariana", "Margarida", "Catarina", "Joana", "Rita", "Francisca", "Marta", "Laura", "Alice", "Diana", "Cláudia", "Raquel", "Teresa", "Isabel", "Helena", "Andreia", "Patrícia", "Eva", "Luísa", "Daniela", "Filipa"];
 const maleNames = ["João", "Pedro", "Miguel", "Francisco", "Tiago", "Diogo", "André", "Rafael", "Gonçalo", "Martim", "Afonso", "Tomás", "Duarte", "Bruno", "Ricardo", "Daniel", "António", "Manuel", "Luís", "Gabriel", "David", "Nuno", "Hugo", "Filipe", "Eduardo", "José", "Rodrigo", "Vasco", "Guilherme"];
-const surnames = ["Silva", "Santos", "Ferreira", "Pereira", "Oliveira", "Costa", "Rodrigues", "Martins", "Sousa", "Gomes", "Lopes", "Almeida", "Ribeiro", "Carvalho", "Moreira", "Mendes", "Teixeira", "Nunes", "Correia", "Monteiro"];
 
 const tombstoneQuotes = [
   "Viveu intensamente, partiu em paz.",
@@ -124,8 +490,7 @@ const tombstoneQuotes = [
   "Descansa em paz. A jornada foi longa e bela.",
   "Amou, riu, aprendeu e agora descansa.",
   "Uma lenda nunca morre, apenas descansa.",
-  "Fez do mundo um lugar um pouco melhor.",
-  "O livro da sua vida fechou-se com chave de ouro."
+  "Fez do mundo um lugar um pouco melhor."
 ];
 
 const commonIllnesses = [
@@ -134,7 +499,7 @@ const commonIllnesses = [
   { name: "Hipertensão Arterial", severity: "Média", cost: 350, healthImpact: 10, specialty: "cardiology" },
   { name: "Depressão Crónica", severity: "Média", cost: 500, healthImpact: 12, specialty: "psychiatry" },
   { name: "Cancro em Estádio Inicial", severity: "Alta", cost: 6000, healthImpact: 30, specialty: "oncology" },
-  { name: "Doença Cardíaca", severity: "High", cost: 4500, healthImpact: 25, specialty: "cardiology" }
+  { name: "Doença Cardíaca", severity: "Alta", cost: 4500, healthImpact: 25, specialty: "cardiology" }
 ];
 
 function generateName(sex) {
@@ -145,7 +510,7 @@ function generateName(sex) {
 
 function createFamilyMember(data) {
   return {
-    id: data.id || "person_" + Date.now() + "_" + Math.floor(Math.random() * 1000000),
+    id: data.id || createId("person"),
     name: data.name || "Sem nome",
     surname: data.surname || "",
     relation: data.relation || "Outro",
@@ -159,18 +524,12 @@ function createFamilyMember(data) {
   };
 }
 
-// Base alargada de eventos diversificados por faixa etária
 const lifeEventsPool = [
-  // Infância (0-5)
   { minAge: 0, maxAge: 3, text: "Deste os teus primeiros passos na sala de estar.", options: [{ text: "Sorrir", effect: () => { game.player.happiness = clamp(game.player.happiness + 5); addEvent("Os pais celebraram os teus passos.", "positive"); } }] },
-  { minAge: 3, maxAge: 5, text: "Partilhaste os teus brinquedos com outra criança no parque.", options: [{ text: "Ser amigável", effect: () => { game.player.happiness = clamp(game.player.happiness + 6); addEvent("Fizeste um novo amigo.", "positive"); } }] },
-  // Escola (6-17)
   { minAge: 6, maxAge: 11, text: "Participaste numa atividade desportiva na escola.", options: [{ text: "Dar o máximo", effect: () => { game.player.health = clamp(game.player.health + 3); addEvent("Ganhaste uma medalha simbólica!", "positive"); } }] },
   { minAge: 12, maxAge: 17, text: "Tiveste um teste difícil de História e conseguiste excelente nota.", options: [{ text: "Celebrar", effect: () => { game.player.intelligence = clamp(game.player.intelligence + 2); addEvent("O esforço nos estudos valeu a pena.", "positive"); } }] },
-  // Vida Adulta (18-65)
   { minAge: 18, maxAge: 65, text: "Fizeste horas extra no trabalho.", options: [{ text: "Aceitar", effect: () => { game.player.bank += 180; addFinanceEvent("Ganhaste 180 € extra."); addEvent("Recebeste um bónus pelo esforço.", "positive"); } }] },
   { minAge: 18, maxAge: 65, text: "Encontraste uma carteira com dinheiro no passeio.", options: [{ text: "Devolver", effect: () => { game.player.happiness = clamp(game.player.happiness + 8); game.player.bank += 40; addEvent("O dono recompensou-te com 40 €.", "positive"); } }] },
-  // Sénior (66+)
   { minAge: 66, maxAge: 110, text: "Participaste num torneio de dominó no centro de reformados.", options: [{ text: "Jogar", effect: () => { game.player.happiness = clamp(game.player.happiness + 10); addEvent("Passáste uma tarde muito agradável.", "positive"); } }] }
 ];
 
@@ -180,15 +539,7 @@ function triggerRandomEvent() {
   const validEvents = lifeEventsPool.filter(ev => age >= ev.minAge && age <= ev.maxAge);
   if (validEvents.length === 0 || Math.random() > 0.4) return;
   const ev = randomFrom(validEvents);
-  
-  let modal = $("eventModal");
-  if (!modal) {
-    modal = document.createElement("div");
-    modal.id = "eventModal";
-    modal.className = "modal-overlay";
-    document.body.appendChild(modal);
-  }
-
+  const modal = $("customModal");
   modal.innerHTML = `
     <div class="modal-card">
       <h3>⚠️ Acontecimento</h3>
@@ -225,49 +576,19 @@ function checkRandomIllness() {
   }
 }
 
-/* =========================================
-   CENTRO MÉDICO & ESPECIALIDADES
-========================================= */
-
 function openHealthSpecialty(specialty) {
   const container = $("healthActionContainer");
-  const player = game.player;
   let title = "Centro Clínico";
   let desc = "Serviços médicos especializados.";
   let cost = 100;
   let actionType = "specialist";
 
-  if (specialty === "familyDoctor") {
-    title = "👨‍⚕️ Médico de Família";
-    desc = "Consulta de rotina para check-up geral.";
-    cost = 40;
-    actionType = "checkup";
-  } else if (specialty === "urgency") {
-    title = "🚑 Urgências Hospitalares";
-    desc = "Atendimento médico imediato para acidentes ou mal-estar súbito.";
-    cost = 100;
-    actionType = "urgency";
-  } else if (specialty === "cardiology") {
-    title = "❤️ Cardiologia";
-    desc = "Avaliação e tratamento do sistema cardiovascular e hipertensão.";
-    cost = 250;
-    actionType = "treatment";
-  } else if (specialty === "orthopedics") {
-    title = "🦴 Ortopedia & Fisioterapia";
-    desc = "Tratamento de lesões ósseas, musculares e articulares.";
-    cost = 180;
-    actionType = "treatment";
-  } else if (specialty === "psychiatry") {
-    title = "🧠 Psiquiatria & Bem-estar";
-    desc = "Acompanhamento de saúde mental e tratamento de depressão.";
-    cost = 200;
-    actionType = "treatment";
-  } else if (specialty === "oncology") {
-    title = "🎗️ Oncologia";
-    desc = "Rastreio e tratamento oncológico especializado.";
-    cost = 1500;
-    actionType = "oncology";
-  }
+  if (specialty === "familyDoctor") { title = "👨‍⚕️ Médico de Família"; desc = "Consulta de rotina para check-up geral."; cost = 40; actionType = "checkup"; }
+  else if (specialty === "urgency") { title = "🚑 Urgências Hospitalares"; desc = "Atendimento médico imediato."; cost = 100; actionType = "urgency"; }
+  else if (specialty === "cardiology") { title = "❤️ Cardiologia"; desc = "Tratamento cardiovascular e hipertensão."; cost = 250; actionType = "treatment"; }
+  else if (specialty === "orthopedics") { title = "🦴 Ortopedia & Fisioterapia"; desc = "Tratamento de lesões ósseas e articulares."; cost = 180; actionType = "treatment"; }
+  else if (specialty === "psychiatry") { title = "🧠 Psiquiatria & Bem-estar"; desc = "Acompanhamento de saúde mental."; cost = 200; actionType = "treatment"; }
+  else if (specialty === "oncology") { title = "🎗️ Oncologia"; desc = "Rastreio e tratamento oncológico."; cost = 1500; actionType = "oncology"; }
 
   container.innerHTML = `
     <div class="panel" style="margin-top: 12px;">
@@ -276,34 +597,28 @@ function openHealthSpecialty(specialty) {
       <button class="primary-btn full-width" style="margin-top: 10px;" id="execHealthBtn">Efetuar Consulta / Tratamento (${money(cost)})</button>
     </div>
   `;
-
   $("execHealthBtn").onclick = () => executeHealthAction(actionType, cost, specialty);
 }
 
 function executeHealthAction(type, cost, specialty) {
   const player = game.player;
-  if (player.bank < cost) {
-    showToast(`Precisas de ${money(cost)} na conta.`);
-    return;
-  }
+  if (player.bank < cost) { showToast(`Precisas de ${money(cost)} na conta.`); return; }
   player.bank -= cost;
-
   if (type === "checkup") {
     player.health = clamp(player.health + 3);
-    showToast(player.illness ? `Atenção: Tens ${player.illness.name}!` : "Check-up limpo e saudável!");
+    showToast(player.illness ? `Atenção: Tens ${player.illness.name}!` : "Check-up limpo!");
   } else if (type === "urgency") {
     player.health = clamp(player.health + 12);
-    showToast("Tratamento de urgência efetuado com sucesso.");
+    showToast("Tratamento de urgência efetuado.");
   } else {
-    // Se tiver doença correspondente à especialidade ou geral
     if (player.illness && (player.illness.specialty === specialty || specialty === "oncology")) {
       addEvent(`Curaste com sucesso: ${player.illness.name}! 🎉`, "positive");
       player.illness = null;
       player.health = clamp(player.health + 25);
-      showToast("Tratamento especializado bem-sucedido!");
+      showToast("Tratamento bem-sucedido!");
     } else {
       player.health = clamp(player.health + 10);
-      showToast("Consulta de especialidade concluída.");
+      showToast("Consulta concluída.");
     }
   }
   saveGame();
@@ -311,7 +626,7 @@ function executeHealthAction(type, cost, specialty) {
 }
 
 /* =========================================
-   ESCOLA E UNIVERSIDADE
+   ESCOLA, UNIVERSIDADE, VEÍCULOS E NEGÓCIOS
 ========================================= */
 
 const educationStages = [
@@ -337,7 +652,6 @@ function getCurrentEducationStage(age) {
 function initializeEducation(player) {
   player.intelligence ??= randomNumber(35, 85);
   player.schoolGrade ??= 12;
-  player.schoolStatus ??= "A frequentar";
   player.education ??= "Sem escolaridade";
   player.educationLevel ??= 0;
   player.universityCourse ??= null;
@@ -362,13 +676,12 @@ function studyHarder() {
   renderGame();
 }
 
-function enrollUniversity(index, fundingType) {
+function enrollUniversity(index) {
   const player = game.player;
   const course = universityCourses[index];
   if (player.universityCourse) { showToast("Já estás na universidade."); return; }
   player.universityCourse = course.name;
   player.universityProgress = 0;
-  player.universityFunding = fundingType;
   addEvent(`Entraste na Universidade para estudar ${course.name}! 🎓`);
   saveGame();
   renderGame();
@@ -405,12 +718,7 @@ function renderSchoolAndUniversitySubmenu() {
   `;
 
   if (player.age >= 6 && player.age <= 18) {
-    html += `
-      <div class="panel">
-        <h3>Atividades de Estudante</h3>
-        <button class="primary-btn full-width" id="studyBtn">📖 Estudar Mais</button>
-      </div>
-    `;
+    html += `<div class="panel"><h3>Atividades de Estudante</h3><button class="primary-btn full-width" id="studyBtn">📖 Estudar Mais</button></div>`;
   }
 
   if (player.age >= 18 && player.educationLevel >= 2) {
@@ -429,16 +737,11 @@ function renderSchoolAndUniversitySubmenu() {
   }
 
   container.innerHTML = html;
-
   if ($("studyBtn")) $("studyBtn").onclick = studyHarder;
   container.querySelectorAll("[data-uni-idx]").forEach(b => {
-    b.onclick = () => enrollUniversity(Number(b.dataset.uniIdx), "savings");
+    b.onclick = () => enrollUniversity(Number(b.dataset.uniIdx));
   });
 }
-
-/* =========================================
-   CARTA, VEÍCULOS E NEGÓCIOS
-========================================= */
 
 const DRIVING_LICENSE_COST = 650;
 const availableVehicles = [
@@ -462,7 +765,7 @@ function buyVehicle(idx) {
   const player = game.player;
   if (player.bank < car.price) { showToast("Sem saldo."); return; }
   player.bank -= car.price;
-  game.vehicles.push({ id: "person_" + Date.now(), name: car.name, value: car.price, annualCost: car.annualCost });
+  game.vehicles.push({ id: createId("car"), name: car.name, value: car.price, annualCost: car.annualCost });
   addEvent(`🚘 Compraste um ${car.name}!`, "positive");
   saveGame();
   renderGame();
@@ -498,7 +801,7 @@ function createBusiness() {
   const inv = Number(prompt("Investimento inicial (min. 500 €):"));
   if (!inv || inv < 500 || game.player.bank < inv) { showToast("Investimento inválido ou sem saldo."); return; }
   game.player.bank -= inv;
-  game.businesses.push({ id: "person_" + Date.now(), name, investment: inv, yearlyProfit: Math.round(inv * 0.25) });
+  game.businesses.push({ id: createId("biz"), name, investment: inv, yearlyProfit: Math.round(inv * 0.25) });
   addEvent(`Criaste o negócio "${name}"! 🏢`, "positive");
   saveGame();
   renderGame();
@@ -533,7 +836,7 @@ function processBusinessesYear() {
 }
 
 /* =========================================
-   MORTE E LÁPIDE
+   MORTE E AVANÇAR ANO
 ========================================= */
 
 function triggerDeath() {
@@ -554,53 +857,10 @@ function triggerDeath() {
     <div class="info-row"><span>Escolaridade</span><strong>${escapeHTML(player.education)}</strong></div>
   `;
 
-  const children = game.family.filter(f => ["Filho/a", "Filho", "Filha"].includes(f.relation) && f.alive);
-  const childBtn = $("continueChildBtn");
-  if (children.length > 0) {
-    childBtn.classList.remove("hidden");
-    childBtn.onclick = () => continueAsChild(children[0]);
-  } else {
-    childBtn.classList.add("hidden");
-  }
-
   $("newLifeBtn").onclick = () => {
     localStorage.removeItem(SAVE_KEY);
     location.reload();
   };
-}
-
-function continueAsChild(child) {
-  const oldBank = game.player.bank;
-  const surname = game.player.surname;
-
-  game.player = {
-    id: child.id,
-    name: child.name,
-    surname: surname,
-    sex: child.sex,
-    country: game.player.country,
-    city: game.player.city,
-    age: child.age,
-    alive: true,
-    health: 100,
-    happiness: 90,
-    education: "Sem escolaridade",
-    educationLevel: 0,
-    job: "",
-    salary: 0,
-    bank: Math.round(oldBank / 2),
-    debt: 0,
-    expenses: 0,
-    hasDrivingLicense: false,
-    illness: null,
-    maxAge: randomNumber(75, 105)
-  };
-
-  game.family = game.family.filter(f => f.id !== child.id);
-  $("deathScreen").classList.add("hidden");
-  showGame();
-  renderGame();
-  showToast(`Agora jogas como ${child.name}!`);
 }
 
 function advanceYear() {
@@ -609,11 +869,14 @@ function advanceYear() {
 
   player.age += 1;
   game.year += 1;
+  player.bank += player.salary;
 
   processSchoolYear();
   processFurtherEducation();
+  processHousingYear();
   processBusinessesYear();
   checkRandomIllness();
+  generateYearlyMarket();
 
   if (player.illness) {
     player.health = clamp(player.health - player.illness.healthImpact);
@@ -630,7 +893,7 @@ function advanceYear() {
 }
 
 /* =========================================
-   INICIALIZAÇÃO
+   INICIALIZAÇÃO E RENDER
 ========================================= */
 
 function startGame() {
@@ -639,7 +902,7 @@ function startGame() {
   if (!name || !surname) { showToast("Preenche os campos."); return; }
 
   const player = {
-    id: "person_" + Date.now(), name, surname,
+    id: createId("player"), name, surname,
     sex: $("playerSex").value,
     country: $("playerCountry").value.trim(),
     city: $("playerCity").value.trim(),
@@ -647,16 +910,19 @@ function startGame() {
     health: 100, happiness: 80,
     education: "Sem escolaridade", educationLevel: 0,
     job: "", salary: 0, bank: 1000, debt: 0, expenses: 0,
-    hasDrivingLicense: false, illness: null,
+    hasDrivingLicense: false, bankAccount: null, activeRental: null,
+    illness: null,
     maxAge: randomNumber(78, 108)
   };
 
   game = {
-    player, family: [], socialPeople: [], events: [], financeHistory: [], businesses: [], vehicles: [],
+    player, family: [], socialPeople: [], events: [], financeHistory: [],
+    properties: [], marketListings: [], businesses: [], vehicles: [],
     year: new Date().getFullYear(), started: true
   };
 
   initializeEducation(player);
+  generateYearlyMarket();
 
   if (initialFamily.length === 0) {
     const mother = createFamilyMember({ name: generateName("Feminino"), surname, relation: "Mãe", age: 30, sex: "Feminino" });
@@ -697,6 +963,11 @@ function renderHome() {
   $("jobValue").textContent = player.job || "Sem profissão";
   $("illnessValue").textContent = player.illness ? player.illness.name : "Nenhuma";
 
+  const primaryProp = game.properties.find(p => p.status === "primary");
+  if (primaryProp) $("housingSummary").textContent = primaryProp.title;
+  else if (player.activeRental) $("housingSummary").textContent = `${player.activeRental.title} (Arrendada)`;
+  else $("housingSummary").textContent = "Casa dos Pais";
+
   const eventsContainer = $("recentEvents");
   eventsContainer.innerHTML = "";
   game.events.slice(0, 6).forEach(ev => {
@@ -709,11 +980,16 @@ function renderHome() {
 
 function renderPatrimony() {
   const player = game.player;
-  $("totalWealth").textContent = money(player.bank);
+  const propsVal = game.properties.reduce((sum, p) => sum + p.value, 0);
+  $("totalWealth").textContent = money(player.bank + propsVal - player.debt);
   $("bankBalance").textContent = money(player.bank);
+  $("currentBankName").textContent = player.bankAccount ? player.bankAccount.bankName : "Sem conta aberta";
   $("annualSalary").textContent = money(player.salary);
   $("annualExpenses").textContent = money(player.expenses);
   $("debtValue").textContent = money(player.debt);
+
+  renderBankSection();
+  renderHousingSection();
   renderVehiclesSection();
 }
 
@@ -729,7 +1005,8 @@ function renderCareer() {
     if (player.age >= 16) {
       jobContainer.innerHTML = `
         <button class="secondary-btn" onclick="applyJob('Empregado/a', 12000)">Empregado/a · 12 000 €/ano</button>
-        <button class="secondary-btn" onclick="applyJob('Assistente', 15000)">Assistente · 15 000 €/ano</button>
+        <button class="secondary-btn" onclick="applyJob('Assistente', 16500)">Assistente · 16 500 €/ano</button>
+        <button class="secondary-btn" onclick="applyJob('Gestor/a Júnior', 24000)">Gestor/a Júnior · 24 000 €/ano</button>
       `;
     } else {
       jobContainer.innerHTML = `<p class="muted">Procura emprego a partir dos 16 anos.</p>`;

@@ -1,7 +1,7 @@
 "use strict";
 
 /* =========================================
-   STARLIFE - MOTOR GRÁFICO IDÊNTICO AO BITLIFE (CORRIGIDO)
+   STARLIFE - MOTOR OFICIAL COMPLETO
 ========================================= */
 
 const SAVE_KEY = "starlife_v18_bitlife_perfect";
@@ -9,15 +9,6 @@ const SAVE_KEY = "starlife_v18_bitlife_perfect";
 let game = null;
 let initialFamily = [];
 let toastTimer = null;
-
-let setupAvatar = {
-  skin: "#fde0c3",
-  hairStyle: "spiky",
-  hairColor: "#d97706",
-  eyeColor: "#2563eb",
-  beard: "goatee",
-  glasses: "none"
-};
 
 const $ = id => document.getElementById(id);
 
@@ -65,129 +56,8 @@ function showToast(message) {
 }
 
 /* =========================================
-   GERADOR DE AVATAR SVG - PROPORÇÕES EXATAS BITLIFE
-========================================= */
-
-function generateAvatarSVG(avatar, age = 25, happiness = 80) {
-  const av = avatar || setupAvatar;
-  const hairCol = age >= 65 ? "#cbd5e1" : av.hairColor;
-  const showBeard = age >= 16 && av.beard !== "none";
-
-  // Cabelo espigado perfeitamente alinhado com o topo da cabeça
-  let hairHTML = "";
-  if (av.hairStyle === "spiky") {
-    hairHTML = `
-      <path d="M 28 32 C 26 14, 38 6, 50 12 C 62 6, 74 14, 72 32 C 78 30, 84 38, 76 46 C 70 38, 62 40, 50 40 C 38 40, 30 38, 24 46 C 16 38, 22 30, 28 32 Z" fill="${hairCol}" />
-      <path d="M 33 24 Q 50 12, 67 24 Q 50 28, 33 24 Z" fill="rgba(255,255,255,0.3)" />
-    `;
-  } else if (av.hairStyle === "short") {
-    hairHTML = `<path d="M 27 34 C 25 15, 75 15, 73 34 C 68 22, 32 22, 27 34 Z" fill="${hairCol}" />`;
-  } else if (av.hairStyle === "curly") {
-    hairHTML = `
-      <circle cx="33" cy="26" r="11" fill="${hairCol}" />
-      <circle cx="44" cy="18" r="13" fill="${hairCol}" />
-      <circle cx="56" cy="18" r="13" fill="${hairCol}" />
-      <circle cx="67" cy="26" r="11" fill="${hairCol}" />
-    `;
-  }
-
-  // Pêlo facial (Pera / Goatee idêntico à referência)
-  let beardHTML = "";
-  if (showBeard) {
-    if (av.beard === "goatee") {
-      beardHTML = `
-        <path d="M 43 57 Q 50 53 57 57 Q 54 68, 50 72 Q 46 68, 43 57 Z" fill="#7c2d12" />
-        <path d="M 40 58 Q 50 54 60 58 Q 50 60, 40 58 Z" fill="#7c2d12" />
-      `;
-    } else if (av.beard === "full") {
-      beardHTML = `<path d="M 30 46 C 30 74, 70 74, 70 46 C 65 64, 35 64, 30 46 Z" fill="${hairCol}" />`;
-    }
-  }
-
-  // Boca
-  let mouthHTML = `<path d="M 41 62 Q 50 70 59 62" stroke="#7f1d1d" stroke-width="2.8" fill="none" stroke-linecap="round" />`;
-  if (happiness < 40) {
-    mouthHTML = `<path d="M 41 66 Q 50 57 59 66" stroke="#7f1d1d" stroke-width="2.8" fill="none" stroke-linecap="round" />`;
-  } else if (happiness < 65) {
-    mouthHTML = `<line x1="42" y1="63" x2="58" y2="63" stroke="#7f1d1d" stroke-width="2.8" stroke-linecap="round" />`;
-  }
-
-  // Óculos
-  let glassesHTML = "";
-  if (av.glasses === "round") {
-    glassesHTML = `
-      <circle cx="39" cy="44" r="7.5" stroke="#0f172a" stroke-width="2.2" fill="rgba(255,255,255,0.2)" />
-      <circle cx="61" cy="44" r="7.5" stroke="#0f172a" stroke-width="2.2" fill="rgba(255,255,255,0.2)" />
-      <line x1="46.5" y1="44" x2="53.5" y2="44" stroke="#0f172a" stroke-width="2.2" />
-    `;
-  } else if (av.glasses === "sunglasses") {
-    glassesHTML = `
-      <rect x="31" y="38" width="16" height="11" rx="2.5" fill="#0f172a" />
-      <rect x="53" y="38" width="16" height="11" rx="2.5" fill="#0f172a" />
-      <line x1="47" y1="43" x2="53" y2="43" stroke="#0f172a" stroke-width="2.5" />
-    `;
-  }
-
-  return `
-    <svg viewBox="0 0 100 100" class="avatar-svg" style="width:100%;height:100%;display:block;">
-      <defs>
-        <radialGradient id="faceGrad" cx="50%" cy="35%" r="65%">
-          <stop offset="0%" stop-color="${av.skin}" />
-          <stop offset="100%" stop-color="#9a3412" stop-opacity="0.25" />
-        </radialGradient>
-      </defs>
-      
-      <!-- Fundo circular azul escuro exato -->
-      <circle cx="50" cy="50" r="48" fill="#111c30" />
-      
-      <!-- Pescoço -->
-      <rect x="42" y="66" width="16" height="22" fill="url(#faceGrad)" />
-      
-      <!-- T-shirt azul -->
-      <path d="M 22 96 C 24 76, 76 76, 78 96 Z" fill="#2563eb" />
-      
-      <!-- Orelhas nas laterais corretas -->
-      <circle cx="28" cy="45" r="5.5" fill="${av.skin}" />
-      <circle cx="72" cy="45" r="5.5" fill="${av.skin}" />
-      
-      <!-- Rosto Proporcional (Largura 44, Altura 46) -->
-      <rect x="28" y="24" width="44" height="46" rx="20" fill="url(#faceGrad)" />
-      
-      <!-- Sobrancelhas grossas expressivas BitLife -->
-      <path d="M 33 37 Q 39 33, 45 37" stroke="${hairCol}" stroke-width="3" stroke-linecap="round" fill="none" />
-      <path d="M 55 37 Q 61 33, 67 37" stroke="${hairCol}" stroke-width="3" stroke-linecap="round" fill="none" />
-      
-      <!-- Olhos detalhados -->
-      <ellipse cx="39" cy="44" rx="4" ry="4.5" fill="#ffffff" />
-      <circle cx="39" cy="44" r="2.5" fill="${av.eyeColor}" />
-      <circle cx="38" cy="43" r="1" fill="#ffffff" />
-      
-      <ellipse cx="61" cy="44" rx="4" ry="4.5" fill="#ffffff" />
-      <circle cx="61" cy="44" r="2.5" fill="${av.eyeColor}" />
-      <circle cx="60" cy="43" r="1" fill="#ffffff" />
-      
-      <!-- Nariz centralizado -->
-      <path d="M 50 43 L 47.5 51 L 52.5 51" stroke="rgba(0,0,0,0.22)" stroke-width="1.8" fill="none" stroke-linecap="round" />
-      
-      ${beardHTML}
-      ${mouthHTML}
-      ${glassesHTML}
-      ${hairHTML}
-    </svg>
-  `;
-}
-
-function updateSetupAvatarPreview() {
-  const container = $("avatarPreviewContainer");
-  if (!container) return;
-  container.innerHTML = generateAvatarSVG(setupAvatar, 22, 85);
-}
-
-/* =========================================
    GUARDAR / CARREGAR JOGO
 ========================================= */
-
-const SAVE_KEY = "starlife_v18_bitlife_perfect";
 
 function saveGame() {
   if (!game) return;
@@ -205,7 +75,7 @@ function loadGame() {
     if (!saved) return null;
     const loaded = JSON.parse(saved);
     if (!loaded || !loaded.player || !Array.isArray(loaded.family)) return null;
-    loaded.player.avatar ??= { ...setupAvatar };
+    loaded.player.avatarPath ??= "assets/modules/masculino/avatars/Avatar_masculino_1.png";
     loaded.player.licenses ??= { carB: false, bikeAM: false, bikeA1: false, bikeA2: false, bikeA: false };
     loaded.player.bankAccount ??= null;
     loaded.player.activeRental ??= null;
@@ -1056,7 +926,7 @@ function startGame() {
     sex: $("playerSex").value,
     country: $("playerCountry").value.trim(),
     city: $("playerCity").value.trim(),
-    avatar: { ...setupAvatar },
+    avatarPath: window.selectedAvatarPath || "assets/modules/masculino/avatars/Avatar_masculino_1.png",
     age: 0, alive: true,
     health: 100, happiness: 80,
     education: "Sem escolaridade", educationLevel: 0,
@@ -1116,7 +986,7 @@ function renderHome() {
   $("illnessValue").textContent = player.illness ? player.illness.name : "Nenhuma";
 
   if ($("headerAvatarContainer")) {
-    $("headerAvatarContainer").innerHTML = generateAvatarSVG(player.avatar, player.age, player.happiness);
+    $("headerAvatarContainer").innerHTML = `<img src="${player.avatarPath}" alt="Avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
   }
 
   const primaryProp = game.properties.find(p => p.status === "primary");
@@ -1226,55 +1096,7 @@ function updateSetupFamilyUI() {
   });
 }
 
-function bindAvatarControls() {
-  document.querySelectorAll("#skinSwatches .swatch").forEach(btn => {
-    btn.onclick = () => {
-      document.querySelectorAll("#skinSwatches .swatch").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      setupAvatar.skin = btn.dataset.skin;
-      updateSetupAvatarPreview();
-    };
-  });
-
-  document.querySelectorAll("#hairSwatches .swatch").forEach(btn => {
-    btn.onclick = () => {
-      document.querySelectorAll("#hairSwatches .swatch").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      setupAvatar.hairColor = btn.dataset.hair;
-      updateSetupAvatarPreview();
-    };
-  });
-
-  document.querySelectorAll("#eyeSwatches .swatch").forEach(btn => {
-    btn.onclick = () => {
-      document.querySelectorAll("#eyeSwatches .swatch").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      setupAvatar.eyeColor = btn.dataset.eye;
-      updateSetupAvatarPreview();
-    };
-  });
-
-  $("avatarHairStyle")?.addEventListener("change", e => {
-    setupAvatar.hairStyle = e.target.value;
-    updateSetupAvatarPreview();
-  });
-
-  $("avatarBeard")?.addEventListener("change", e => {
-    setupAvatar.beard = e.target.value;
-    updateSetupAvatarPreview();
-  });
-
-  $("avatarGlasses")?.addEventListener("change", e => {
-    setupAvatar.glasses = e.target.value;
-    updateSetupAvatarPreview();
-  });
-
-  updateSetupAvatarPreview();
-}
-
 function boot() {
-  bindAvatarControls();
-
   $("addFamilyMemberBtn")?.addEventListener("click", () => {
     const name = $("famName").value.trim();
     if (!name) return;

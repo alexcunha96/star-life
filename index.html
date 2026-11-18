@@ -5,6 +5,60 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StarLife</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* Estilos específicos para o novo seletor de avatar completo */
+    .avatar-stage-circle {
+      width: 150px;
+      height: 150px;
+      margin: 12px auto;
+      border-radius: 50%;
+      background: #1e293b;
+      border: 3px solid #38bdf8;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .avatar-stage-circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .avatar-nav-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 10px;
+    }
+    .avatar-arrow-btn {
+      background: #1f2937;
+      color: #fff;
+      border: 1px solid #374151;
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .avatar-arrow-btn:active {
+      background: #38bdf8;
+      color: #090d16;
+    }
+    .avatar-index-label {
+      font-weight: bold;
+      color: #38bdf8;
+      min-width: 60px;
+      text-align: center;
+    }
+    #headerAvatarContainer img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+  </style>
 </head>
 <body>
 
@@ -15,72 +69,18 @@
       <p>A tua vida. As tuas escolhas.</p>
       
       <div id="startForm">
-        <!-- Pré-visualização e Personalização do Avatar -->
+        <!-- Pré-visualização e Seleção do Avatar Completo -->
         <div class="panel" style="margin-top: 12px; background: rgba(0,0,0,0.22); text-align: center;">
-          <h3>🎨 Personalizar Aparência (BitLife Style)</h3>
-          <div id="avatarPreviewContainer" class="avatar-preview-box"></div>
+          <h3>🎨 Escolher Avatar</h3>
           
-          <div class="avatar-controls">
-            <div class="input-group">
-              <label>Tom de Pele</label>
-              <div class="color-swatches" id="skinSwatches">
-                <button type="button" class="swatch active" data-skin="#fde0c3" style="background:#fde0c3;"></button>
-                <button type="button" class="swatch" data-skin="#f1c27d" style="background:#f1c27d;"></button>
-                <button type="button" class="swatch" data-skin="#e0ac69" style="background:#e0ac69;"></button>
-                <button type="button" class="swatch" data-skin="#8d5524" style="background:#8d5524;"></button>
-                <button type="button" class="swatch" data-skin="#4b2c20" style="background:#4b2c20;"></button>
-              </div>
-            </div>
-
-            <div class="input-group">
-              <label>Estilo de Cabelo</label>
-              <select id="avatarHairStyle">
-                <option value="spiky">Cabelo Espigado (BitLife)</option>
-                <option value="short">Curto Clássico</option>
-                <option value="curly">Caracóis Volumosos</option>
-                <option value="bald">Careca</option>
-              </select>
-            </div>
-
-            <div class="input-group">
-              <label>Cor do Cabelo</label>
-              <div class="color-swatches" id="hairSwatches">
-                <button type="button" class="swatch active" data-hair="#d97706" style="background:#d97706;"></button>
-                <button type="button" class="swatch" data-hair="#1f1a17" style="background:#1f1a17;"></button>
-                <button type="button" class="swatch" data-hair="#5c3824" style="background:#5c3824;"></button>
-                <button type="button" class="swatch" data-hair="#a63a24" style="background:#a63a24;"></button>
-                <button type="button" class="swatch" data-hair="#2563eb" style="background:#2563eb;"></button>
-              </div>
-            </div>
-
-            <div class="input-group">
-              <label>Cor dos Olhos</label>
-              <div class="color-swatches" id="eyeSwatches">
-                <button type="button" class="swatch active" data-eye="#2563eb" style="background:#2563eb;"></button>
-                <button type="button" class="swatch" data-eye="#4a3121" style="background:#4a3121;"></button>
-                <button type="button" class="swatch" data-eye="#16a34a" style="background:#16a34a;"></button>
-                <button type="button" class="swatch" data-eye="#b45309" style="background:#b45309;"></button>
-              </div>
-            </div>
-
-            <div style="display: flex; gap: 8px;">
-              <div class="input-group" style="flex: 1;">
-                <label>Barba / Pêlo Facial</label>
-                <select id="avatarBeard">
-                  <option value="none">Sem barba</option>
-                  <option value="goatee">Pêlo / Pera (Estilo Referência)</option>
-                  <option value="full">Barba Completa</option>
-                </select>
-              </div>
-              <div class="input-group" style="flex: 1;">
-                <label>Óculos</label>
-                <select id="avatarGlasses">
-                  <option value="none">Sem óculos</option>
-                  <option value="round">Óculos Graduados</option>
-                  <option value="sunglasses">Óculos de Sol</option>
-                </select>
-              </div>
-            </div>
+          <div class="avatar-stage-circle">
+            <img id="setupAvatarImg" src="assets/modules/masculino/avatars/Avatar_masculino_1.png" alt="Avatar">
+          </div>
+          
+          <div class="avatar-nav-row">
+            <button type="button" class="avatar-arrow-btn" onclick="changeSetupAvatar(-1)">◀</button>
+            <span id="setupAvatarIndex" class="avatar-index-label">#1</span>
+            <button type="button" class="avatar-arrow-btn" onclick="changeSetupAvatar(1)">▶</button>
           </div>
         </div>
 
@@ -94,7 +94,7 @@
         </div>
         <div class="input-group">
           <label>Género</label>
-          <select id="playerSex">
+          <select id="playerSex" onchange="onSetupGenderChange()">
             <option value="Masculino">Masculino</option>
             <option value="Feminino">Feminino</option>
           </select>
@@ -142,7 +142,7 @@
           <div id="setupFamilyList" style="margin-top: 10px;" class="people-list"></div>
         </div>
 
-        <button type="button" onclick="startGame()" class="primary-btn full-width" style="margin-top: 15px;">Nova Vida</button>
+        <button type="button" onclick="handleStartWithAvatar()" class="primary-btn full-width" style="margin-top: 15px;">Nova Vida</button>
       </div>
 
       <div id="continuePanel" class="hidden" style="margin-top: 15px;">
@@ -331,6 +331,62 @@
   </div>
 
   <div id="toast" class="toast"></div>
+
+  <!-- Lógica do Seletor de Avatares -->
+  <script>
+    const avatarConfig = {
+      Masculino: { total: 5, folder: "masculino", prefix: "Avatar_masculino_" },
+      Feminino: { total: 2, folder: "feminino", prefix: "Avatar_feminino_" }
+    };
+
+    let currentAvatarIndex = 1;
+    window.selectedAvatarPath = "assets/modules/masculino/avatars/Avatar_masculino_1.png";
+
+    function updateSetupAvatarUI() {
+      const sex = document.getElementById("playerSex").value;
+      const cfg = avatarConfig[sex] || avatarConfig.Masculino;
+      
+      if (currentAvatarIndex > cfg.total) currentAvatarIndex = 1;
+      if (currentAvatarIndex < 1) currentAvatarIndex = cfg.total;
+
+      window.selectedAvatarPath = `assets/modules/${cfg.folder}/avatars/${cfg.prefix}${currentAvatarIndex}.png`;
+      
+      document.getElementById("setupAvatarImg").src = window.selectedAvatarPath;
+      document.getElementById("setupAvatarIndex").textContent = `#${currentAvatarIndex}`;
+    }
+
+    window.changeSetupAvatar = function(dir) {
+      const sex = document.getElementById("playerSex").value;
+      const cfg = avatarConfig[sex] || avatarConfig.Masculino;
+      
+      currentAvatarIndex += dir;
+      if (currentAvatarIndex > cfg.total) currentAvatarIndex = 1;
+      if (currentAvatarIndex < 1) currentAvatarIndex = cfg.total;
+      
+      updateSetupAvatarUI();
+    };
+
+    window.onSetupGenderChange = function() {
+      currentAvatarIndex = 1;
+      updateSetupAvatarUI();
+    };
+
+    window.handleStartWithAvatar = function() {
+      // Inicia o jogo através da função original do teu script.js
+      if (typeof startGame === "function") {
+        startGame();
+      }
+      // Garante que o avatar PNG escolhido aparece no cabeçalho do jogo
+      setTimeout(() => {
+        const headerContainer = document.getElementById("headerAvatarContainer");
+        if (headerContainer) {
+          headerContainer.innerHTML = `<img src="${window.selectedAvatarPath}" alt="Avatar">`;
+        }
+      }, 50);
+    };
+
+    document.addEventListener("DOMContentLoaded", updateSetupAvatarUI);
+  </script>
 
   <script src="script.js"></script>
 </body>

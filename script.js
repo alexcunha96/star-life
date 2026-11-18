@@ -19,6 +19,68 @@ const avatarConfig = {
 let currentAvatarIndex = 1;
 window.selectedAvatarPath = "assets/modules/masculino/avatars/Avatar_masculino_1.png";
 
+// Base de Países Mundiais com Moeda, Bancos e Cidades
+const worldCountriesDatabase = {
+  "Portugal": {
+    currency: "EUR", symbol: "€",
+    banks: [
+      { id: "atlantico", name: "Banco Atlântico", interestRate: 0.045, desc: "Taxas competitivas para crédito habitação." },
+      { id: "caixa", name: "Caixa Popular", interestRate: 0.052, desc: "Aprovação facilitada para jovens." },
+      { id: "novafinanca", name: "Nova Finança Digital", interestRate: 0.038, desc: "Juros baixos para clientes com boa poupança." }
+    ],
+    cities: ["Lisboa", "Porto", "Coimbra", "Braga", "Faro", "Funchal", "Aveiro", "Viseu"]
+  },
+  "Brasil": {
+    currency: "BRL", symbol: "R$",
+    banks: [
+      { id: "nubank", name: "NuBank Brasil", interestRate: 0.095, desc: "Cartão sem anuidade e conta digital." },
+      { id: "itau", name: "Itaú Unibanco", interestRate: 0.110, desc: "Tradição e solidez no crédito imobiliário." },
+      { id: "bancodobrasil", name: "Banco do Brasil", interestRate: 0.100, desc: "Crédito facilitado para cidadãos." }
+    ],
+    cities: ["São Paulo", "Rio de Janeiro", "Belo Horizonte", "Salvador", "Curitiba", "Brasília", "Fortaleza", "Manaus"]
+  },
+  "Espanha": {
+    currency: "EUR", symbol: "€",
+    banks: [
+      { id: "santander", name: "Banco Santander", interestRate: 0.042, desc: "Líder ibérico em financiamento." },
+      { id: "bbva", name: "BBVA España", interestRate: 0.046, desc: "Inovação e crédito habitação." }
+    ],
+    cities: ["Madrid", "Barcelona", "Valência", "Sevilha", "Málaga", "Bilbau", "Saragoça"]
+  },
+  "França": {
+    currency: "EUR", symbol: "€",
+    banks: [
+      { id: "bnp", name: "BNP Paribas", interestRate: 0.039, desc: "Soluções bancárias de alto nível." },
+      { id: "societegenerale", name: "Société Générale", interestRate: 0.041, desc: "Crédito eficiente." }
+    ],
+    cities: ["Paris", "Lyon", "Marselha", "Nice", "Toulouse", "Bordéus", "Nantes"]
+  },
+  "Reino Unido": {
+    currency: "GBP", symbol: "£",
+    banks: [
+      { id: "barclays", name: "Barclays UK", interestRate: 0.048, desc: "Traditional British banking." },
+      { id: "hsbc", name: "HSBC London", interestRate: 0.045, desc: "Global financial services." }
+    ],
+    cities: ["Londres", "Manchester", "Birmingham", "Edimburgo", "Glasgow", "Liverpool", "Bristol"]
+  },
+  "Estados Unidos": {
+    currency: "USD", symbol: "$",
+    banks: [
+      { id: "chase", name: "Chase Bank USA", interestRate: 0.055, desc: "Nationwide standard financial services." },
+      { id: "bofa", name: "Bank of America", interestRate: 0.058, desc: "Secure loans and investment accounts." }
+    ],
+    cities: ["Nova Iorque", "Los Angeles", "Chicago", "Miami", "San Francisco", "Las Vegas", "Boston", "Seattle"]
+  },
+  "Japão": {
+    currency: "JPY", symbol: "¥",
+    banks: [
+      { id: "mufg", name: "MUFG Bank Tokyo", interestRate: 0.015, desc: "Low interest national banking." },
+      { id: "smbc", name: "Sumitomo Mitsui", interestRate: 0.018, desc: "Trusted Japanese financial institution." }
+    ],
+    cities: ["Tóquio", "Osaka", "Quioto", "Yokohama", "Nagoya", "Sapporo", "Fukuoka"]
+  }
+};
+
 const $ = id => document.getElementById(id);
 
 function createId(prefix = "id") {
@@ -34,9 +96,11 @@ function randomNumber(min, max) {
 }
 
 function money(value) {
+  const country = game ? game.player.country : "Portugal";
+  const currData = worldCountriesDatabase[country] || { currency: "EUR", symbol: "€" };
   return new Intl.NumberFormat("pt-PT", {
     style: "currency",
-    currency: "EUR",
+    currency: currData.currency,
     maximumFractionDigits: 0
   }).format(Number(value) || 0);
 }
@@ -65,8 +129,11 @@ function showToast(message) {
 }
 
 /* =========================================
-   AVATAR UI CONTROLS
+   AVATAR E NOMES DINÂMICOS NO SETUP
 ========================================= */
+
+const sampleMaleNames = ["João", "Pedro", "Miguel", "Francisco", "Tiago", "Diogo", "André", "Rafael", "Gonçalo", "Martim"];
+const sampleFemaleNames = ["Maria", "Ana", "Beatriz", "Inês", "Sofia", "Matilde", "Leonor", "Carolina", "Mariana", "Margarida"];
 
 function updateSetupAvatarUI() {
   const sexEl = $("playerSex");
@@ -82,6 +149,17 @@ function updateSetupAvatarUI() {
   const indexEl = $("setupAvatarIndex");
   if (imgEl) imgEl.src = window.selectedAvatarPath;
   if (indexEl) indexEl.textContent = `#${currentAvatarIndex}`;
+
+  // Atualizar nome de exemplo consoante o género
+  const nameHint = $("nameHint");
+  const nameInput = $("playerName");
+  if (nameHint && nameInput) {
+    const suggestedName = sex === "Feminino" ? randomFrom(sampleFemaleNames) : randomFrom(sampleMaleNames);
+    nameHint.textContent = `(Ex: ${suggestedName})`;
+    if (!nameInput.value || nameInput.value === "João" || nameInput.value === "Maria" || nameInput.value === "Ana") {
+      nameInput.value = suggestedName;
+    }
+  }
 }
 
 window.changeSetupAvatar = function(dir) {
@@ -92,6 +170,79 @@ window.changeSetupAvatar = function(dir) {
 window.onSetupGenderChange = function() {
   currentAvatarIndex = 1;
   updateSetupAvatarUI();
+};
+
+/* =========================================
+   POPULAR PAÍSES E CIDADES NO SETUP
+========================================= */
+
+function initSetupGeography() {
+  const countrySelect = $("playerCountrySelect");
+  if (!countrySelect) return;
+
+  countrySelect.innerHTML = "";
+  Object.keys(worldCountriesDatabase).forEach(country => {
+    const opt = document.createElement("option");
+    opt.value = country;
+    opt.textContent = country;
+    countrySelect.appendChild(opt);
+  });
+
+  const optOther = document.createElement("option");
+  optOther.value = "Outro";
+  optOther.textContent = "Outro País...";
+  countrySelect.appendChild(optOther);
+
+  countrySelect.value = "Portugal";
+  updateCityOptions("Portugal");
+}
+
+window.onCountryChange = function() {
+  const countrySelect = $("playerCountrySelect");
+  const customGroup = $("customCountryGroup");
+  const isOther = countrySelect.value === "Outro";
+  if (customGroup) customGroup.style.display = isOther ? "block" : "none";
+
+  if (!isOther) {
+    updateCityOptions(countrySelect.value);
+  } else {
+    const citySelect = $("playerCitySelect");
+    citySelect.innerHTML = `<option value="Outro">Outra Cidade...</option>`;
+    $("customCityGroup").style.display = "block";
+  }
+};
+
+function updateCityOptions(countryName) {
+  const citySelect = $("playerCitySelect");
+  const customCityGroup = $("customCityGroup");
+  if (!citySelect) return;
+
+  citySelect.innerHTML = "";
+  const data = worldCountriesDatabase[countryName];
+  if (data && data.cities) {
+    data.cities.forEach(city => {
+      const opt = document.createElement("option");
+      opt.value = city;
+      opt.textContent = city;
+      citySelect.appendChild(opt);
+    });
+  }
+
+  const optOther = document.createElement("option");
+  optOther.value = "Outro";
+  optOther.textContent = "Outra Cidade...";
+  citySelect.appendChild(optOther);
+
+  if (customCityGroup) customCityGroup.style.display = "none";
+  citySelect.value = citySelect.options[0]?.value || "";
+}
+
+window.onCitySelectChange = function() {
+  const citySelect = $("playerCitySelect");
+  const customCityGroup = $("customCityGroup");
+  if (citySelect && customCityGroup) {
+    customCityGroup.style.display = citySelect.value === "Outro" ? "block" : "none";
+  }
 };
 
 /* =========================================
@@ -181,17 +332,18 @@ function getHouseSVG(type) {
 }
 
 /* =========================================
-   BANCOS E MERCADO
+   BANCOS E MERCADO BASEADOS NO PAÍS
 ========================================= */
 
-const banksList = [
-  { id: "atlantico", name: "Banco Atlântico", interestRate: 0.045, desc: "Taxas competitivas para crédito habitação." },
-  { id: "caixa", name: "Caixa Popular", interestRate: 0.052, desc: "Aprovação facilitada para jovens." },
-  { id: "novafinanca", name: "Nova Finança Digital", interestRate: 0.038, desc: "Juros baixos para clientes com boa poupança." }
-];
+function getActiveCountryBanks() {
+  const country = game ? game.player.country : "Portugal";
+  const data = worldCountriesDatabase[country];
+  return data ? data.banks : worldCountriesDatabase["Portugal"].banks;
+}
 
 function openBankAccount(bankId) {
-  const bank = banksList.find(b => b.id === bankId);
+  const banks = getActiveCountryBanks();
+  const bank = banks.find(b => b.id === bankId);
   if (!bank) return;
   game.player.bankAccount = { bankId: bank.id, bankName: bank.name, interestRate: bank.interestRate };
   addEvent(`Abriste conta bancária no ${bank.name}! 🏦`, "positive");
@@ -203,10 +355,11 @@ function renderBankSection() {
   const container = $("bankSectionContainer");
   if (!container) return;
   const player = game.player;
+  const banks = getActiveCountryBanks();
 
   if (!player.bankAccount) {
-    let html = `<div class="panel"><h3>🏦 Abrir Conta Bancária</h3><p class="muted">Escolhe um banco para gerir dinheiro e pedir crédito habitação:</p><div class="button-list">`;
-    banksList.forEach(b => {
+    let html = `<div class="panel"><h3>🏦 Abrir Conta Bancária (${player.country})</h3><p class="muted">Escolhe um banco local para gerir dinheiro e crédito habitação:</p><div class="button-list">`;
+    banks.forEach(b => {
       html += `
         <div class="person-card" style="flex-direction: column; align-items: flex-start; gap: 6px;">
           <strong>${escapeHTML(b.name)}</strong>
@@ -572,7 +725,7 @@ function renderVehiclesSection() {
   if (!container) return;
   const player = game.player;
 
-  let html = `<div class="panel"><h3>📜 Cartas de Condução (Legislação PT)</h3><div class="button-list">`;
+  let html = `<div class="panel"><h3>📜 Cartas de Condução</h3><div class="button-list">`;
   Object.keys(licenseRules).forEach(key => {
     const rule = licenseRules[key];
     const hasIt = player.licenses[key];
@@ -611,7 +764,7 @@ function createBusiness() {
   if (game.player.age < 18) { showToast("Precisas de ter 18 anos."); return; }
   const name = prompt("Nome do negócio:");
   if (!name) return;
-  const inv = Number(prompt("Investimento inicial (min. 500 €):"));
+  const inv = Number(prompt("Investimento inicial:"));
   if (!inv || inv < 500 || game.player.bank < inv) { showToast("Investimento inválido ou sem saldo."); return; }
   game.player.bank -= inv;
   game.businesses.push({ id: createId("biz"), name, investment: inv, yearlyProfit: Math.round(inv * 0.25) });
@@ -766,8 +919,6 @@ function renderSchoolAndUniversitySubmenu() {
    FAMÍLIA & ÁRVORE GENEALÓGICA INTERATIVA
 ========================================= */
 
-const femaleNames = ["Maria", "Ana", "Beatriz", "Inês", "Sofia", "Matilde", "Leonor", "Carolina", "Mariana", "Margarida", "Catarina", "Joana", "Rita", "Francisca", "Marta", "Laura", "Alice", "Diana", "Cláudia", "Raquel", "Teresa", "Isabel", "Helena", "Andreia", "Patrícia", "Eva", "Luísa", "Daniela", "Filipa"];
-const maleNames = ["João", "Pedro", "Miguel", "Francisco", "Tiago", "Diogo", "André", "Rafael", "Gonçalo", "Martim", "Afonso", "Tomás", "Duarte", "Bruno", "Ricardo", "Daniel", "António", "Manuel", "Luís", "Gabriel", "David", "Nuno", "Hugo", "Filipe", "Eduardo", "José", "Rodrigo", "Vasco", "Guilherme"];
 const tombstoneQuotes = [
   "Viveu intensamente, partiu em paz.",
   "Deixou saudades em todos os que cruzaram o seu caminho.",
@@ -777,9 +928,9 @@ const tombstoneQuotes = [
 ];
 
 function generateName(sex) {
-  if (sex === "Feminino") return randomFrom(femaleNames);
-  if (sex === "Masculino") return randomFrom(maleNames);
-  return randomFrom([...femaleNames, ...maleNames]);
+  if (sex === "Feminino") return randomFrom(sampleFemaleNames);
+  if (sex === "Masculino") return randomFrom(sampleMaleNames);
+  return randomFrom([...sampleFemaleNames, ...sampleMaleNames]);
 }
 
 function createFamilyMember(data) {
@@ -835,7 +986,7 @@ function openFamilyInteractionModal(memberId) {
 
       <div class="modal-buttons">
         <button class="primary-btn full-width" onclick="interactFamily('${member.id}', 'talk')">💬 Conversar / Passar Tempo</button>
-        <button class="secondary-btn full-width" onclick="interactFamily('${member.id}', 'gift')">🎁 Dar Presente (50 €)</button>
+        <button class="secondary-btn full-width" onclick="interactFamily('${member.id}', 'gift')">🎁 Dar Presente</button>
         <button class="secondary-btn full-width" onclick="interactFamily('${member.id}', 'money')">💶 Pedir Dinheiro</button>
         <button class="danger-btn full-width" onclick="interactFamily('${member.id}', 'argue')">💢 Discutir</button>
       </div>
@@ -859,7 +1010,7 @@ function interactFamily(memberId, action) {
   } 
   else if (action === "gift") {
     if (game.player.bank < 50) {
-      showToast("Não tens 50 € disponíveis.");
+      showToast("Não tens saldo suficiente.");
       return;
     }
     game.player.bank -= 50;
@@ -875,7 +1026,7 @@ function interactFamily(memberId, action) {
       return;
     }
     if (member.relationship >= 55 && Math.random() < 0.7) {
-      const amount = game.player.age < 18 ? randomNumber(20, 80) : randomNumber(100, 450);
+      const amount = randomNumber(100, 450);
       game.player.bank += amount;
       member.relationship = clamp(member.relationship - 4);
       addFinanceEvent(`${member.name} (${member.relation}) deu-te ${money(amount)}.`);
@@ -993,7 +1144,7 @@ const lifeEventsPool = [
   { minAge: 0, maxAge: 3, text: "Deste os teus primeiros passos na sala de estar.", options: [{ text: "Sorrir", effect: () => { game.player.happiness = clamp(game.player.happiness + 5); addEvent("Os pais celebraram.", "positive"); } }] },
   { minAge: 6, maxAge: 11, text: "Participaste numa atividade desportiva na escola.", options: [{ text: "Dar o máximo", effect: () => { game.player.health = clamp(game.player.health + 3); addEvent("Ganhaste uma medalha!", "positive"); } }] },
   { minAge: 12, maxAge: 17, text: "Tiveste um teste difícil de História e tiraste excelente nota.", options: [{ text: "Celebrar", effect: () => { game.player.intelligence = clamp(game.player.intelligence + 2); addEvent("O esforço valeu a pena.", "positive"); } }] },
-  { minAge: 18, maxAge: 65, text: "Fizeste horas extra no trabalho.", options: [{ text: "Aceitar", effect: () => { game.player.bank += 180; addFinanceEvent("Ganhaste 180 € extra."); addEvent("Recebeste um bónus.", "positive"); } }] }
+  { minAge: 18, maxAge: 65, text: "Fizeste horas extra no trabalho.", options: [{ text: "Aceitar", effect: () => { game.player.bank += 180; addFinanceEvent("Ganhaste bónus extra."); addEvent("Recebeste um bónus.", "positive"); } }] }
 ];
 
 function triggerRandomEvent() {
@@ -1065,7 +1216,7 @@ function openHealthSpecialty(specialty) {
 
 function executeHealthAction(type, cost, specialty) {
   const player = game.player;
-  if (player.bank < cost) { showToast(`Precisas de ${money(cost)}.`); return; }
+  if (player.bank < cost) { showToast("Saldo insuficiente."); return; }
   player.bank -= cost;
   if (type === "checkup") {
     player.health = clamp(player.health + 3);
@@ -1155,11 +1306,18 @@ function startGame() {
   const surname = $("playerSurname").value.trim();
   if (!name || !surname) { showToast("Preenche o nome e apelido."); return; }
 
+  // Recolher País e Cidade corretamente (incluindo campos personalizados se "Outro" estiver selecionado)
+  const countrySel = $("playerCountrySelect").value;
+  const country = countrySel === "Outro" ? ($("playerCountryCustom").value.trim() || "Portugal") : countrySel;
+
+  const citySel = $("playerCitySelect").value;
+  const city = citySel === "Outro" ? ($("playerCityCustom").value.trim() || "Lisboa") : citySel;
+
   const player = {
     id: createId("player"), name, surname,
     sex: $("playerSex").value,
-    country: $("playerCountry").value.trim(),
-    city: $("playerCity").value.trim(),
+    country,
+    city,
     avatarPath: window.selectedAvatarPath || "assets/modules/masculino/avatars/Avatar_masculino_1.png",
     age: 0, alive: true,
     health: 100, happiness: 80,
@@ -1214,7 +1372,7 @@ function renderHome() {
   $("healthValue").textContent = `${Math.round(player.health)}%`;
   $("happinessValue").textContent = `${Math.round(player.happiness)}%`;
   $("healthBar").style.width = `${player.health}%`;
-  $("happinessBar").style.width = `${player.health}%`;
+  $("happinessBar").style.width = `${player.happiness}%`;
   $("educationValue").textContent = player.education;
   $("jobValue").textContent = player.job || "Sem profissão";
   $("illnessValue").textContent = player.illness ? player.illness.name : "Nenhuma";
@@ -1263,8 +1421,8 @@ function renderCareer() {
     jobContainer.innerHTML = "";
     if (player.age >= 16) {
       jobContainer.innerHTML = `
-        <button class="secondary-btn" onclick="applyJob('Empregado/a', 12000)">Empregado/a · 12 000 €/ano</button>
-        <button class="secondary-btn" onclick="applyJob('Assistente', 16500)">Assistente · 16 500 €/ano</button>
+        <button class="secondary-btn" onclick="applyJob('Empregado/a', 12000)">Empregado/a · ${money(12000)}/ano</button>
+        <button class="secondary-btn" onclick="applyJob('Assistente', 16500)">Assistente · ${money(16500)}/ano</button>
       `;
     } else {
       jobContainer.innerHTML = `<p class="muted">Procura emprego a partir dos 16 anos.</p>`;
@@ -1322,7 +1480,6 @@ function updateSetupFamilyUI() {
 }
 
 function boot() {
-  // Garantir ligação correta do botão Nova Vida
   const startBtn = $("startGameBtn");
   if (startBtn) {
     startBtn.addEventListener("click", startGame);
@@ -1361,6 +1518,7 @@ function boot() {
     if (btn && btn.dataset.tab) showTab(btn.dataset.tab);
   });
 
+  initSetupGeography();
   updateContinuePanel();
   updateSetupFamilyUI();
   updateSetupAvatarUI();

@@ -6,18 +6,18 @@
   <title>StarLife</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    /* Estilos específicos para o novo seletor de avatar completo */
     .avatar-stage-circle {
-      width: 150px;
-      height: 150px;
-      margin: 12px auto;
+      width: 140px;
+      height: 140px;
+      margin: 10px auto;
       border-radius: 50%;
-      background: #1e293b;
-      border: 3px solid #38bdf8;
+      background: var(--bg-color, #152238);
+      border: 3px solid var(--accent-color, #3b82f6);
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.4);
     }
     .avatar-stage-circle img {
       width: 100%;
@@ -28,28 +28,28 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 16px;
+      gap: 14px;
       margin-top: 10px;
     }
     .avatar-arrow-btn {
-      background: #1f2937;
-      color: #fff;
-      border: 1px solid #374151;
-      width: 38px;
-      height: 38px;
+      background: var(--panel-light, #2b446e);
+      color: var(--text-main, #f8fafc);
+      border: 1px solid var(--border-color, #334e7b);
+      width: 36px;
+      height: 36px;
       border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
       font-size: 1rem;
     }
     .avatar-arrow-btn:active {
-      background: #38bdf8;
-      color: #090d16;
+      background: var(--accent-color, #3b82f6);
+      color: #fff;
     }
     .avatar-index-label {
       font-weight: bold;
-      color: #38bdf8;
-      min-width: 60px;
+      color: var(--accent-color, #3b82f6);
+      min-width: 50px;
       text-align: center;
     }
     #headerAvatarContainer img {
@@ -62,7 +62,7 @@
 </head>
 <body>
 
-  <!-- Ecrã Inicial / Criação de Personagem, Avatar e Família -->
+  <!-- Ecrã Inicial / Criação de Personagem -->
   <div id="setupScreen" class="screen">
     <div class="panel setup-panel">
       <h1>⭐ StarLife</h1>
@@ -152,7 +152,7 @@
     </div>
   </div>
 
-  <!-- Ecrã Principal do Jogo -->
+  <!-- Ecrã Principal do Jogo (Inicia Oculto) -->
   <div id="gameScreen" class="screen hidden">
     <header class="game-header">
       <div style="display: flex; align-items: center; gap: 10px;">
@@ -332,7 +332,7 @@
 
   <div id="toast" class="toast"></div>
 
-  <!-- Lógica do Seletor de Avatares -->
+  <!-- Lógica do Seletor de Avatares e Início -->
   <script>
     const avatarConfig = {
       Masculino: { total: 5, folder: "masculino", prefix: "Avatar_masculino_" },
@@ -372,17 +372,9 @@
     };
 
     window.handleStartWithAvatar = function() {
-      // Inicia o jogo através da função original do teu script.js
       if (typeof startGame === "function") {
         startGame();
       }
-      // Garante que o avatar PNG escolhido aparece no cabeçalho do jogo
-      setTimeout(() => {
-        const headerContainer = document.getElementById("headerAvatarContainer");
-        if (headerContainer) {
-          headerContainer.innerHTML = `<img src="${window.selectedAvatarPath}" alt="Avatar">`;
-        }
-      }, 50);
     };
 
     document.addEventListener("DOMContentLoaded", updateSetupAvatarUI);

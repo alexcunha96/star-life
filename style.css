@@ -70,18 +70,6 @@ p.muted, .muted {
   font-size: 0.9rem;
 }
 
-/* Avatar Preview & Controls BitLife Exact */
-.avatar-preview-box {
-  width: 130px;
-  height: 130px;
-  margin: 8px auto 14px auto;
-  border-radius: 50%;
-  border: 3px solid var(--accent-color);
-  overflow: hidden;
-  box-shadow: 0 8px 22px rgba(0,0,0,0.4);
-  background-color: #0e1726;
-}
-
 .header-avatar {
   width: 48px;
   height: 48px;
@@ -90,37 +78,6 @@ p.muted, .muted {
   overflow: hidden;
   flex-shrink: 0;
   background-color: #0e1726;
-}
-
-.avatar-svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.avatar-controls {
-  text-align: left;
-}
-
-.color-swatches {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-start;
-  margin-top: 4px;
-}
-
-.swatch {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  padding: 0;
-  border: 2px solid transparent;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
-
-.swatch.active {
-  border-color: #ffffff;
-  transform: scale(1.12);
 }
 
 .input-group {

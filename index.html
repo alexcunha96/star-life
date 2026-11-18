@@ -142,7 +142,7 @@
           <div id="setupFamilyList" style="margin-top: 10px;" class="people-list"></div>
         </div>
 
-        <button type="button" onclick="handleStartWithAvatar()" class="primary-btn full-width" style="margin-top: 15px;">Nova Vida</button>
+        <button type="button" onclick="startGame()" class="primary-btn full-width" style="margin-top: 15px;">Nova Vida</button>
       </div>
 
       <div id="continuePanel" class="hidden" style="margin-top: 15px;">
@@ -152,7 +152,7 @@
     </div>
   </div>
 
-  <!-- Ecrã Principal do Jogo (Inicia Oculto) -->
+  <!-- Ecrã Principal do Jogo -->
   <div id="gameScreen" class="screen hidden">
     <header class="game-header">
       <div style="display: flex; align-items: center; gap: 10px;">
@@ -332,7 +332,7 @@
 
   <div id="toast" class="toast"></div>
 
-  <!-- Lógica do Seletor de Avatares e Início -->
+  <!-- Lógica do Seletor de Avatares no Setup -->
   <script>
     const avatarConfig = {
       Masculino: { total: 5, folder: "masculino", prefix: "Avatar_masculino_" },
@@ -349,10 +349,7 @@
       if (currentAvatarIndex > cfg.total) currentAvatarIndex = 1;
       if (currentAvatarIndex < 1) currentAvatarIndex = cfg.total;
 
-      window.selectedAvatarPath = `assets/modules/${cfg.folder}/avatars/${cfg.prefix}${currentAvatarIndex}.png`;
-      
-      document.getElementById("setupAvatarImg").src = window.selectedAvatarPath;
-      document.getElementById("setupAvatarIndex").textContent = `#${currentAvatarIndex}`;
+      window.selectedAvatarPath = `assets/modules/${cfg.folder}/avatars/${cfg.prefix}${currentAvatarIndex}.png`;  document.getElementById("setupAvatarImg").src = window.selectedAvatarPath; document.getElementById("setupAvatarIndex").textContent = `#${currentAvatarIndex}`;
     }
 
     window.changeSetupAvatar = function(dir) {
@@ -369,12 +366,6 @@
     window.onSetupGenderChange = function() {
       currentAvatarIndex = 1;
       updateSetupAvatarUI();
-    };
-
-    window.handleStartWithAvatar = function() {
-      if (typeof startGame === "function") {
-        startGame();
-      }
     };
 
     document.addEventListener("DOMContentLoaded", updateSetupAvatarUI);

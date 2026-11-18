@@ -142,7 +142,7 @@
           <div id="setupFamilyList" style="margin-top: 10px;" class="people-list"></div>
         </div>
 
-        <button type="button" onclick="startGame()" class="primary-btn full-width" style="margin-top: 15px;">Nova Vida</button>
+        <button type="button" id="startGameBtn" class="primary-btn full-width" style="margin-top: 15px;">Nova Vida</button>
       </div>
 
       <div id="continuePanel" class="hidden" style="margin-top: 15px;">
@@ -180,4 +180,157 @@
           </div>
           <div class="stat-bar">
             <span>Felicidade</span>
-            <div class="bar"><div id="happinessBar
+            <div class="bar"><div id="happinessBar" class="fill"></div></div>
+            <strong id="happinessValue">80%</strong>
+          </div>
+          <div class="info-row"><span>Morada Atual</span><strong id="housingSummary">Casa dos Pais</strong></div>
+          <div class="info-row"><span>Escolaridade</span><strong id="educationValue">Sem escolaridade</strong></div>
+          <div class="info-row"><span>Profissão</span><strong id="jobValue">Sem profissão</strong></div>
+          <div class="info-row"><span>Doença Atual</span><strong id="illnessValue" style="color: var(--danger-color);">Nenhuma</strong></div>
+        </div>
+
+        <div class="panel">
+          <h3>Acontecimentos Recentes</h3>
+          <div id="recentEvents" class="events-list"></div>
+        </div>
+      </section>
+
+      <!-- Tab: Património -->
+      <section id="patrimonyTab" class="tab-content hidden">
+        <div class="panel">
+          <h2>💰 Finanças & Património</h2>
+          <div class="info-row"><span>Património Total</span><strong id="totalWealth">0 €</strong></div>
+          <div class="info-row"><span>Dinheiro Líquido</span><strong id="bankBalance">0 €</strong></div>
+          <div class="info-row"><span>Banco</span><strong id="currentBankName">Sem conta</strong></div>
+          <div class="info-row"><span>Salário Anual</span><strong id="annualSalary">0 €</strong></div>
+          <div class="info-row"><span>Dívidas / Crédito</span><strong id="debtValue">0 €</strong></div>
+        </div>
+
+        <div class="sub-nav">
+          <button class="sub-btn active" data-sub="subBank">🏦 Banco</button>
+          <button class="sub-btn" data-sub="subMyAssets">🏡 Meus Bens</button>
+        </div>
+
+        <div id="subBank" class="sub-content">
+          <div id="bankSectionContainer"></div>
+        </div>
+        <div id="subMyAssets" class="sub-content hidden">
+          <div id="myAssetsContainer"></div>
+        </div>
+      </section>
+
+      <!-- Tab: Carreira, Educação e Negócios -->
+      <section id="careerTab" class="tab-content hidden">
+        <div class="panel">
+          <h2>💼 Carreira, Educação & Negócios</h2>
+          <div class="info-row"><span>Profissão</span><strong id="careerJob">Nenhuma</strong></div>
+          <div class="info-row"><span>Salário anual</span><strong id="careerSalary">0 €</strong></div>
+          <div class="info-row"><span>Escolaridade</span><strong id="careerEducation">Sem escolaridade</strong></div>
+        </div>
+
+        <div class="sub-nav">
+          <button class="sub-btn active" data-sub="subJob">💼 Empregos</button>
+          <button class="sub-btn" data-sub="subSchool">📚 Escola / Univ.</button>
+          <button class="sub-btn" data-sub="subBusiness">🏢 Negócios</button>
+        </div>
+
+        <div id="subJob" class="sub-content">
+          <div class="panel">
+            <h3>💼 Oportunidades de Trabalho</h3>
+            <p class="muted">Procura emprego a partir dos 16 anos.</p>
+            <div id="jobOptions" class="button-list"></div>
+          </div>
+        </div>
+        <div id="subSchool" class="sub-content hidden">
+          <div id="schoolSectionContainer"></div>
+        </div>
+        <div id="subBusiness" class="sub-content hidden">
+          <div class="panel">
+            <h3>🏢 As Tuas Empresas</h3>
+            <button id="createBusinessBtn" class="primary-btn full-width" style="margin-bottom: 10px;">Criar Novo Negócio</button>
+            <div id="businessList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab: Loja -->
+      <section id="shopTab" class="tab-content hidden">
+        <div class="sub-nav">
+          <button class="sub-btn active" data-sub="shopHousing">🏡 Imobiliário</button>
+          <button class="sub-btn" data-sub="shopVehicles">🚗 Veículos & Cartas</button>
+        </div>
+
+        <div id="shopHousing" class="sub-content">
+          <div id="housingSectionContainer"></div>
+        </div>
+        <div id="shopVehicles" class="sub-content hidden">
+          <div id="vehiclesSectionContainer"></div>
+        </div>
+      </section>
+
+      <!-- Tab: Pessoas / Família -->
+      <section id="peopleTab" class="tab-content hidden">
+        <div class="panel">
+          <h2>👨‍👩‍👧 Família</h2>
+          <div id="peopleList" class="people-list"></div>
+        </div>
+        <div class="panel">
+          <h3>Árvore Genealógica</h3>
+          <div id="familyTree"><p class="muted">Árvore genealógica ativa.</p></div>
+        </div>
+      </section>
+
+      <!-- Tab: Atividades e Saúde -->
+      <section id="activitiesTab" class="tab-content hidden">
+        <div class="panel">
+          <h2>🏥 Centro Médico & Especialidades</h2>
+          <p class="muted">Acompanhamento clínico profissional e prevenção.</p>
+          <div class="button-list" style="margin-top: 12px;">
+            <button class="secondary-btn full-width" data-health="familyDoctor">👨‍⚕️ Médico de Família (Check-up)</button>
+            <button class="secondary-btn full-width" data-health="urgency">🚑 Urgências Hospitalares</button>
+            <button class="secondary-btn full-width" data-health="cardiology">❤️ Cardiologia</button>
+            <button class="secondary-btn full-width" data-health="orthopedics">🦴 Ortopedia & Fisioterapia</button>
+            <button class="secondary-btn full-width" data-health="psychiatry">🧠 Psiquiatria & Bem-estar</button>
+            <button class="secondary-btn full-width" data-health="oncology">🎗️ Oncologia (Rastreio e Tratamento)</button>
+          </div>
+        </div>
+        <div id="healthActionContainer"></div>
+      </section>
+    </main>
+
+    <!-- Navegação Inferior -->
+    <nav id="bottomNav" class="bottom-nav">
+      <button class="nav-btn active" data-tab="homeTab">🏠<span>Início</span></button>
+      <button class="nav-btn" data-tab="patrimonyTab">💰<span>Património</span></button>
+      <button class="nav-btn" data-tab="careerTab">💼<span>Carreira</span></button>
+      <button class="nav-btn" data-tab="shopTab">🛒<span>Loja</span></button>
+      <button class="nav-btn" data-tab="peopleTab">👨‍👩‍👧<span>Pessoas</span></button>
+      <button class="nav-btn" data-tab="activitiesTab">🏃<span>Atividades</span></button>
+    </nav>
+  </div>
+
+  <div id="customModal" class="modal-overlay hidden"></div>
+
+  <!-- Ecrã de Morte -->
+  <div id="deathScreen" class="screen hidden" style="justify-content: center; align-items: center; padding: 20px;">
+    <div class="panel" style="width: 100%; max-width: 440px; text-align: center; background: #142136; border: 2px solid #4a6b9c;">
+      <h2 style="font-size: 2.5rem; margin-bottom: 5px;">⚰️</h2>
+      <div style="background: #1d3150; padding: 25px; border-radius: 12px; border: 1px dashed #6085bd; margin: 15px 0;">
+        <h3 id="tombstoneName" style="font-size: 1.4rem; color: #f8fafc; margin-bottom: 8px;">Nome</h3>
+        <p id="tombstoneYears" class="muted" style="margin-bottom: 15px;">1990 - 2060 (70 anos)</p>
+        <p id="tombstoneQuote" style="font-style: italic; color: #cbd5e1; font-size: 1rem; line-height: 1.4;">"Aqui jaz alguém que viveu intensamente."</p>
+      </div>
+
+      <div style="text-align: left; margin: 15px 0;" id="deathReportStats"></div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 20px;">
+        <button id="newLifeBtn" class="primary-btn full-width">✨ Iniciar Nova Vida</button>
+        <button id="continueChildBtn" class="secondary-btn full-width hidden">👶 Continuar com Filho/a</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="script.js"></script>
+</body>
+</html>

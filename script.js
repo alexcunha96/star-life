@@ -10,6 +10,15 @@ let game = null;
 let initialFamily = [];
 let toastTimer = null;
 
+// Gestão de Avatares no Setup
+const avatarConfig = {
+  Masculino: { total: 5, folder: "masculino", prefix: "Avatar_masculino_" },
+  Feminino: { total: 2, folder: "feminino", prefix: "Avatar_feminino_" }
+};
+
+let currentAvatarIndex = 1;
+window.selectedAvatarPath = "assets/modules/masculino/avatars/Avatar_masculino_1.png";
+
 const $ = id => document.getElementById(id);
 
 function createId(prefix = "id") {
@@ -54,6 +63,36 @@ function showToast(message) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
 }
+
+/* =========================================
+   AVATAR UI CONTROLS
+========================================= */
+
+function updateSetupAvatarUI() {
+  const sexEl = $("playerSex");
+  const sex = sexEl ? sexEl.value : "Masculino";
+  const cfg = avatarConfig[sex] || avatarConfig.Masculino;
+  
+  if (currentAvatarIndex > cfg.total) currentAvatarIndex = 1;
+  if (currentAvatarIndex < 1) currentAvatarIndex = cfg.total;
+
+  window.selectedAvatarPath = `assets/modules/${cfg.folder}/avatars/${cfg.prefix}${currentAvatarIndex}.png`;
+  
+  const imgEl = $("setupAvatarImg");
+  const indexEl = $("setupAvatarIndex");
+  if (imgEl) imgEl.src = window.selectedAvatarPath;
+  if (indexEl) indexEl.textContent = `#${currentAvatarIndex}`;
+}
+
+window.changeSetupAvatar = function(dir) {
+  currentAvatarIndex += dir;
+  updateSetupAvatarUI();
+};
+
+window.onSetupGenderChange = function() {
+  currentAvatarIndex = 1;
+  updateSetupAvatarUI();
+};
 
 /* =========================================
    GUARDAR / CARREGAR JOGO
@@ -1175,7 +1214,7 @@ function renderHome() {
   $("healthValue").textContent = `${Math.round(player.health)}%`;
   $("happinessValue").textContent = `${Math.round(player.happiness)}%`;
   $("healthBar").style.width = `${player.health}%`;
-  $("happinessBar").style.width = `${player.happiness}%`;
+  $("happinessBar").style.width = `${player.health}%`;
   $("educationValue").textContent = player.education;
   $("jobValue").textContent = player.job || "Sem profissão";
   $("illnessValue").textContent = player.illness ? player.illness.name : "Nenhuma";
@@ -1283,6 +1322,12 @@ function updateSetupFamilyUI() {
 }
 
 function boot() {
+  // Garantir ligação correta do botão Nova Vida
+  const startBtn = $("startGameBtn");
+  if (startBtn) {
+    startBtn.addEventListener("click", startGame);
+  }
+
   $("addFamilyMemberBtn")?.addEventListener("click", () => {
     const name = $("famName").value.trim();
     if (!name) return;
@@ -1318,6 +1363,7 @@ function boot() {
 
   updateContinuePanel();
   updateSetupFamilyUI();
+  updateSetupAvatarUI();
 }
 
 document.addEventListener("DOMContentLoaded", boot);

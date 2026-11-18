@@ -861,44 +861,46 @@ function interactFamily(memberId, action) {
 }
 
 function renderFamilyTree() {
-  const treeContainer = $("familyTree");
-  if (!treeContainer) return;
-
-  const grandparents = game.family.filter(f => f.relation === "Avô" || f.relation === "Avó");
-  const parents = game.family.filter(f => f.relation === "Mãe" || f.relation === "Pai");
-  const siblingsAndOthers = game.family.filter(f => f.relation !== "Avô" && f.relation !== "Avó" && f.relation !== "Mãe" && f.relation !== "Pai");
-
-  const formatNode = (person, roleLabel) => {
-    const statusIcon = person.alive ? "🟢" : "🕯️";
-    return `<div style="display:inline-block; padding: 6px 10px; margin: 4px; border-radius: 8px; background: var(--bg-color); border: 1px solid var(--border-color); font-size: 0.85rem;">
-      ${statusIcon} <strong>${escapeHTML(person.name)}</strong> <small>(${roleLabel}, ${person.age}a)</small>
-    </div>`;
-  };
-
-  let html = `<div style="text-align: center;">`;
-
-  if (grandparents.length > 0) {
-    html += `<div style="margin-bottom: 8px;"><small class="muted" style="display:block;">Avós</small>${grandparents.map(g => formatNode(g, g.relation)).join("")}</div><div style="color: var(--accent-color);">│</div>`;
+  let targetContainer = $("familyTree");
+  if (!targetContainer) {
+    const panels = document.querySelectorAll("#peopleTab .panel");
+    if (panels.length >= 2) {
+      targetContainer = panels[1].querySelector("div:last-child") || panels[1];
+    }
   }
+  if (!targetContainer) return;
 
+  const parents = game.family.filter(f => f.relation === "Mãe" || f.relation === "Pai");
+  const others = game.family.filter(f => f.relation !== "Mãe" && f.relation !== "Pai");
+
+  let html = `<div style="text-align: center; padding: 4px;">`;
+  
   if (parents.length > 0) {
-    html += `<div style="margin-bottom: 8px;"><small class="muted" style="display:block;">Pais</small>${parents.map(p => formatNode(p, p.relation)).join("")}</div><div style="color: var(--accent-color);">│</div>`;
+    html += `<div style="margin-bottom: 8px;"><small class="muted" style="display:block; margin-bottom: 4px;">Pais</small>`;
+    parents.forEach(p => {
+      html += `<span style="display:inline-block; background:var(--bg-color); border:1px solid var(--border-color); padding:4px 8px; border-radius:6px; margin:2px; font-size:0.85rem;">${p.alive ? '🟢' : '🕯️'} ${escapeHTML(p.name)} (${p.relation}, ${p.age}a)</span>`;
+    });
+    html += `</div><div style="color:var(--accent-color); font-weight:bold;">│</div>`;
   }
 
   html += `
-    <div style="margin: 6px 0;">
-      <div style="display:inline-block; padding: 8px 14px; border-radius: 10px; background: var(--accent-color); color: #fff; font-weight: bold; font-size: 0.9rem;">
-        ⭐ ${escapeHTML(game.player.name)} ${escapeHTML(game.player.surname)} (${game.player.age} anos)
-      </div>
+    <div style="margin: 4px 0;">
+      <span style="display:inline-block; background:var(--accent-color); color:#fff; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:0.9rem;">
+        ⭐ ${escapeHTML(game.player.name)} (${game.player.age} anos)
+      </span>
     </div>
   `;
 
-  if (siblingsAndOthers.length > 0) {
-    html += `<div style="color: var(--accent-color);">│</div><div style="margin-top: 6px;"><small class="muted" style="display:block;">Irmãos & Outros Familiares</small>${siblingsAndOthers.map(s => formatNode(s, s.relation)).join("")}</div>`;
+  if (others.length > 0) {
+    html += `<div style="color:var(--accent-color); font-weight:bold;">│</div><div style="margin-top: 6px;"><small class="muted" style="display:block; margin-bottom: 4px;">Outros Familiares</small>`;
+    others.forEach(o => {
+      html += `<span style="display:inline-block; background:var(--bg-color); border:1px solid var(--border-color); padding:4px 8px; border-radius:6px; margin:2px; font-size:0.85rem;">${o.alive ? '🟢' : '🕯️'} ${escapeHTML(o.name)} (${o.relation}, ${o.age}a)</span>`;
+    });
+    html += `</div>`;
   }
 
   html += `</div>`;
-  treeContainer.innerHTML = html;
+  targetContainer.innerHTML = html;
 }
 
 function renderPeople() {

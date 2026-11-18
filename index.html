@@ -7,9 +7,9 @@
   <link rel="stylesheet" href="style.css">
   <style>
     .avatar-stage-circle {
-      width: 140px;
-      height: 140px;
-      margin: 10px auto;
+      width: 130px;
+      height: 130px;
+      margin: 8px auto;
       border-radius: 50%;
       background: var(--bg-color, #152238);
       border: 3px solid var(--accent-color, #3b82f6);
@@ -29,14 +29,14 @@
       align-items: center;
       justify-content: center;
       gap: 14px;
-      margin-top: 10px;
+      margin-top: 8px;
     }
     .avatar-arrow-btn {
       background: var(--panel-light, #2b446e);
       color: var(--text-main, #f8fafc);
       border: 1px solid var(--border-color, #334e7b);
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
@@ -49,7 +49,7 @@
     .avatar-index-label {
       font-weight: bold;
       color: var(--accent-color, #3b82f6);
-      min-width: 50px;
+      min-width: 45px;
       text-align: center;
     }
     #headerAvatarContainer img {
@@ -70,7 +70,7 @@
       
       <div id="startForm">
         <!-- Pré-visualização e Seleção do Avatar Completo -->
-        <div class="panel" style="margin-top: 12px; background: rgba(0,0,0,0.22); text-align: center;">
+        <div class="panel" style="margin-top: 10px; background: rgba(0,0,0,0.22); text-align: center;">
           <h3>🎨 Escolher Avatar</h3>
           
           <div class="avatar-stage-circle">
@@ -82,30 +82,48 @@
             <span id="setupAvatarIndex" class="avatar-index-label">#1</span>
             <button type="button" class="avatar-arrow-btn" onclick="changeSetupAvatar(1)">▶</button>
           </div>
+
+          <!-- Género logo abaixo das setas do avatar -->
+          <div class="input-group" style="margin-top: 12px; text-align: left;">
+            <label>Género</label>
+            <select id="playerSex" onchange="onSetupGenderChange()">
+              <option value="Masculino">Masculino</option>
+              <option value="Feminino">Feminino</option>
+            </select>
+          </div>
         </div>
 
         <div class="input-group">
-          <label>Nome</label>
-          <input type="text" id="playerName" placeholder="Ex: João" value="João" required>
+          <label>Nome <small id="nameHint" class="muted">(Ex: João)</small></label>
+          <input type="text" id="playerName" placeholder="Escreve o teu nome" value="João" required>
         </div>
         <div class="input-group">
           <label>Apelido</label>
-          <input type="text" id="playerSurname" placeholder="Ex: Silva" value="Silva" required>
+          <input type="text" id="playerSurname" placeholder="Escreve o teu apelido" value="Silva" required>
         </div>
-        <div class="input-group">
-          <label>Género</label>
-          <select id="playerSex" onchange="onSetupGenderChange()">
-            <option value="Masculino">Masculino</option>
-            <option value="Feminino">Feminino</option>
-          </select>
-        </div>
+
+        <!-- Seletor Global de Países -->
         <div class="input-group">
           <label>País</label>
-          <input type="text" id="playerCountry" value="Portugal">
+          <select id="playerCountrySelect" onchange="onCountryChange()">
+            <!-- Preenchido dinamicamente via JS com todos os países do mundo -->
+          </select>
         </div>
+        <div class="input-group" id="customCountryGroup" style="display:none;">
+          <label>Outro País</label>
+          <input type="text" id="playerCountryCustom" placeholder="Nome do país">
+        </div>
+
+        <!-- Seletor de Cidades baseada no país + opção customizada -->
         <div class="input-group">
           <label>Cidade</label>
-          <input type="text" id="playerCity" value="Lisboa">
+          <select id="playerCitySelect" onchange="onCitySelectChange()">
+            <!-- Preenchido dinamicamente -->
+          </select>
+        </div>
+        <div class="input-group" id="customCityGroup" style="display:none;">
+          <label>Outra Cidade</label>
+          <input type="text" id="playerCityCustom" placeholder="Nome da cidade">
         </div>
 
         <!-- Secção para Adicionar Família Manualmente -->

@@ -95,18 +95,18 @@
 
         <div class="input-group">
           <label>Nome <small id="nameHint" class="muted">(Ex: João)</small></label>
-          <input type="text" id="playerName" placeholder="Escreve o teu nome" value="João" required>
+          <input type="text" id="playerName" placeholder="Escreve o teu nome" value="" required>
         </div>
         <div class="input-group">
           <label>Apelido</label>
-          <input type="text" id="playerSurname" placeholder="Escreve o teu apelido" value="Silva" required>
+          <input type="text" id="playerSurname" placeholder="Escreve o teu apelido" value="" required>
         </div>
 
         <!-- Seletor Global de Países -->
         <div class="input-group">
           <label>País</label>
           <select id="playerCountrySelect" onchange="onCountryChange()">
-            <!-- Preenchido dinamicamente via JS com todos os países do mundo -->
+            <!-- Preenchido dinamicamente via JS -->
           </select>
         </div>
         <div class="input-group" id="customCountryGroup" style="display:none;">
@@ -114,7 +114,7 @@
           <input type="text" id="playerCountryCustom" placeholder="Nome do país">
         </div>
 
-        <!-- Seletor de Cidades baseada no país + opção customizada -->
+        <!-- Seletor de Cidades -->
         <div class="input-group">
           <label>Cidade</label>
           <select id="playerCitySelect" onchange="onCitySelectChange()">

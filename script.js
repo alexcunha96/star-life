@@ -148,7 +148,7 @@ function updateSetupAvatarUI() {
   const imgEl = $("setupAvatarImg");
   const indexEl = $("setupAvatarIndex");
   if (imgEl) imgEl.src = window.selectedAvatarPath;
-  if (indexEl) indexEl.textContent = `#${currentAvatarIndex}`;  // Atualizar apenas o texto de ajuda visual (Ex: Maria / Ex: João) sem tocar no valor inserido pelo utilizador const nameHint = $("nameHint"); if (nameHint) { const suggestedName = sex === "Feminino" ? randomFrom(sampleFemaleNames) : randomFrom(sampleMaleNames); nameHint.textContent = `(Ex: ${suggestedName})`;
+  if (indexEl) indexEl.textContent = `#${currentAvatarIndex}`;  // Atualiza apenas o texto de ajuda visual no rótulo (Ex: Maria / Ex: João) sem alterar o input const nameHint = $("nameHint"); if (nameHint) { const suggestedName = sex === "Feminino" ? randomFrom(sampleFemaleNames) : randomFrom(sampleMaleNames); nameHint.textContent = `(Ex: ${suggestedName})`;
   }
 }
 
@@ -593,59 +593,4 @@ function renderMyAssets() {
   });
 
   if (game.vehicles.length > 0) {
-    html += `<h4 style="margin-top: 15px;">Veículos na Garagem</h4>`;
-    game.vehicles.forEach(v => {
-      html += `
-        <div class="person-card" style="margin-bottom: 6px;">
-          <div><strong>${escapeHTML(v.name)}</strong><small style="display:block;">Valor: ${money(v.value)}</small></div>
-          <button class="small-btn danger-btn" onclick="sellVehicle('${v.id}')">Vender</button>
-        </div>
-      `;
-    });
-  }
-
-  html += `</div>`;
-  container.innerHTML = html;
-}
-
-/* =========================================
-   CARTAS E VEÍCULOS
-========================================= */
-
-const licenseRules = {
-  bikeAM: { name: "Carta AM (Ciclomotores até 50cc)", minAge: 16, cost: 250 },
-  bikeA1: { name: "Carta A1 (Motos até 125cc / 11kW)", minAge: 16, cost: 380 },
-  bikeA2: { name: "Carta A2 (Motos até 35kW)", minAge: 18, cost: 500 },
-  bikeA:  { name: "Carta A (Motos Pesadas)", minAge: 24, cost: 650 },
-  carB:   { name: "Carta B (Carros Ligeiros)", minAge: 18, cost: 650 }
-};
-
-const availableCars = [
-  { name: "Yaris City", brand: "Toyo", price: 2500, annualCost: 450, reqLicense: "carB" },
-  { name: "Golf GTI", brand: "Volks", price: 12000, annualCost: 750, reqLicense: "carB" },
-  { name: "Série 3 Desportivo", brand: "BWM", price: 28000, annualCost: 1300, reqLicense: "carB" }
-];
-
-const availableBikes = [
-  { name: "Scooter Urban 50", brand: "Yamah", cc: "50cc", price: 1800, annualCost: 200, reqLicense: "bikeAM" },
-  { name: "CBR 125R", brand: "Hona", cc: "125cc", price: 3400, annualCost: 320, reqLicense: "bikeA1" },
-  { name: "Ninja 400 Sport", brand: "Kawas", cc: "400cc", price: 6200, annualCost: 480, reqLicense: "bikeA2" },
-  { name: "Monster 821 Naked", brand: "Ducati", cc: "821cc", price: 10500, annualCost: 700, reqLicense: "bikeA2" },
-  { name: "R1 Superbike", brand: "Yamah", cc: "1000cc", price: 17500, annualCost: 1100, reqLicense: "bikeA" }
-];
-
-function takeLicense(licenseKey) {
-  const player = game.player;
-  const rule = licenseRules[licenseKey];
-  if (!rule) return;
-
-  if (licenseKey === "bikeA" && player.age < 24) {
-    showToast("Para a Carta A precisas de 24 anos.");
-    return;
-  }
-  if (player.age < rule.minAge) {
-    showToast(`Precisas de ter pelo menos ${rule.minAge} anos.`);
-    return;
-  }
-  if (player.bank < rule.cost) {
-    showToast(`Sem saldo suficiente (${money(rule.cost
+    html += `<h4 style="margin-top: 

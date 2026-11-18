@@ -85,6 +85,11 @@ function loadGame() {
     loaded.businesses ??= [];
     loaded.player.illness ??= null;
     loaded.player.maxAge ??= randomNumber(78, 108);
+    loaded.family.forEach(f => {
+      f.relationship ??= randomNumber(65, 95);
+      f.alive ??= true;
+      f.maxAge ??= randomNumber(78, 102);
+    });
     return loaded;
   } catch (error) {
     return null;
@@ -718,6 +723,10 @@ function renderSchoolAndUniversitySubmenu() {
   });
 }
 
+/* =========================================
+   FAMÍLIA & ÁRVORE GENEALÓGICA INTERATIVA
+========================================= */
+
 const femaleNames = ["Maria", "Ana", "Beatriz", "Inês", "Sofia", "Matilde", "Leonor", "Carolina", "Mariana", "Margarida", "Catarina", "Joana", "Rita", "Francisca", "Marta", "Laura", "Alice", "Diana", "Cláudia", "Raquel", "Teresa", "Isabel", "Helena", "Andreia", "Patrícia", "Eva", "Luísa", "Daniela", "Filipa"];
 const maleNames = ["João", "Pedro", "Miguel", "Francisco", "Tiago", "Diogo", "André", "Rafael", "Gonçalo", "Martim", "Afonso", "Tomás", "Duarte", "Bruno", "Ricardo", "Daniel", "António", "Manuel", "Luís", "Gabriel", "David", "Nuno", "Hugo", "Filipe", "Eduardo", "José", "Rodrigo", "Vasco", "Guilherme"];
 const tombstoneQuotes = [
@@ -726,14 +735,6 @@ const tombstoneQuotes = [
   "Descansa em paz. A jornada foi longa e bela.",
   "Amou, riu, aprendeu e agora descansa.",
   "Uma lenda nunca morre, apenas descansa."
-];
-
-const commonIllnesses = [
-  { name: "Gripe Sazonal", severity: "Baixa", cost: 50, healthImpact: 4, specialty: "familyDoctor" },
-  { name: "Entorse no Tornozelo", severity: "Baixa", cost: 120, healthImpact: 6, specialty: "orthopedics" },
-  { name: "Hipertensão Arterial", severity: "Média", cost: 350, healthImpact: 10, specialty: "cardiology" },
-  { name: "Depressão Crónica", severity: "Média", cost: 500, healthImpact: 12, specialty: "psychiatry" },
-  { name: "Cancro em Estádio Inicial", severity: "Alta", cost: 6000, healthImpact: 30, specialty: "oncology" }
 ];
 
 function generateName(sex) {
@@ -751,10 +752,201 @@ function createFamilyMember(data) {
     age: Number(data.age) || 0,
     sex: data.sex || "Outro",
     alive: true,
+    relationship: data.relationship ?? randomNumber(70, 95),
+    maxAge: randomNumber(78, 102),
     job: "",
     salary: 0
   };
 }
+
+function processFamilyYear() {
+  if (!game || !Array.isArray(game.family)) return;
+  game.family.forEach(member => {
+    if (!member.alive) return;
+    member.age += 1;
+    member.relationship = clamp(member.relationship - randomNumber(0, 2));
+
+    if (member.age >= member.maxAge && Math.random() < 0.25) {
+      member.alive = false;
+      game.player.happiness = clamp(game.player.happiness - 18);
+      addEvent(`🕯️ O teu/tua ${member.relation.toLowerCase()}, ${member.name} ${member.surname}, faleceu aos ${member.age} anos.`, "negative");
+    }
+  });
+}
+
+function openFamilyInteractionModal(memberId) {
+  const member = game.family.find(f => f.id === memberId);
+  if (!member) return;
+
+  if (!member.alive) {
+    showToast(`${member.name} já faleceu.`);
+    return;
+  }
+
+  const modal = $("customModal");
+  modal.innerHTML = `
+    <div class="modal-card">
+      <h3>${escapeHTML(member.name)} ${escapeHTML(member.surname)}</h3>
+      <p class="muted">${escapeHTML(member.relation)} · ${member.age} anos</p>
+      
+      <div class="stat-bar" style="margin-top: 12px;">
+        <span>Relação Familiar: <strong>${member.relationship}%</strong></span>
+        <div class="bar"><div class="fill" style="width: ${member.relationship}%; background-color: ${member.relationship > 40 ? 'var(--success-color)' : 'var(--danger-color)'};"></div></div>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="primary-btn full-width" onclick="interactFamily('${member.id}', 'talk')">💬 Conversar / Passar Tempo</button>
+        <button class="secondary-btn full-width" onclick="interactFamily('${member.id}', 'gift')">🎁 Dar Presente (50 €)</button>
+        <button class="secondary-btn full-width" onclick="interactFamily('${member.id}', 'money')">💶 Pedir Dinheiro</button>
+        <button class="danger-btn full-width" onclick="interactFamily('${member.id}', 'argue')">💢 Discutir</button>
+      </div>
+
+      <button class="small-btn full-width" style="margin-top: 14px;" onclick="closeCustomModal()">Fechar</button>
+    </div>
+  `;
+  modal.classList.remove("hidden");
+}
+
+function interactFamily(memberId, action) {
+  const member = game.family.find(f => f.id === memberId);
+  if (!member || !member.alive) return;
+
+  if (action === "talk") {
+    const gain = randomNumber(4, 9);
+    member.relationship = clamp(member.relationship + gain);
+    game.player.happiness = clamp(game.player.happiness + 3);
+    addEvent(`Tiveste uma ótima conversa com ${member.name} (${member.relation}).`, "positive");
+    showToast(`Relação +${gain}%`);
+  } 
+  else if (action === "gift") {
+    if (game.player.bank < 50) {
+      showToast("Não tens 50 € disponíveis.");
+      return;
+    }
+    game.player.bank -= 50;
+    const gain = randomNumber(10, 18);
+    member.relationship = clamp(member.relationship + gain);
+    game.player.happiness = clamp(game.player.happiness + 4);
+    addEvent(`Ofereceste um presente a ${member.name}! 🎁`, "positive");
+    showToast(`Presente entregue! Relação +${gain}%`);
+  } 
+  else if (action === "money") {
+    if (member.age < 18) {
+      showToast(`${member.name} ainda é menor de idade.`);
+      return;
+    }
+    if (member.relationship >= 55 && Math.random() < 0.7) {
+      const amount = game.player.age < 18 ? randomNumber(20, 80) : randomNumber(100, 450);
+      game.player.bank += amount;
+      member.relationship = clamp(member.relationship - 4);
+      addFinanceEvent(`${member.name} (${member.relation}) deu-te ${money(amount)}.`);
+      addEvent(`${member.name} ajudou-te com ${money(amount)}! 💶`, "positive");
+      showToast(`Recebeste ${money(amount)}!`);
+    } else {
+      member.relationship = clamp(member.relationship - 6);
+      showToast(`${member.name} recusou o pedido de dinheiro.`);
+    }
+  } 
+  else if (action === "argue") {
+    const loss = randomNumber(12, 22);
+    member.relationship = clamp(member.relationship - loss);
+    game.player.happiness = clamp(game.player.happiness - 6);
+    addEvent(`Tiveste uma discussão séria com ${member.name}. 💢`, "negative");
+    showToast(`Relação -${loss}%`);
+  }
+
+  closeCustomModal();
+  saveGame();
+  renderGame();
+}
+
+function renderFamilyTree() {
+  const treeContainer = $("familyTree");
+  if (!treeContainer) return;
+
+  const grandparents = game.family.filter(f => f.relation === "Avô" || f.relation === "Avó");
+  const parents = game.family.filter(f => f.relation === "Mãe" || f.relation === "Pai");
+  const siblingsAndOthers = game.family.filter(f => f.relation !== "Avô" && f.relation !== "Avó" && f.relation !== "Mãe" && f.relation !== "Pai");
+
+  const formatNode = (person, roleLabel) => {
+    const statusIcon = person.alive ? "🟢" : "🕯️";
+    return `<div style="display:inline-block; padding: 6px 10px; margin: 4px; border-radius: 8px; background: var(--bg-color); border: 1px solid var(--border-color); font-size: 0.85rem;">
+      ${statusIcon} <strong>${escapeHTML(person.name)}</strong> <small>(${roleLabel}, ${person.age}a)</small>
+    </div>`;
+  };
+
+  let html = `<div style="text-align: center;">`;
+
+  if (grandparents.length > 0) {
+    html += `<div style="margin-bottom: 8px;"><small class="muted" style="display:block;">Avós</small>${grandparents.map(g => formatNode(g, g.relation)).join("")}</div><div style="color: var(--accent-color);">│</div>`;
+  }
+
+  if (parents.length > 0) {
+    html += `<div style="margin-bottom: 8px;"><small class="muted" style="display:block;">Pais</small>${parents.map(p => formatNode(p, p.relation)).join("")}</div><div style="color: var(--accent-color);">│</div>`;
+  }
+
+  html += `
+    <div style="margin: 6px 0;">
+      <div style="display:inline-block; padding: 8px 14px; border-radius: 10px; background: var(--accent-color); color: #fff; font-weight: bold; font-size: 0.9rem;">
+        ⭐ ${escapeHTML(game.player.name)} ${escapeHTML(game.player.surname)} (${game.player.age} anos)
+      </div>
+    </div>
+  `;
+
+  if (siblingsAndOthers.length > 0) {
+    html += `<div style="color: var(--accent-color);">│</div><div style="margin-top: 6px;"><small class="muted" style="display:block;">Irmãos & Outros Familiares</small>${siblingsAndOthers.map(s => formatNode(s, s.relation)).join("")}</div>`;
+  }
+
+  html += `</div>`;
+  treeContainer.innerHTML = html;
+}
+
+function renderPeople() {
+  const container = $("peopleList");
+  if (!container) return;
+  container.innerHTML = "";
+
+  if (game.family.length === 0) {
+    container.innerHTML = `<p class="muted">Sem familiares registados.</p>`;
+  } else {
+    game.family.forEach(f => {
+      const aliveBadge = f.alive ? `${f.age} anos` : `🕯️ Falecido/a (${f.age} anos)`;
+      const barColor = f.relationship > 40 ? "var(--success-color)" : "var(--danger-color)";
+      container.innerHTML += `
+        <div class="person-card house-card" onclick="openFamilyInteractionModal('${f.id}')" style="flex-direction: column; align-items: stretch; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong>${escapeHTML(f.name)} ${escapeHTML(f.surname)}</strong>
+              <small style="display:block; color: var(--text-muted);">${escapeHTML(f.relation)} · ${aliveBadge}</small>
+            </div>
+            ${f.alive ? `<span class="small-btn">Interagir ›</span>` : ""}
+          </div>
+          ${f.alive ? `
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <small style="font-size: 0.75rem; color: var(--text-muted);">Relação:</small>
+              <div class="bar" style="flex: 1; height: 6px; margin: 0;"><div class="fill" style="width: ${f.relationship}%; background-color: ${barColor};"></div></div>
+              <small style="font-size: 0.75rem; font-weight: bold;">${f.relationship}%</small>
+            </div>
+          ` : ""}
+        </div>
+      `;
+    });
+  }
+
+  renderFamilyTree();
+}
+
+/* =========================================
+   SAÚDE & EVENTOS ALEATÓRIOS
+========================================= */
+
+const commonIllnesses = [
+  { name: "Gripe Sazonal", severity: "Baixa", cost: 50, healthImpact: 4, specialty: "familyDoctor" },
+  { name: "Entorse no Tornozelo", severity: "Baixa", cost: 120, healthImpact: 6, specialty: "orthopedics" },
+  { name: "Hipertensão Arterial", severity: "Média", cost: 350, healthImpact: 10, specialty: "cardiology" },
+  { name: "Depressão Crónica", severity: "Média", cost: 500, healthImpact: 12, specialty: "psychiatry" },
+  { name: "Cancro em Estádio Inicial", severity: "Alta", cost: 6000, healthImpact: 30, specialty: "oncology" }
+];
 
 const lifeEventsPool = [
   { minAge: 0, maxAge: 3, text: "Deste os teus primeiros passos na sala de estar.", options: [{ text: "Sorrir", effect: () => { game.player.happiness = clamp(game.player.happiness + 5); addEvent("Os pais celebraram.", "positive"); } }] },
@@ -891,6 +1083,7 @@ function advanceYear() {
   game.year += 1;
   player.bank += player.salary;
 
+  processFamilyYear();
   processSchoolYear();
   processFurtherEducation();
   processHousingYear();
@@ -1047,15 +1240,6 @@ function applyJob(name, salary) {
   addEvent(`Começaste a trabalhar como ${name}!`);
   saveGame();
   renderGame();
-}
-
-function renderPeople() {
-  const container = $("peopleList");
-  if (!container) return;
-  container.innerHTML = "";
-  game.family.forEach(f => {
-    container.innerHTML += `<div class="person-card"><strong>${escapeHTML(f.name)}</strong> <small>${f.relation} · ${f.age} anos</small></div>`;
-  });
 }
 
 function renderGame() {

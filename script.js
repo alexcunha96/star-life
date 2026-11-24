@@ -218,7 +218,7 @@ function showToast(message) {
    AVATAR PERSONALIZADO + BARBA AOS 18 ANOS
 ========================================= */
 
-function buildCustomAvatarUrl(person, previewInEditor = false) {
+function buildCustomAvatarMarkup(person, previewInEditor = false) {
   const custom = person?.avatarCustom || createDefaultAvatarCustom(person?.sex || "Masculino", currentAvatarIndex);
   const skin = escapeHTML(custom.skinTone || "#f2c29b");
   const eyeColor = escapeHTML(custom.eyeColor || "#2563eb");
@@ -292,13 +292,7 @@ function buildCustomAvatarUrl(person, previewInEditor = false) {
     }
   }
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140"><rect width="140" height="140" fill="${bgColor}"/>${hairStyle === "long" || hairStyle === "medium" || hairStyle === "ponytail" ? hairSvg : ""}${outfitSvg}<rect x="61" y="80" width="18" height="18" rx="6" fill="${skin}"/><ellipse cx="70" cy="62" rx="25" ry="29" fill="${skin}"/>${browSvg}<circle cx="60" cy="60" r="4.2" fill="${eyeColor}"/><circle cx="80" cy="60" r="4.2" fill="${eyeColor}"/><circle cx="60" cy="60" r="1.8" fill="#0f172a"/><circle cx="80" cy="60" r="1.8" fill="#0f172a"/>${beardSvg}<path d="M62,76 Q70,82 78,76" fill="none" stroke="#7f1d1d" stroke-width="2.4" stroke-linecap="round"/>${hairStyle !== "long" && hairStyle !== "medium" && hairStyle !== "ponytail" ? hairSvg : ""}${accSvg}</svg>`;
-
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-}
-
-function getPlayerAvatarSrc(player, previewInEditor = false) {
-  return buildCustomAvatarUrl(player || {}, previewInEditor);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140" width="100%" height="100%" aria-label="Avatar"><rect width="140" height="140" fill="${bgColor}"/>${hairStyle === "long" || hairStyle === "medium" || hairStyle === "ponytail" ? hairSvg : ""}${outfitSvg}<rect x="61" y="80" width="18" height="18" rx="6" fill="${skin}"/><ellipse cx="70" cy="62" rx="25" ry="29" fill="${skin}"/>${browSvg}<circle cx="60" cy="60" r="4.2" fill="${eyeColor}"/><circle cx="80" cy="60" r="4.2" fill="${eyeColor}"/><circle cx="60" cy="60" r="1.8" fill="#0f172a"/><circle cx="80" cy="60" r="1.8" fill="#0f172a"/>${beardSvg}<path d="M62,76 Q70,82 78,76" fill="none" stroke="#7f1d1d" stroke-width="2.4" stroke-linecap="round"/>${hairStyle !== "long" && hairStyle !== "medium" && hairStyle !== "ponytail" ? hairSvg : ""}${accSvg}</svg>`;
 }
 
 function updateSetupAvatarUI() {
@@ -308,10 +302,10 @@ function updateSetupAvatarUI() {
   if (currentAvatarIndex < 1) currentAvatarIndex = 1;
   setupAvatarCustom.presetIndex = currentAvatarIndex;
 
-  const imgEl = $("setupAvatarImg");
+  const stageEl = $("setupAvatarStage");
   const indexEl = $("setupAvatarIndex");
-  if (imgEl) {
-    imgEl.src = buildCustomAvatarUrl(
+  if (stageEl) {
+    stageEl.innerHTML = buildCustomAvatarMarkup(
       { name: $("playerName")?.value.trim() || "Avatar", sex, age: 0, avatarCustom: setupAvatarCustom },
       false
     );
@@ -424,7 +418,7 @@ function renderAppearanceModal() {
   const draft = appearanceModalState.draft;
   if (!modal || !draft) return;
 
-  const previewUrl = buildCustomAvatarUrl(
+  const previewSvg = buildCustomAvatarMarkup(
     {
       name: appearanceModalState.target === "game" ? game.player.name : ($("playerName")?.value.trim() || "Avatar"),
       sex: draft.sex || "Masculino",
@@ -449,9 +443,7 @@ function renderAppearanceModal() {
 
       <div class="appearance-stage-row">
         <button type="button" class="avatar-arrow-btn" id="appPrevBtn">◀</button>
-        <div class="appearance-portrait-box">
-          <img src="${previewUrl}" alt="Pré-visualização do Avatar">
-        </div>
+        <div class="appearance-portrait-box">${previewSvg}</div>
         <button type="button" class="avatar-arrow-btn" id="appNextBtn">▶</button>
       </div>
 
@@ -1747,8 +1739,7 @@ function renderHome() {
   $("illnessValue").textContent = player.illness ? player.illness.name : "Nenhuma";
 
   if ($("headerAvatarContainer")) {
-    const avatarSrc = getPlayerAvatarSrc(player, false);
-    $("headerAvatarContainer").innerHTML = `<img src="${avatarSrc}" alt="Avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+    $("headerAvatarContainer").innerHTML = buildCustomAvatarMarkup(player, false);
   }
 
   const primaryProp = game.properties.find(p => p.status === "primary");

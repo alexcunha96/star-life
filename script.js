@@ -11,14 +11,7 @@ let game = null;
 let initialFamily = [];
 let toastTimer = null;
 
-// Gestão de Avatares no Setup
-const avatarConfig = {
-  Masculino: { total: 5, folder: "masculino", prefix: "Avatar_masculino_" },
-  Feminino: { total: 2, folder: "feminino", prefix: "Avatar_feminino_" }
-};
-
 let currentAvatarIndex = 1;
-window.selectedAvatarPath = "assets/modules/masculino/avatars/Avatar_masculino_1.png";
 
 const APPEARANCE_OPTIONS = {
   eyes: [
@@ -86,7 +79,7 @@ const APPEARANCE_CATEGORIES = [
 
 function createDefaultAvatarCustom(sex = "Masculino", presetIndex = 1) {
   return {
-    enabled: false,
+    enabled: true,
     diceStyle: "avataaars",
     mouthStyle: "default",
     presetIndex,
@@ -223,7 +216,7 @@ function showToast(message) {
 }
 
 /* =========================================
-   AVATAR PERSONALIZADO + BARBA AOS 18 ANOS
+   AVATAR DICEBEAR + BARBA AOS 18 ANOS
 ========================================= */
 
 function cleanHexColor(hex, fallback = "3b2618") {
@@ -261,7 +254,6 @@ function buildCustomAvatarUrl(person, previewInEditor = false) {
     params.set("clothing", clothOpt.diceCloth);
     params.set("mouth", custom.mouthStyle || "default");
 
-    // A barba escolhida mostra-se sempre na pré-visualização do editor e automaticamente no jogo a partir dos 18 anos
     const showBeard = Boolean(beardOpt.diceBeard) && (previewInEditor || ageNum >= 18);
     if (showBeard) {
       params.set("facialHair", beardOpt.diceBeard);
@@ -286,33 +278,23 @@ function buildCustomAvatarUrl(person, previewInEditor = false) {
 }
 
 function getPlayerAvatarSrc(player, previewInEditor = false) {
-  if (player?.avatarCustom?.enabled) {
-    return buildCustomAvatarUrl(player, previewInEditor);
-  }
-  return player?.avatarPath || window.selectedAvatarPath || "assets/modules/masculino/avatars/Avatar_masculino_1.png";
+  return buildCustomAvatarUrl(player || {}, previewInEditor);
 }
 
 function updateSetupAvatarUI() {
   const sexEl = $("playerSex");
   const sex = sexEl ? sexEl.value : "Masculino";
-  const cfg = avatarConfig[sex] || avatarConfig.Masculino;
 
-  if (currentAvatarIndex > cfg.total) currentAvatarIndex = 1;
-  if (currentAvatarIndex < 1) currentAvatarIndex = cfg.total;
-
-  window.selectedAvatarPath = `assets/modules/${cfg.folder}/avatars/${cfg.prefix}${currentAvatarIndex}.png`;
+  if (currentAvatarIndex < 1) currentAvatarIndex = 1;
+  setupAvatarCustom.presetIndex = currentAvatarIndex;
 
   const imgEl = $("setupAvatarImg");
   const indexEl = $("setupAvatarIndex");
   if (imgEl) {
-    if (setupAvatarCustom.enabled) {
-      imgEl.src = buildCustomAvatarUrl(
-        { name: $("playerName")?.value.trim() || "Avatar", sex, age: 0, avatarCustom: setupAvatarCustom },
-        false
-      );
-    } else {
-      imgEl.src = window.selectedAvatarPath;
-    }
+    imgEl.src = buildCustomAvatarUrl(
+      { name: $("playerName")?.value.trim() || "Avatar", sex, age: 0, avatarCustom: setupAvatarCustom },
+      false
+    );
   }
   if (indexEl) indexEl.textContent = `#${currentAvatarIndex}`;
 
@@ -324,7 +306,7 @@ function updateSetupAvatarUI() {
 }
 
 window.changeSetupAvatar = function(dir) {
-  currentAvatarIndex += dir;
+  currentAvatarIndex = Math.max(1, currentAvatarIndex + dir);
   setupAvatarCustom = createDefaultAvatarCustom($("playerSex")?.value || "Masculino", currentAvatarIndex);
   updateSetupAvatarUI();
 };
@@ -516,15 +498,11 @@ window.openAppearanceModal = function(target = "game") {
   appearanceModalState.category = "facialHair";
 
   if (target === "game" && game && game.player) {
-    const base = game.player.avatarCustom?.enabled
-      ? game.player.avatarCustom
-      : createDefaultAvatarCustom(game.player.sex, currentAvatarIndex);
+    const base = game.player.avatarCustom || createDefaultAvatarCustom(game.player.sex, currentAvatarIndex);
     appearanceModalState.draft = { ...base, sex: game.player.sex };
   } else {
     const sex = $("playerSex")?.value || "Masculino";
-    const base = setupAvatarCustom?.enabled
-      ? setupAvatarCustom
-      : createDefaultAvatarCustom(sex, currentAvatarIndex);
+    const base = setupAvatarCustom || createDefaultAvatarCustom(sex, currentAvatarIndex);
     appearanceModalState.draft = { ...base, sex };
   }
 
@@ -625,8 +603,8 @@ function loadGame() {
     if (!saved) return null;
     const loaded = JSON.parse(saved);
     if (!loaded || !loaded.player || !Array.isArray(loaded.family)) return null;
-    loaded.player.avatarPath ??= "assets/modules/masculino/avatars/Avatar_masculino_1.png";
     loaded.player.avatarCustom ??= createDefaultAvatarCustom(loaded.player.sex || "Masculino", 1);
+    loaded.player.avatarCustom.enabled = true;
     loaded.player.licenses ??= { carB: false, bikeAM: false, bikeA1: false, bikeA2: false, bikeA: false };
     loaded.player.bankAccount ??= null;
     loaded.player.activeRental ??= null;
@@ -1637,7 +1615,7 @@ function advanceYear() {
   game.year += 1;
   player.bank += player.salary;
 
-  if (prevAge < 18 && player.age >= 18 && player.avatarCustom?.enabled && player.avatarCustom?.facialHair !== "none") {
+  if (prevAge < 18 && player.age >= 18 && player.avatarCustom?.facialHair !== "none") {
     addEvent("Completaste 18 anos e a barba cresceu! 🧔", "positive");
   }
 
@@ -1679,16 +1657,16 @@ function startGame() {
   const city = citySel === "Outro" ? ($("playerCityCustom").value.trim() || "Lisboa") : citySel;
 
   const sex = $("playerSex").value;
-  const avatarCustom = setupAvatarCustom?.enabled
-    ? { ...setupAvatarCustom }
-    : createDefaultAvatarCustom(sex, currentAvatarIndex);
+  const avatarCustom = {
+    ...(setupAvatarCustom || createDefaultAvatarCustom(sex, currentAvatarIndex)),
+    enabled: true
+  };
 
   const player = {
     id: createId("player"), name, surname,
     sex,
     country,
     city,
-    avatarPath: window.selectedAvatarPath || "assets/modules/masculino/avatars/Avatar_masculino_1.png",
     avatarCustom,
     age: 0, alive: true,
     health: 100, happiness: 80,
@@ -1743,7 +1721,7 @@ function renderHome() {
   $("healthValue").textContent = `${Math.round(player.health)}%`;
   $("happinessValue").textContent = `${Math.round(player.happiness)}%`;
   $("healthBar").style.width = `${player.health}%`;
-  $("happinessBar").style.width = `${player.happiness}%`;
+  $("happinessBar").style.width = `${player.health}%`;
   $("educationValue").textContent = player.education;
   $("jobValue").textContent = player.job || "Sem profissão";
   $("illnessValue").textContent = player.illness ? player.illness.name : "Nenhuma";

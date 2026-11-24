@@ -291,6 +291,10 @@ function updateSetupAvatarUI() {
   const imgEl = $("setupAvatarImg");
   const indexEl = $("setupAvatarIndex");
   if (imgEl) {
+    imgEl.onerror = () => {
+      imgEl.onerror = null;
+      imgEl.src = `${DICEBEAR_API_BASE}/avataaars/svg?seed=starlife-fallback`;
+    };
     imgEl.src = buildCustomAvatarUrl(
       { name: $("playerName")?.value.trim() || "Avatar", sex, age: 0, avatarCustom: setupAvatarCustom },
       false

@@ -83,7 +83,11 @@
             <button type="button" class="avatar-arrow-btn" onclick="changeSetupAvatar(1)">▶</button>
           </div>
 
-          <!-- Género logo abaixo das setas do avatar -->
+          <button type="button" id="setupEditAvatarBtn" class="secondary-btn full-width" style="margin-top: 10px;" onclick="openAppearanceModal('setup')">
+            ✏️ Editar Avatar
+          </button>
+
+          <!-- Género logo abaixo do avatar -->
           <div class="input-group" style="margin-top: 12px; text-align: left;">
             <label>Género</label>
             <select id="playerSex" onchange="onSetupGenderChange()">
@@ -205,6 +209,12 @@
           <div class="info-row"><span>Escolaridade</span><strong id="educationValue">Sem escolaridade</strong></div>
           <div class="info-row"><span>Profissão</span><strong id="jobValue">Sem profissão</strong></div>
           <div class="info-row"><span>Doença Atual</span><strong id="illnessValue" style="color: var(--danger-color);">Nenhuma</strong></div>
+        </div>
+
+        <div class="panel">
+          <h3>Aparência</h3>
+          <p class="muted" style="margin-bottom: 10px;">Altera o visual do teu avatar. A barba escolhida surge automaticamente a partir dos 18 anos.</p>
+          <button type="button" class="secondary-btn full-width" onclick="openAppearanceModal('game')">✏️ Editar Avatar</button>
         </div>
 
         <div class="panel">

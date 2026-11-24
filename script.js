@@ -215,84 +215,83 @@ function showToast(message) {
 }
 
 /* =========================================
-   AVATAR PERSONALIZADO + BARBA AOS 18 ANOS
+   AVATAR DICEBEAR (AVATAAARS) + BARBA AOS 18 ANOS
 ========================================= */
 
-function buildCustomAvatarMarkup(person, previewInEditor = false) {
+function buildDiceBearUrl(person, previewInEditor = false) {
   const custom = person?.avatarCustom || createDefaultAvatarCustom(person?.sex || "Masculino", currentAvatarIndex);
-  const skin = escapeHTML(custom.skinTone || "#f2c29b");
-  const eyeColor = escapeHTML(custom.eyeColor || "#2563eb");
-  const hairColor = escapeHTML(custom.hairColor || "#3b2618");
-  const outfitColor = escapeHTML(custom.outfitColor || "#3b82f6");
-  const browStyle = custom.browStyle || "arch";
-  const hairStyle = custom.hairStyle || "short";
-  const outfit = custom.outfit || "casual";
-  const beardStyle = custom.facialHair || "none";
-  const accStyle = custom.tattoo || "none";
-  const styleMode = custom.diceStyle || "classic";
   const preset = Number(custom.presetIndex) || 1;
   const ageNum = Number(person?.age) || 0;
+  const seedBase = person?.id || `${person?.name || "starlife"}-${person?.sex || "Masculino"}-${preset}`;
 
-  const bgPalette = ["#1e3a8a", "#134e4a", "#4c1d95", "#7c2d12", "#1e293b"];
-  const bgColor = bgPalette[(preset - 1) % bgPalette.length];
+  const params = new URLSearchParams();
+  params.set("seed", `${seedBase}-${custom.skinTone || ""}-${custom.hairColor || ""}-${custom.outfitColor || ""}`);
 
-  const strokeWidth = styleMode === "bold" ? "3.2" : styleMode === "stylized" ? "2.6" : "2";
+  const skinHex = String(custom.skinTone || "#f2c29b").replace("#", "");
+  if (skinHex) params.set("skinColor", skinHex);
 
-  const browSvg = browStyle === "straight"
-    ? `<line x1="53" y1="53" x2="67" y2="53" stroke="${hairColor}" stroke-width="${strokeWidth}" stroke-linecap="round"/><line x1="73" y1="53" x2="87" y2="53" stroke="${hairColor}" stroke-width="${strokeWidth}" stroke-linecap="round"/>`
-    : browStyle === "thick"
-      ? `<path d="M52,54 Q60,49 68,54" fill="none" stroke="${hairColor}" stroke-width="4.2" stroke-linecap="round"/><path d="M72,54 Q80,49 88,54" fill="none" stroke="${hairColor}" stroke-width="4.2" stroke-linecap="round"/>`
-      : browStyle === "soft"
-        ? `<path d="M53,55 Q60,52 67,54" fill="none" stroke="${hairColor}" stroke-width="${strokeWidth}" stroke-linecap="round"/><path d="M73,54 Q80,52 87,55" fill="none" stroke="${hairColor}" stroke-width="${strokeWidth}" stroke-linecap="round"/>`
-        : `<path d="M53,54 Q60,48 67,53" fill="none" stroke="${hairColor}" stroke-width="${strokeWidth}" stroke-linecap="round"/><path d="M73,53 Q80,48 87,54" fill="none" stroke="${hairColor}" stroke-width="${strokeWidth}" stroke-linecap="round"/>`;
+  const hairHex = String(custom.hairColor || "#3b2618").replace("#", "");
+  if (hairHex) params.set("hairColor", hairHex);
 
-  const showBeard = beardStyle !== "none" && (previewInEditor || ageNum >= 18);
-  let beardSvg = "";
-  if (showBeard) {
-    if (beardStyle === "stubble") {
-      beardSvg = `<path d="M46,66 C46,84 56,92 70,92 C84,92 94,84 94,66 C91,78 82,86 70,86 C58,86 49,78 46,66 Z" fill="${hairColor}" opacity="0.28"/>`;
-    } else if (beardStyle === "goatee") {
-      beardSvg = `<path d="M62,71 Q70,68 78,71 L76,75 Q70,73 64,75 Z" fill="${hairColor}"/><path d="M62,80 Q70,91 78,80 Q70,84 62,80 Z" fill="${hairColor}"/>`;
-    } else if (beardStyle === "beard") {
-      beardSvg = `<path d="M45,63 C44,85 55,95 70,95 C85,95 96,85 95,63 C90,74 82,80 70,80 C58,80 50,74 45,63 Z" fill="${hairColor}"/>`;
-    }
+  const clothHex = String(custom.outfitColor || "#3b82f6").replace("#", "");
+  if (clothHex) params.set("clothingColor", clothHex);
+
+  const hairMap = {
+    short: "shortFlat",
+    medium: "shortWaved",
+    long: "straight01",
+    ponytail: "bun",
+    buzz: "shaggy"
+  };
+  if (hairMap[custom.hairStyle]) {
+    params.set("top", hairMap[custom.hairStyle]);
   }
 
-  let hairSvg = "";
-  if (hairStyle === "long") {
-    hairSvg = `<path d="M41,54 C41,25 99,25 99,54 L103,104 L88,104 L88,62 C88,46 52,46 52,62 L52,104 L37,104 Z" fill="${hairColor}"/>`;
-  } else if (hairStyle === "medium") {
-    hairSvg = `<path d="M42,56 C42,26 98,26 98,56 L99,82 L88,80 L87,56 C87,44 53,44 53,56 L52,80 L41,82 Z" fill="${hairColor}"/>`;
-  } else if (hairStyle === "ponytail") {
-    hairSvg = `<circle cx="96" cy="40" r="14" fill="${hairColor}"/><path d="M44,54 C44,27 96,27 96,54 C88,42 52,42 44,54 Z" fill="${hairColor}"/>`;
-  } else if (hairStyle === "buzz") {
-    hairSvg = `<path d="M45,52 C46,31 94,31 95,52 C86,41 54,41 45,52 Z" fill="${hairColor}"/>`;
+  const showBeard = custom.facialHair && custom.facialHair !== "none" && (previewInEditor || ageNum >= 18);
+  const beardMap = {
+    stubble: "beardLight",
+    goatee: "moustacheFancy",
+    beard: "beardMedium"
+  };
+  if (showBeard && beardMap[custom.facialHair]) {
+    params.set("facialHair", beardMap[custom.facialHair]);
+    params.set("facialHairProbability", "100");
   } else {
-    hairSvg = `<path d="M44,53 C45,28 95,28 96,53 C86,42 54,42 44,53 Z" fill="${hairColor}"/>`;
+    params.set("facialHairProbability", "0");
   }
 
-  let outfitSvg = `<path d="M26,132 C28,103 47,94 70,94 C93,94 112,103 114,132 Z" fill="${outfitColor}"/>`;
-  if (outfit === "smart") {
-    outfitSvg = `<path d="M26,132 C28,103 47,94 70,94 C93,94 112,103 114,132 Z" fill="${outfitColor}"/><polygon points="70,96 58,112 70,132 82,112" fill="#f8fafc"/><polygon points="70,104 66,115 70,132 74,115" fill="#1e293b"/>`;
-  } else if (outfit === "sport") {
-    outfitSvg = `<path d="M26,132 C28,103 47,94 70,94 C93,94 112,103 114,132 Z" fill="${outfitColor}"/><line x1="36" y1="104" x2="32" y2="132" stroke="#f8fafc" stroke-width="3"/><line x1="104" y1="104" x2="108" y2="132" stroke="#f8fafc" stroke-width="3"/>`;
-  } else if (outfit === "hoodie") {
-    outfitSvg = `<path d="M24,132 C26,101 46,92 70,92 C94,92 114,101 116,132 Z" fill="${outfitColor}"/><path d="M52,95 Q70,108 88,95" fill="none" stroke="rgba(0,0,0,0.35)" stroke-width="3"/>`;
+  const outfitMap = {
+    casual: "graphicShirt",
+    smart: "blazerAndShirt",
+    sport: "hoodie",
+    hoodie: "hoodie"
+  };
+  if (outfitMap[custom.outfit]) {
+    params.set("clothing", outfitMap[custom.outfit]);
   }
 
-  const showAcc = accStyle !== "none" && (previewInEditor || ageNum >= 13);
-  let accSvg = "";
-  if (showAcc) {
-    if (accStyle === "star") {
-      accSvg = `<circle cx="60" cy="60" r="8" fill="none" stroke="#f8fafc" stroke-width="2.4"/><circle cx="80" cy="60" r="8" fill="none" stroke="#f8fafc" stroke-width="2.4"/><line x1="68" y1="60" x2="72" y2="60" stroke="#f8fafc" stroke-width="2.4"/>`;
-    } else if (accStyle === "sleeve") {
-      accSvg = `<rect x="51" y="54" width="17" height="11" rx="2" fill="none" stroke="#e2e8f0" stroke-width="2.2"/><rect x="72" y="54" width="17" height="11" rx="2" fill="none" stroke="#e2e8f0" stroke-width="2.2"/><line x1="68" y1="59" x2="72" y2="59" stroke="#e2e8f0" stroke-width="2.2"/>`;
-    } else if (accStyle === "tribal") {
-      accSvg = `<rect x="50" y="54" width="18" height="11" rx="3" fill="#0f172a" stroke="#f8fafc" stroke-width="1.6"/><rect x="72" y="54" width="18" height="11" rx="3" fill="#0f172a" stroke="#f8fafc" stroke-width="1.6"/><line x1="68" y1="59" x2="72" y2="59" stroke="#f8fafc" stroke-width="2"/>`;
-    }
+  const showAcc = custom.tattoo && custom.tattoo !== "none" && (previewInEditor || ageNum >= 13);
+  const accMap = {
+    star: "round",
+    sleeve: "prescription02",
+    tribal: "sunglasses"
+  };
+  if (showAcc && accMap[custom.tattoo]) {
+    params.set("accessories", accMap[custom.tattoo]);
+    params.set("accessoriesProbability", "100");
+  } else {
+    params.set("accessoriesProbability", "0");
   }
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140" width="100%" height="100%" aria-label="Avatar"><rect width="140" height="140" fill="${bgColor}"/>${hairStyle === "long" || hairStyle === "medium" || hairStyle === "ponytail" ? hairSvg : ""}${outfitSvg}<rect x="61" y="80" width="18" height="18" rx="6" fill="${skin}"/><ellipse cx="70" cy="62" rx="25" ry="29" fill="${skin}"/>${browSvg}<circle cx="60" cy="60" r="4.2" fill="${eyeColor}"/><circle cx="80" cy="60" r="4.2" fill="${eyeColor}"/><circle cx="60" cy="60" r="1.8" fill="#0f172a"/><circle cx="80" cy="60" r="1.8" fill="#0f172a"/>${beardSvg}<path d="M62,76 Q70,82 78,76" fill="none" stroke="#7f1d1d" stroke-width="2.4" stroke-linecap="round"/>${hairStyle !== "long" && hairStyle !== "medium" && hairStyle !== "ponytail" ? hairSvg : ""}${accSvg}</svg>`;
+  return `https://api.dicebear.com/9.x/avataaars/svg?${params.toString()}`;
+}
+
+function renderAvatarImgHTML(person, previewInEditor = false, altText = "Avatar") {
+  const url = buildDiceBearUrl(person, previewInEditor);
+  const fallbackSvg = encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e3a8a"/><circle cx="50" cy="40" r="18" fill="#f2c29b"/><path d="M20,92 C22,68 35,62 50,62 C65,62 78,68 80,92 Z" fill="#3b82f6"/></svg>`
+  );
+  return `<img src="${escapeHTML(url)}" alt="${escapeHTML(altText)}" loading="eager" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${fallbackSvg}';">`;
 }
 
 function updateSetupAvatarUI() {
@@ -305,9 +304,10 @@ function updateSetupAvatarUI() {
   const stageEl = $("setupAvatarStage");
   const indexEl = $("setupAvatarIndex");
   if (stageEl) {
-    stageEl.innerHTML = buildCustomAvatarMarkup(
+    stageEl.innerHTML = renderAvatarImgHTML(
       { name: $("playerName")?.value.trim() || "Avatar", sex, age: 0, avatarCustom: setupAvatarCustom },
-      false
+      false,
+      "Avatar"
     );
   }
   if (indexEl) indexEl.textContent = `#${currentAvatarIndex}`;
@@ -418,14 +418,15 @@ function renderAppearanceModal() {
   const draft = appearanceModalState.draft;
   if (!modal || !draft) return;
 
-  const previewSvg = buildCustomAvatarMarkup(
+  const previewImgHtml = renderAvatarImgHTML(
     {
       name: appearanceModalState.target === "game" ? game.player.name : ($("playerName")?.value.trim() || "Avatar"),
       sex: draft.sex || "Masculino",
       age: 18,
       avatarCustom: draft
     },
-    true
+    true,
+    "Pré-visualização do Avatar"
   );
 
   const label = getDraftOptionLabel(draft, appearanceModalState.category);
@@ -443,7 +444,7 @@ function renderAppearanceModal() {
 
       <div class="appearance-stage-row">
         <button type="button" class="avatar-arrow-btn" id="appPrevBtn">◀</button>
-        <div class="appearance-portrait-box">${previewSvg}</div>
+        <div class="appearance-portrait-box">${previewImgHtml}</div>
         <button type="button" class="avatar-arrow-btn" id="appNextBtn">▶</button>
       </div>
 
@@ -1739,7 +1740,7 @@ function renderHome() {
   $("illnessValue").textContent = player.illness ? player.illness.name : "Nenhuma";
 
   if ($("headerAvatarContainer")) {
-    $("headerAvatarContainer").innerHTML = buildCustomAvatarMarkup(player, false);
+    $("headerAvatarContainer").innerHTML = renderAvatarImgHTML(player, false, "Avatar");
   }
 
   const primaryProp = game.properties.find(p => p.status === "primary");

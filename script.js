@@ -5,6 +5,7 @@
 ========================================= */
 
 const SAVE_KEY = "starlife_v18_bitlife_perfect";
+const DICEBEAR_API_BASE = "https://api.dicebear.com/9.x";
 
 let game = null;
 let initialFamily = [];
@@ -18,6 +19,96 @@ const avatarConfig = {
 
 let currentAvatarIndex = 1;
 window.selectedAvatarPath = "assets/modules/masculino/avatars/Avatar_masculino_1.png";
+
+const APPEARANCE_OPTIONS = {
+  eyes: [
+    { id: "#2563eb", label: "Olhos Azuis", diceEye: "default" },
+    { id: "#15803d", label: "Olhos Verdes", diceEye: "wink" },
+    { id: "#5c3a21", label: "Olhos Castanhos", diceEye: "side" },
+    { id: "#475569", label: "Olhos Cinzentos", diceEye: "eyeRoll" },
+    { id: "#92400e", label: "Olhos Âmbar / Mel", diceEye: "squint" }
+  ],
+  skin: [
+    { id: "#fbe3cf", label: "Pele Clara", diceSkin: "ffdbb4" },
+    { id: "#f2c29b", label: "Pele Média Clara", diceSkin: "edb98a" },
+    { id: "#d89b6c", label: "Pele Bronzeada", diceSkin: "d08b5b" },
+    { id: "#b06d3b", label: "Pele Morena", diceSkin: "ae5d29" },
+    { id: "#7c4722", label: "Pele Escura", diceSkin: "614335" }
+  ],
+  brows: [
+    { id: "arch", label: "Sobrancelhas Arqueadas", diceBrow: "raisedExcitedNatural" },
+    { id: "straight", label: "Sobrancelhas Retas", diceBrow: "flatNatural" },
+    { id: "thick", label: "Sobrancelhas Densas", diceBrow: "defaultNatural" },
+    { id: "soft", label: "Sobrancelhas Suaves", diceBrow: "upDownNatural" }
+  ],
+  facialHair: [
+    { id: "none", label: "Sem Barba", diceBeard: "" },
+    { id: "stubble", label: "Barba por Fazer", diceBeard: "beardLight" },
+    { id: "goatee", label: "Cavanhaque / Bigode", diceBeard: "beardMajestic" },
+    { id: "beard", label: "Barba Cheia", diceBeard: "beardMedium" }
+  ],
+  hair: [
+    { id: "short", label: "Cabelo Curto", diceTop: "shortFlat" },
+    { id: "medium", label: "Cabelo Médio", diceTop: "bob" },
+    { id: "long", label: "Cabelo Comprido", diceTop: "longButNotTooLong" },
+    { id: "ponytail", label: "Rabo de Cavalo", diceTop: "bun" },
+    { id: "buzz", label: "Rapado / Curto Alto", diceTop: "shortCurly" }
+  ],
+  outfit: [
+    { id: "casual", label: "T-Shirt Casual", diceCloth: "graphicShirt" },
+    { id: "smart", label: "Camisa Social", diceCloth: "blazerAndShirt" },
+    { id: "sport", label: "Fato de Treino", diceCloth: "shirtCrewNeck" },
+    { id: "hoodie", label: "Sweat com Capuz", diceCloth: "hoodie" }
+  ],
+  tattoo: [
+    { id: "none", label: "Sem Acessório", diceAcc: "" },
+    { id: "star", label: "Óculos Redondos", diceAcc: "round" },
+    { id: "sleeve", label: "Óculos Graduados", diceAcc: "prescription02" },
+    { id: "tribal", label: "Óculos Escuros", diceAcc: "wayfarers" }
+  ]
+};
+
+const DICE_STYLES = [
+  { id: "avataaars", label: "Avataaars" },
+  { id: "big-ears", label: "Big Ears" },
+  { id: "big-smile", label: "Big Smile" }
+];
+
+const APPEARANCE_CATEGORIES = [
+  { key: "eyes", label: "Olhos" },
+  { key: "skin", label: "Pele" },
+  { key: "brows", label: "Sobrancelhas" },
+  { key: "facialHair", label: "Barba" },
+  { key: "hair", label: "Cabelo" },
+  { key: "outfit", label: "Roupa" },
+  { key: "tattoo", label: "Acessório" }
+];
+
+function createDefaultAvatarCustom(sex = "Masculino", presetIndex = 1) {
+  return {
+    enabled: false,
+    diceStyle: "avataaars",
+    mouthStyle: "default",
+    presetIndex,
+    skinTone: "#f2c29b",
+    eyeColor: "#2563eb",
+    browStyle: "arch",
+    facialHair: "none",
+    hairStyle: sex === "Feminino" ? "long" : "short",
+    hairColor: "#3b2618",
+    outfit: "casual",
+    outfitColor: sex === "Feminino" ? "#ec4899" : "#3b82f6",
+    tattoo: "none"
+  };
+}
+
+let setupAvatarCustom = createDefaultAvatarCustom("Masculino", 1);
+
+let appearanceModalState = {
+  target: "setup",
+  category: "facialHair",
+  draft: null
+};
 
 // Base de Países Mundiais com Moeda, Bancos e Cidades
 const worldCountriesDatabase = {
@@ -132,22 +223,97 @@ function showToast(message) {
 }
 
 /* =========================================
-   AVATAR E GÉNERO DINÂMICO NO SETUP
+   AVATAR PERSONALIZADO + BARBA AOS 18 ANOS
 ========================================= */
+
+function cleanHexColor(hex, fallback = "3b2618") {
+  const cleaned = String(hex || fallback).replace("#", "").trim();
+  return /^[0-9a-fA-F]{6}$/.test(cleaned) ? cleaned.toLowerCase() : fallback;
+}
+
+function buildCustomAvatarUrl(person, previewInEditor = false) {
+  const custom = person.avatarCustom || createDefaultAvatarCustom(person.sex, currentAvatarIndex);
+  const style = custom.diceStyle || "avataaars";
+  const hairHex = cleanHexColor(custom.hairColor, "3b2618");
+  const clothHex = cleanHexColor(custom.outfitColor, "3b82f6");
+
+  const skinOpt = APPEARANCE_OPTIONS.skin.find(o => o.id === custom.skinTone) || APPEARANCE_OPTIONS.skin[1];
+  const eyeOpt = APPEARANCE_OPTIONS.eyes.find(o => o.id === custom.eyeColor) || APPEARANCE_OPTIONS.eyes[0];
+  const browOpt = APPEARANCE_OPTIONS.brows.find(o => o.id === custom.browStyle) || APPEARANCE_OPTIONS.brows[0];
+  const beardOpt = APPEARANCE_OPTIONS.facialHair.find(o => o.id === custom.facialHair) || APPEARANCE_OPTIONS.facialHair[0];
+  const hairOpt = APPEARANCE_OPTIONS.hair.find(o => o.id === custom.hairStyle) || APPEARANCE_OPTIONS.hair[0];
+  const clothOpt = APPEARANCE_OPTIONS.outfit.find(o => o.id === custom.outfit) || APPEARANCE_OPTIONS.outfit[0];
+  const accOpt = APPEARANCE_OPTIONS.tattoo.find(o => o.id === custom.tattoo) || APPEARANCE_OPTIONS.tattoo[0];
+
+  const ageNum = Number(person.age) || 0;
+  const seed = `${person.name || "starlife"}-${previewInEditor ? "editor" : (ageNum >= 18 ? "adult18" : "young")}-${custom.presetIndex || 1}-${beardOpt.id}-${accOpt.id}`;
+  const params = new URLSearchParams();
+  params.set("seed", seed);
+  params.set("radius", "50");
+
+  if (style === "avataaars") {
+    params.set("skinColor", skinOpt.diceSkin);
+    params.set("hairColor", hairHex);
+    params.set("clothingColor", clothHex);
+    params.set("eyes", eyeOpt.diceEye);
+    params.set("eyebrows", browOpt.diceBrow);
+    params.set("top", hairOpt.diceTop);
+    params.set("clothing", clothOpt.diceCloth);
+    params.set("mouth", custom.mouthStyle || "default");
+
+    // A barba escolhida mostra-se sempre na pré-visualização do editor e automaticamente no jogo a partir dos 18 anos
+    const showBeard = Boolean(beardOpt.diceBeard) && (previewInEditor || ageNum >= 18);
+    if (showBeard) {
+      params.set("facialHair", beardOpt.diceBeard);
+      params.set("facialHairColor", hairHex);
+      params.set("facialHairProbability", "100");
+    } else {
+      params.set("facialHairProbability", "0");
+    }
+
+    const showAccessory = Boolean(accOpt.diceAcc) && (previewInEditor || ageNum >= 13);
+    if (showAccessory) {
+      params.set("accessories", accOpt.diceAcc);
+      params.set("accessoriesProbability", "100");
+    } else {
+      params.set("accessoriesProbability", "0");
+    }
+  } else {
+    params.set("hairColor", hairHex);
+  }
+
+  return `${DICEBEAR_API_BASE}/${style}/svg?${params.toString()}`;
+}
+
+function getPlayerAvatarSrc(player, previewInEditor = false) {
+  if (player?.avatarCustom?.enabled) {
+    return buildCustomAvatarUrl(player, previewInEditor);
+  }
+  return player?.avatarPath || window.selectedAvatarPath || "assets/modules/masculino/avatars/Avatar_masculino_1.png";
+}
 
 function updateSetupAvatarUI() {
   const sexEl = $("playerSex");
   const sex = sexEl ? sexEl.value : "Masculino";
   const cfg = avatarConfig[sex] || avatarConfig.Masculino;
-  
+
   if (currentAvatarIndex > cfg.total) currentAvatarIndex = 1;
   if (currentAvatarIndex < 1) currentAvatarIndex = cfg.total;
 
   window.selectedAvatarPath = `assets/modules/${cfg.folder}/avatars/${cfg.prefix}${currentAvatarIndex}.png`;
-  
+
   const imgEl = $("setupAvatarImg");
   const indexEl = $("setupAvatarIndex");
-  if (imgEl) imgEl.src = window.selectedAvatarPath;
+  if (imgEl) {
+    if (setupAvatarCustom.enabled) {
+      imgEl.src = buildCustomAvatarUrl(
+        { name: $("playerName")?.value.trim() || "Avatar", sex, age: 0, avatarCustom: setupAvatarCustom },
+        false
+      );
+    } else {
+      imgEl.src = window.selectedAvatarPath;
+    }
+  }
   if (indexEl) indexEl.textContent = `#${currentAvatarIndex}`;
 
   const nameHint = $("nameHint");
@@ -159,12 +325,210 @@ function updateSetupAvatarUI() {
 
 window.changeSetupAvatar = function(dir) {
   currentAvatarIndex += dir;
+  setupAvatarCustom = createDefaultAvatarCustom($("playerSex")?.value || "Masculino", currentAvatarIndex);
   updateSetupAvatarUI();
 };
 
 window.onSetupGenderChange = function() {
   currentAvatarIndex = 1;
+  setupAvatarCustom = createDefaultAvatarCustom($("playerSex")?.value || "Masculino", currentAvatarIndex);
   updateSetupAvatarUI();
+};
+
+function getDraftOptionLabel(draft, category) {
+  const options = APPEARANCE_OPTIONS[category] || [];
+  const map = {
+    eyes: draft.eyeColor,
+    skin: draft.skinTone,
+    brows: draft.browStyle,
+    facialHair: draft.facialHair,
+    hair: draft.hairStyle,
+    outfit: draft.outfit,
+    tattoo: draft.tattoo
+  };
+  const found = options.find(o => o.id === map[category]);
+  return found ? found.label : "";
+}
+
+function cycleAppearanceDraft(delta) {
+  const draft = appearanceModalState.draft;
+  if (!draft) return;
+  const cat = appearanceModalState.category;
+  const options = APPEARANCE_OPTIONS[cat] || [];
+  if (!options.length) return;
+
+  const map = {
+    eyes: draft.eyeColor,
+    skin: draft.skinTone,
+    brows: draft.browStyle,
+    facialHair: draft.facialHair,
+    hair: draft.hairStyle,
+    outfit: draft.outfit,
+    tattoo: draft.tattoo
+  };
+
+  let idx = options.findIndex(o => o.id === map[cat]);
+  if (idx === -1) idx = 0;
+  const nextIdx = (((idx + delta) % options.length) + options.length) % options.length;
+  const nextVal = options[nextIdx].id;
+
+  if (cat === "eyes") draft.eyeColor = nextVal;
+  if (cat === "skin") draft.skinTone = nextVal;
+  if (cat === "brows") draft.browStyle = nextVal;
+  if (cat === "facialHair") draft.facialHair = nextVal;
+  if (cat === "hair") draft.hairStyle = nextVal;
+  if (cat === "outfit") draft.outfit = nextVal;
+  if (cat === "tattoo") draft.tattoo = nextVal;
+
+  renderAppearanceModal();
+}
+
+function saveAppearanceDraft() {
+  const draft = appearanceModalState.draft;
+  if (!draft) return;
+
+  const cleaned = {
+    enabled: true,
+    diceStyle: draft.diceStyle || "avataaars",
+    mouthStyle: draft.mouthStyle || "default",
+    presetIndex: currentAvatarIndex,
+    skinTone: draft.skinTone,
+    eyeColor: draft.eyeColor,
+    browStyle: draft.browStyle,
+    facialHair: draft.facialHair,
+    hairStyle: draft.hairStyle,
+    hairColor: draft.hairColor,
+    outfit: draft.outfit,
+    outfitColor: draft.outfitColor,
+    tattoo: draft.tattoo
+  };
+
+  if (appearanceModalState.target === "setup") {
+    setupAvatarCustom = cleaned;
+    updateSetupAvatarUI();
+  } else if (game && game.player) {
+    game.player.avatarCustom = cleaned;
+    addEvent("Atualizaste a aparência do teu avatar. ✏️", "positive");
+    saveGame();
+    renderGame();
+  }
+
+  closeCustomModal();
+  showToast("Aparência guardada!");
+}
+
+function renderAppearanceModal() {
+  const modal = $("customModal");
+  const draft = appearanceModalState.draft;
+  if (!modal || !draft) return;
+
+  const previewUrl = buildCustomAvatarUrl(
+    {
+      name: appearanceModalState.target === "game" ? game.player.name : ($("playerName")?.value.trim() || "Avatar"),
+      sex: draft.sex || "Masculino",
+      age: 18,
+      avatarCustom: draft
+    },
+    true
+  );
+
+  const label = getDraftOptionLabel(draft, appearanceModalState.category);
+
+  modal.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Editar Avatar">
+      <h3>✨ Editar Avatar</h3>
+      <p class="muted" style="margin-bottom: 8px;">Seleciona a categoria e usa as setas para alterar.</p>
+
+      <div class="appearance-tabs">
+        ${APPEARANCE_CATEGORIES.map(c => `
+          <button type="button" class="app-cat-btn ${appearanceModalState.category === c.key ? "active" : ""}" data-app-cat="${c.key}">${escapeHTML(c.label)}</button>
+        `).join("")}
+      </div>
+
+      <div class="appearance-stage-row">
+        <button type="button" class="avatar-arrow-btn" id="appPrevBtn">◀</button>
+        <div class="appearance-portrait-box">
+          <img src="${previewUrl}" alt="Pré-visualização do Avatar">
+        </div>
+        <button type="button" class="avatar-arrow-btn" id="appNextBtn">▶</button>
+      </div>
+
+      <div class="appearance-option-label">${escapeHTML(label)}</div>
+
+      <div class="appearance-extra-controls">
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
+          Estilo:
+          <select id="modalDiceStyleSelect">
+            ${DICE_STYLES.map(s => `<option value="${s.id}" ${draft.diceStyle === s.id ? "selected" : ""}>${escapeHTML(s.label)}</option>`).join("")}
+          </select>
+        </label>
+
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
+          Cabelo:
+          <input type="color" id="modalHairColorInput" value="${escapeHTML(draft.hairColor)}" style="width:32px;height:26px;padding:1px;">
+        </label>
+
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
+          Roupa:
+          <input type="color" id="modalOutfitColorInput" value="${escapeHTML(draft.outfitColor)}" style="width:32px;height:26px;padding:1px;">
+        </label>
+      </div>
+
+      <div class="modal-buttons">
+        <button type="button" class="primary-btn full-width" id="saveAppearanceBtn">Guardar</button>
+        <button type="button" class="secondary-btn full-width" onclick="closeCustomModal()">Cancelar</button>
+      </div>
+    </div>
+  `;
+
+  modal.classList.remove("hidden");
+
+  modal.querySelectorAll("[data-app-cat]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      appearanceModalState.category = btn.dataset.appCat;
+      renderAppearanceModal();
+    });
+  });
+
+  $("appPrevBtn")?.addEventListener("click", () => cycleAppearanceDraft(-1));
+  $("appNextBtn")?.addEventListener("click", () => cycleAppearanceDraft(1));
+
+  $("modalDiceStyleSelect")?.addEventListener("change", e => {
+    appearanceModalState.draft.diceStyle = e.target.value;
+    renderAppearanceModal();
+  });
+
+  $("modalHairColorInput")?.addEventListener("input", e => {
+    appearanceModalState.draft.hairColor = e.target.value;
+    renderAppearanceModal();
+  });
+
+  $("modalOutfitColorInput")?.addEventListener("input", e => {
+    appearanceModalState.draft.outfitColor = e.target.value;
+    renderAppearanceModal();
+  });
+
+  $("saveAppearanceBtn")?.addEventListener("click", saveAppearanceDraft);
+}
+
+window.openAppearanceModal = function(target = "game") {
+  appearanceModalState.target = target;
+  appearanceModalState.category = "facialHair";
+
+  if (target === "game" && game && game.player) {
+    const base = game.player.avatarCustom?.enabled
+      ? game.player.avatarCustom
+      : createDefaultAvatarCustom(game.player.sex, currentAvatarIndex);
+    appearanceModalState.draft = { ...base, sex: game.player.sex };
+  } else {
+    const sex = $("playerSex")?.value || "Masculino";
+    const base = setupAvatarCustom?.enabled
+      ? setupAvatarCustom
+      : createDefaultAvatarCustom(sex, currentAvatarIndex);
+    appearanceModalState.draft = { ...base, sex };
+  }
+
+  renderAppearanceModal();
 };
 
 /* =========================================
@@ -262,6 +626,7 @@ function loadGame() {
     const loaded = JSON.parse(saved);
     if (!loaded || !loaded.player || !Array.isArray(loaded.family)) return null;
     loaded.player.avatarPath ??= "assets/modules/masculino/avatars/Avatar_masculino_1.png";
+    loaded.player.avatarCustom ??= createDefaultAvatarCustom(loaded.player.sex || "Masculino", 1);
     loaded.player.licenses ??= { carB: false, bikeAM: false, bikeA1: false, bikeA2: false, bikeA: false };
     loaded.player.bankAccount ??= null;
     loaded.player.activeRental ??= null;
@@ -1267,9 +1632,14 @@ function advanceYear() {
   if (!game || !game.player.alive) return;
   const player = game.player;
 
+  const prevAge = player.age;
   player.age += 1;
   game.year += 1;
   player.bank += player.salary;
+
+  if (prevAge < 18 && player.age >= 18 && player.avatarCustom?.enabled && player.avatarCustom?.facialHair !== "none") {
+    addEvent("Completaste 18 anos e a barba cresceu! 🧔", "positive");
+  }
 
   processFamilyYear();
   processSchoolYear();
@@ -1308,12 +1678,18 @@ function startGame() {
   const citySel = $("playerCitySelect").value;
   const city = citySel === "Outro" ? ($("playerCityCustom").value.trim() || "Lisboa") : citySel;
 
+  const sex = $("playerSex").value;
+  const avatarCustom = setupAvatarCustom?.enabled
+    ? { ...setupAvatarCustom }
+    : createDefaultAvatarCustom(sex, currentAvatarIndex);
+
   const player = {
     id: createId("player"), name, surname,
-    sex: $("playerSex").value,
+    sex,
     country,
     city,
     avatarPath: window.selectedAvatarPath || "assets/modules/masculino/avatars/Avatar_masculino_1.png",
+    avatarCustom,
     age: 0, alive: true,
     health: 100, happiness: 80,
     education: "Sem escolaridade", educationLevel: 0,
@@ -1367,13 +1743,14 @@ function renderHome() {
   $("healthValue").textContent = `${Math.round(player.health)}%`;
   $("happinessValue").textContent = `${Math.round(player.happiness)}%`;
   $("healthBar").style.width = `${player.health}%`;
-  $("happinessBar").style.width = `${player.health}%`;
+  $("happinessBar").style.width = `${player.happiness}%`;
   $("educationValue").textContent = player.education;
   $("jobValue").textContent = player.job || "Sem profissão";
   $("illnessValue").textContent = player.illness ? player.illness.name : "Nenhuma";
 
   if ($("headerAvatarContainer")) {
-    $("headerAvatarContainer").innerHTML = `<img src="${player.avatarPath}" alt="Avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+    const avatarSrc = getPlayerAvatarSrc(player, false);
+    $("headerAvatarContainer").innerHTML = `<img src="${avatarSrc}" alt="Avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
   }
 
   const primaryProp = game.properties.find(p => p.status === "primary");

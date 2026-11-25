@@ -341,6 +341,37 @@ button:disabled {
   display: block;
 }
 
+/* Centro Médico em modo botão */
+.medical-entry-btn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.medical-entry-sub {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  font-weight: normal;
+}
+
+.medical-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.medical-header-row h2 {
+  margin-bottom: 0;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;

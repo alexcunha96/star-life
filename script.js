@@ -223,6 +223,30 @@ function normalizeHexNoHash(colorValue, fallbackHex) {
   return normalizeHexWithHash(colorValue, fallbackHex).slice(1);
 }
 
+function hexToHueDegrees(hexColor) {
+  const hex = normalizeHexNoHash(hexColor, "#3b82f6");
+  const r = parseInt(hex.slice(0, 2), 16) / 255;
+  const g = parseInt(hex.slice(2, 4), 16) / 255;
+  const b = parseInt(hex.slice(4, 6), 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+
+  if (delta === 0) return 0;
+
+  let hue = 0;
+  if (max === r) {
+    hue = ((g - b) / delta) % 6;
+  } else if (max === g) {
+    hue = (b - r) / delta + 2;
+  } else {
+    hue = (r - g) / delta + 4;
+  }
+
+  return Math.round((hue * 60 + 360) % 360);
+}
+
 function getCategoryColorConfig(draft, category) {
   if (!draft || category === "skin") return null;
 
@@ -242,6 +266,32 @@ function getCategoryColorConfig(draft, category) {
     ...cfg,
     value: normalizeHexWithHash(draft[cfg.prop], cfg.fallback)
   };
+}
+
+function getAvatarCssFilter(custom, activeCategory = null) {
+  const c = custom || createDefaultAvatarCustom("Masculino", currentAvatarIndex);
+  const defaultOutfit = normalizeHexWithHash(c.outfitColor, "#3b82f6");
+
+  // Quando o utilizador está a ajustar a cor numa categoria específica dentro do modal,
+  // aplicamos um ajuste visual imediato na imagem para que a mudança de cor seja sempre visível.
+  if (activeCategory === "eyes") {
+    const hue = hexToHueDegrees(c.eyeTint || "#2563eb");
+    return `hue-rotate(${hue}deg) saturate(1.25)`;
+  }
+  if (activeCategory === "brows") {
+    const hue = hexToHueDegrees(c.browTint || "#3b2618");
+    return `hue-rotate(${hue}deg) contrast(1.15)`;
+  }
+  if (activeCategory === "tattoo") {
+    const hue = hexToHueDegrees(c.accessoryColor || "#334155");
+    return `hue-rotate(${hue}deg) saturate(1.3)`;
+  }
+  if (activeCategory === "outfit") {
+    const hue = hexToHueDegrees(defaultOutfit);
+    return `hue-rotate(${hue}deg) saturate(1.15)`;
+  }
+
+  return "none";
 }
 
 function buildDiceBearUrl(person, previewInEditor = false) {
@@ -327,66 +377,14 @@ function buildDiceBearUrl(person, previewInEditor = false) {
   return `https://api.dicebear.com/9.x/avataaars/svg?${params.toString()}`;
 }
 
-function buildColorOverlaySVG(custom, previewInEditor = false, ageNum = 0) {
-  const c = custom || createDefaultAvatarCustom("Masculino", currentAvatarIndex);
-  const eyeTint = normalizeHexWithHash(c.eyeTint, "#2563eb");
-  const browTint = normalizeHexWithHash(c.browTint, "#3b2618");
-  const accTint = normalizeHexWithHash(c.accessoryColor, "#334155");
-  const showAcc = Boolean(c.tattoo && c.tattoo !== "none") && (previewInEditor || ageNum >= 13);
-
-  const browOverlay = `
-    <rect x="33" y="34" width="12" height="3.2" rx="1.6" fill="${browTint}" opacity="0.65" />
-    <rect x="55" y="34" width="12" height="3.2" rx="1.6" fill="${browTint}" opacity="0.65" />
-  `;
-
-  const eyeOverlay = `
-    <circle cx="39" cy="40" r="3.4" fill="${eyeTint}" opacity="0.55" />
-    <circle cx="61" cy="40" r="3.4" fill="${eyeTint}" opacity="0.55" />
-  `;
-
-  let accOverlay = "";
-  if (showAcc && c.tattoo === "star") {
-    accOverlay = `
-      <circle cx="39" cy="40" r="6.5" fill="none" stroke="${accTint}" stroke-width="2.4" opacity="0.85" />
-      <circle cx="61" cy="40" r="6.5" fill="none" stroke="${accTint}" stroke-width="2.4" opacity="0.85" />
-      <line x1="45.5" y1="40" x2="54.5" y2="40" stroke="${accTint}" stroke-width="2.4" opacity="0.85" />
-    `;
-  } else if (showAcc && c.tattoo === "sleeve") {
-    accOverlay = `
-      <rect x="32" y="36" width="14" height="8" rx="1.5" fill="none" stroke="${accTint}" stroke-width="2.4" opacity="0.85" />
-      <rect x="54" y="36" width="14" height="8" rx="1.5" fill="none" stroke="${accTint}" stroke-width="2.4" opacity="0.85" />
-      <line x1="46" y1="40" x2="54" y2="40" stroke="${accTint}" stroke-width="2.4" opacity="0.85" />
-    `;
-  } else if (showAcc && c.tattoo === "tribal") {
-    accOverlay = `
-      <rect x="31" y="35.5" width="15" height="9" rx="2.5" fill="${accTint}" stroke="${accTint}" stroke-width="2" opacity="0.72" />
-      <rect x="54" y="35.5" width="15" height="9" rx="2.5" fill="${accTint}" stroke="${accTint}" stroke-width="2" opacity="0.72" />
-      <line x1="46" y1="39.5" x2="54" y2="39.5" stroke="${accTint}" stroke-width="2.4" opacity="0.85" />
-    `;
-  }
-
-  return `
-    <svg viewBox="0 0 100 100" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;">
-      ${browOverlay}
-      ${eyeOverlay}
-      ${accOverlay}
-    </svg>
-  `;
-}
-
-function renderAvatarImgHTML(person, previewInEditor = false, altText = "Avatar") {
+function renderAvatarImgHTML(person, previewInEditor = false, altText = "Avatar", activeCategory = null) {
   const url = buildDiceBearUrl(person, previewInEditor);
   const custom = person?.avatarCustom || createDefaultAvatarCustom(person?.sex || "Masculino", currentAvatarIndex);
-  const ageNum = Number(person?.age) || 0;
+  const cssFilter = getAvatarCssFilter(custom, activeCategory);
   const fallbackSvg = encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e3a8a"/><circle cx="50" cy="40" r="18" fill="#f2c29b"/><path d="M20,92 C22,68 35,62 50,62 C65,62 78,68 80,92 Z" fill="#3b82f6"/></svg>`
   );
-  return `
-    <div class="avatar-composite-wrap" style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-      <img src="${escapeHTML(url)}" alt="${escapeHTML(altText)}" loading="eager" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;display:block;position:relative;z-index:1;" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${fallbackSvg}';">
-      ${buildColorOverlaySVG(custom, previewInEditor, ageNum)}
-    </div>
-  `;
+  return `<img src="${escapeHTML(url)}" alt="${escapeHTML(altText)}" loading="eager" referrerpolicy="no-referrer" style="filter:${escapeHTML(cssFilter)};transition:filter 0.12s ease;" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${fallbackSvg}';">`;
 }
 
 function refreshAppearancePreviewOnly() {
@@ -401,7 +399,8 @@ function refreshAppearancePreviewOnly() {
       avatarCustom: draft
     },
     true,
-    "Pré-visualização do Avatar"
+    "Pré-visualização do Avatar",
+    appearanceModalState.category
   );
 }
 
@@ -418,7 +417,8 @@ function updateSetupAvatarUI() {
     stageEl.innerHTML = renderAvatarImgHTML(
       { name: $("playerName")?.value.trim() || "Avatar", sex, age: 0, avatarCustom: setupAvatarCustom },
       false,
-      "Avatar"
+      "Avatar",
+      null
     );
   }
   if (indexEl) indexEl.textContent = `#${currentAvatarIndex}`;
@@ -553,7 +553,8 @@ function renderAppearanceModal() {
       avatarCustom: draft
     },
     true,
-    "Pré-visualização do Avatar"
+    "Pré-visualização do Avatar",
+    appearanceModalState.category
   );
 
   const label = getDraftOptionLabel(draft, appearanceModalState.category);
@@ -607,10 +608,13 @@ function renderAppearanceModal() {
   $("appNextBtn")?.addEventListener("click", () => cycleAppearanceDraft(1));
 
   if (colorCfg) {
-    $("modalCategoryColorInput")?.addEventListener("input", e => {
+    const colorInput = $("modalCategoryColorInput");
+    const applyColorChange = e => {
       appearanceModalState.draft[colorCfg.prop] = e.target.value;
       refreshAppearancePreviewOnly();
-    });
+    };
+    colorInput?.addEventListener("input", applyColorChange);
+    colorInput?.addEventListener("change", applyColorChange);
   }
 
   $("saveAppearanceBtn")?.addEventListener("click", saveAppearanceDraft);
@@ -1850,7 +1854,7 @@ function renderHome() {
   $("illnessValue").textContent = player.illness ? player.illness.name : "Nenhuma";
 
   if ($("headerAvatarContainer")) {
-    $("headerAvatarContainer").innerHTML = renderAvatarImgHTML(player, false, "Avatar");
+    $("headerAvatarContainer").innerHTML = renderAvatarImgHTML(player, false, "Avatar", null);
   }
 
   const primaryProp = game.properties.find(p => p.status === "primary");

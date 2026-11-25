@@ -221,7 +221,6 @@ function normalizeHexNoHash(colorValue, fallbackHex) {
   return normalizeHexWithHash(colorValue, fallbackHex).slice(1);
 }
 
-// Apenas categorias com parâmetro real de cor no DiceBear avataaars
 function getCategoryColorConfig(draft, category) {
   if (!draft) return null;
 
@@ -249,33 +248,20 @@ function buildDiceBearUrl(person, previewInEditor = false) {
 
   const params = new URLSearchParams();
   params.set("seed", baseSeed);
-
-  // 1. Cor da pele (skinColor)
   params.set("skinColor", normalizeHexNoHash(custom.skinTone, "#f2c29b"));
-
-  // 2. Cor do cabelo (hairColor)
   params.set("hairColor", normalizeHexNoHash(custom.hairColor, "#3b2618"));
-
-  // 3. Cor da barba (facialHairColor - parâmetro oficial!)
   params.set("facialHairColor", normalizeHexNoHash(custom.facialHairColor || custom.hairColor, "#3b2618"));
-
-  // 4. Cor da roupa (clothesColor - no avataaars é `clothesColor`, NÃO `clothingColor`!)
   params.set("clothesColor", normalizeHexNoHash(custom.outfitColor, "#3b82f6"));
-
-  // 5. Cor dos acessórios (accessoriesColor - parâmetro oficial!)
   params.set("accessoriesColor", normalizeHexNoHash(custom.accessoryColor, "#262e33"));
 
-  // Expressão dos olhos (`eyes`)
   const validEyes = ["default", "happy", "wink", "squint"];
   const eyeVal = validEyes.includes(custom.eyeColor) ? custom.eyeColor : "default";
   params.set("eyes", eyeVal);
 
-  // Sobrancelhas (`eyebrows`)
   const validBrows = ["default", "raisedExcited", "frownNatural", "sadConcerned"];
   const browVal = validBrows.includes(custom.browStyle) ? custom.browStyle : "default";
   params.set("eyebrows", browVal);
 
-  // Cabelo (`top`)
   const hairMap = {
     short: "shortFlat",
     medium: "shortWaved",
@@ -287,7 +273,6 @@ function buildDiceBearUrl(person, previewInEditor = false) {
     params.set("top", hairMap[custom.hairStyle]);
   }
 
-  // Barba apenas a partir dos 18 anos no jogo (ou ao vivo no modal Editar Avatar)
   const showBeard = Boolean(custom.facialHair && custom.facialHair !== "none") && (previewInEditor || ageNum >= 18);
   const beardMap = {
     stubble: "beardLight",
@@ -301,7 +286,6 @@ function buildDiceBearUrl(person, previewInEditor = false) {
     params.set("facialHairProbability", "0");
   }
 
-  // Roupa (`clothes` - parâmetro oficial no avataaars)
   const outfitMap = {
     casual: "graphicShirt",
     smart: "blazerAndShirt",
@@ -312,7 +296,6 @@ function buildDiceBearUrl(person, previewInEditor = false) {
     params.set("clothes", outfitMap[custom.outfit]);
   }
 
-  // Acessórios / Óculos (`accessories` a partir dos 13 anos ou no editor)
   const showAcc = Boolean(custom.tattoo && custom.tattoo !== "none") && (previewInEditor || ageNum >= 13);
   const accMap = {
     star: "round",
@@ -1596,6 +1579,22 @@ function checkRandomIllness() {
   }
 }
 
+function setMedicalCenterOpen(isOpen) {
+  const btnCard = $("medicalCenterButtonCard");
+  const content = $("medicalCenterContent");
+  const actionContainer = $("healthActionContainer");
+  if (!btnCard || !content) return;
+
+  if (isOpen) {
+    btnCard.classList.add("hidden");
+    content.classList.remove("hidden");
+  } else {
+    content.classList.add("hidden");
+    btnCard.classList.remove("hidden");
+    if (actionContainer) actionContainer.innerHTML = "";
+  }
+}
+
 function openHealthSpecialty(specialty) {
   const container = $("healthActionContainer");
   let title = "Centro Clínico";
@@ -1872,6 +1871,10 @@ function showTab(tabId) {
   const target = $(tabId);
   if (target) target.classList.remove("hidden");
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tabId));
+
+  if (tabId !== "activitiesTab") {
+    setMedicalCenterOpen(false);
+  }
 }
 
 function showSubTab(subId) {
@@ -1912,6 +1915,9 @@ function boot() {
     $("famName").value = "";
     updateSetupFamilyUI();
   });
+
+  $("openMedicalCenterBtn")?.addEventListener("click", () => setMedicalCenterOpen(true));
+  $("closeMedicalCenterBtn")?.addEventListener("click", () => setMedicalCenterOpen(false));
 
   document.querySelectorAll("[data-health]").forEach(btn => {
     btn.onclick = () => openHealthSpecialty(btn.dataset.health);

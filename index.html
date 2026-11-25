@@ -312,8 +312,23 @@
 
       <!-- Tab: Atividades e Saúde -->
       <section id="activitiesTab" class="tab-content hidden">
-        <div class="panel">
-          <h2>🏥 Centro Médico & Especialidades</h2>
+        <!-- Modo botão inicial -->
+        <div id="medicalCenterButtonCard" class="panel">
+          <button type="button" id="openMedicalCenterBtn" class="primary-btn medical-entry-btn">
+            <div>
+              <span>🏥 Centro Médico & Especialidades</span>
+              <small class="medical-entry-sub">Acompanhamento clínico profissional e prevenção.</small>
+            </div>
+            <span>➔</span>
+          </button>
+        </div>
+
+        <!-- Conteúdo (só aparece depois de entrar no botão) -->
+        <div id="medicalCenterContent" class="panel hidden">
+          <div class="medical-header-row">
+            <h2>🏥 Centro Médico & Especialidades</h2>
+            <button type="button" id="closeMedicalCenterBtn" class="secondary-btn small-btn">✕ Fechar</button>
+          </div>
           <p class="muted">Acompanhamento clínico profissional e prevenção.</p>
           <div class="button-list" style="margin-top: 12px;">
             <button class="secondary-btn full-width" data-health="familyDoctor">👨‍⚕️ Médico de Família (Check-up)</button>
@@ -324,6 +339,7 @@
             <button class="secondary-btn full-width" data-health="oncology">🎗️ Oncologia (Rastreio e Tratamento)</button>
           </div>
         </div>
+
         <div id="healthActionContainer"></div>
       </section>
     </main>

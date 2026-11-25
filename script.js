@@ -59,12 +59,6 @@ const APPEARANCE_OPTIONS = {
   ]
 };
 
-const DICE_STYLES = [
-  { id: "classic", label: "Clássico" },
-  { id: "stylized", label: "Estilizado" },
-  { id: "bold", label: "Marcado" }
-];
-
 const APPEARANCE_CATEGORIES = [
   { key: "eyes", label: "Olhos" },
   { key: "skin", label: "Pele" },
@@ -78,18 +72,21 @@ const APPEARANCE_CATEGORIES = [
 function createDefaultAvatarCustom(sex = "Masculino", presetIndex = 1) {
   return {
     enabled: true,
-    diceStyle: "classic",
     mouthStyle: "default",
     presetIndex,
     skinTone: "#f2c29b",
     eyeColor: "default",
+    eyeTint: "#2563eb",
     browStyle: "default",
+    browTint: "#3b2618",
     facialHair: "none",
+    facialHairColor: "#3b2618",
     hairStyle: sex === "Feminino" ? "long" : "short",
     hairColor: "#3b2618",
     outfit: "casual",
     outfitColor: sex === "Feminino" ? "#ec4899" : "#3b82f6",
-    tattoo: "none"
+    tattoo: "none",
+    accessoryColor: "#334155"
   };
 }
 
@@ -214,12 +211,32 @@ function showToast(message) {
 }
 
 /* =========================================
-   AVATAR DICEBEAR (9.x / AVATAAARS) CORRIGIDO
+   AVATAR DICEBEAR (9.x / AVATAAARS)
 ========================================= */
 
 function normalizeHexNoHash(colorValue, fallbackHex) {
   const cleaned = String(colorValue || fallbackHex).replace(/^#/, "").trim();
   return /^[0-9a-fA-F]{6}$/.test(cleaned) ? cleaned : fallbackHex.replace(/^#/, "");
+}
+
+function getCategoryColorConfig(draft, category) {
+  if (!draft || category === "skin") return null;
+
+  const configs = {
+    eyes: { prop: "eyeTint", label: "Cor dos Olhos", fallback: "#2563eb" },
+    brows: { prop: "browTint", label: "Cor das Sobrancelhas", fallback: "#3b2618" },
+    facialHair: { prop: "facialHairColor", label: "Cor da Barba", fallback: "#3b2618" },
+    hair: { prop: "hairColor", label: "Cor do Cabelo", fallback: "#3b2618" },
+    outfit: { prop: "outfitColor", label: "Cor da Roupa", fallback: "#3b82f6" },
+    tattoo: { prop: "accessoryColor", label: "Cor do Acessório", fallback: "#334155" }
+  };
+
+  const cfg = configs[category];
+  if (!cfg) return null;
+
+  const rawValue = draft[cfg.prop] || cfg.fallback;
+  const normalizedHex = "#" + normalizeHexNoHash(rawValue, cfg.fallback);
+  return { ...cfg, value: normalizedHex };
 }
 
 function buildDiceBearUrl(person, previewInEditor = false) {
@@ -365,9 +382,13 @@ window.onSetupGenderChange = function() {
   setupAvatarCustom = {
     ...createDefaultAvatarCustom(sex, currentAvatarIndex),
     facialHair: setupAvatarCustom.facialHair || "none",
+    facialHairColor: setupAvatarCustom.facialHairColor || "#3b2618",
     tattoo: setupAvatarCustom.tattoo || "none",
+    accessoryColor: setupAvatarCustom.accessoryColor || "#334155",
     eyeColor: setupAvatarCustom.eyeColor || "default",
-    browStyle: setupAvatarCustom.browStyle || "default"
+    eyeTint: setupAvatarCustom.eyeTint || "#2563eb",
+    browStyle: setupAvatarCustom.browStyle || "default",
+    browTint: setupAvatarCustom.browTint || "#3b2618"
   };
   updateSetupAvatarUI();
 };
@@ -428,18 +449,21 @@ function saveAppearanceDraft() {
 
   const cleaned = {
     enabled: true,
-    diceStyle: draft.diceStyle || "classic",
     mouthStyle: draft.mouthStyle || "default",
     presetIndex: currentAvatarIndex,
     skinTone: draft.skinTone,
     eyeColor: draft.eyeColor,
+    eyeTint: draft.eyeTint || "#2563eb",
     browStyle: draft.browStyle,
+    browTint: draft.browTint || "#3b2618",
     facialHair: draft.facialHair,
+    facialHairColor: draft.facialHairColor || "#3b2618",
     hairStyle: draft.hairStyle,
     hairColor: draft.hairColor,
     outfit: draft.outfit,
     outfitColor: draft.outfitColor,
-    tattoo: draft.tattoo
+    tattoo: draft.tattoo,
+    accessoryColor: draft.accessoryColor || "#334155"
   };
 
   if (appearanceModalState.target === "setup") {
@@ -473,6 +497,7 @@ function renderAppearanceModal() {
   );
 
   const label = getDraftOptionLabel(draft, appearanceModalState.category);
+  const colorCfg = getCategoryColorConfig(draft, appearanceModalState.category);
 
   modal.innerHTML = `
     <div class="modal-card" role="dialog" aria-modal="true" aria-label="Editar Avatar">
@@ -493,24 +518,14 @@ function renderAppearanceModal() {
 
       <div class="appearance-option-label">${escapeHTML(label)}</div>
 
-      <div class="appearance-extra-controls">
-        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
-          Traço:
-          <select id="modalDiceStyleSelect">
-            ${DICE_STYLES.map(s => `<option value="${s.id}" ${draft.diceStyle === s.id ? "selected" : ""}>${escapeHTML(s.label)}</option>`).join("")}
-          </select>
-        </label>
-
-        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
-          Cabelo:
-          <input type="color" id="modalHairColorInput" value="${escapeHTML(draft.hairColor)}" style="width:32px;height:26px;padding:1px;">
-        </label>
-
-        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;">
-          Roupa:
-          <input type="color" id="modalOutfitColorInput" value="${escapeHTML(draft.outfitColor)}" style="width:32px;height:26px;padding:1px;">
-        </label>
-      </div>
+      ${colorCfg ? `
+        <div class="appearance-extra-controls" style="justify-content: center;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.88rem;">
+            ${escapeHTML(colorCfg.label)}:
+            <input type="color" id="modalCategoryColorInput" value="${escapeHTML(colorCfg.value)}" style="width:34px;height:28px;padding:1px;">
+          </label>
+        </div>
+      ` : ""}
 
       <div class="modal-buttons">
         <button type="button" class="primary-btn full-width" id="saveAppearanceBtn">Guardar</button>
@@ -531,20 +546,12 @@ function renderAppearanceModal() {
   $("appPrevBtn")?.addEventListener("click", () => cycleAppearanceDraft(-1));
   $("appNextBtn")?.addEventListener("click", () => cycleAppearanceDraft(1));
 
-  $("modalDiceStyleSelect")?.addEventListener("change", e => {
-    appearanceModalState.draft.diceStyle = e.target.value;
-    refreshAppearancePreviewOnly();
-  });
-
-  $("modalHairColorInput")?.addEventListener("input", e => {
-    appearanceModalState.draft.hairColor = e.target.value;
-    refreshAppearancePreviewOnly();
-  });
-
-  $("modalOutfitColorInput")?.addEventListener("input", e => {
-    appearanceModalState.draft.outfitColor = e.target.value;
-    refreshAppearancePreviewOnly();
-  });
+  if (colorCfg) {
+    $("modalCategoryColorInput")?.addEventListener("input", e => {
+      appearanceModalState.draft[colorCfg.prop] = e.target.value;
+      refreshAppearancePreviewOnly();
+    });
+  }
 
   $("saveAppearanceBtn")?.addEventListener("click", saveAppearanceDraft);
 }

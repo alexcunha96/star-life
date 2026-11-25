@@ -211,12 +211,16 @@ function showToast(message) {
 }
 
 /* =========================================
-   AVATAR DICEBEAR (9.x / AVATAAARS)
+   AVATAR DICEBEAR (9.x / AVATAAARS) + CORES
 ========================================= */
 
-function normalizeHexNoHash(colorValue, fallbackHex) {
+function normalizeHexWithHash(colorValue, fallbackHex) {
   const cleaned = String(colorValue || fallbackHex).replace(/^#/, "").trim();
-  return /^[0-9a-fA-F]{6}$/.test(cleaned) ? cleaned : fallbackHex.replace(/^#/, "");
+  return /^[0-9a-fA-F]{6}$/.test(cleaned) ? `#${cleaned.toLowerCase()}` : fallbackHex;
+}
+
+function normalizeHexNoHash(colorValue, fallbackHex) {
+  return normalizeHexWithHash(colorValue, fallbackHex).slice(1);
 }
 
 function getCategoryColorConfig(draft, category) {
@@ -234,9 +238,10 @@ function getCategoryColorConfig(draft, category) {
   const cfg = configs[category];
   if (!cfg) return null;
 
-  const rawValue = draft[cfg.prop] || cfg.fallback;
-  const normalizedHex = "#" + normalizeHexNoHash(rawValue, cfg.fallback);
-  return { ...cfg, value: normalizedHex };
+  return {
+    ...cfg,
+    value: normalizeHexWithHash(draft[cfg.prop], cfg.fallback)
+  };
 }
 
 function buildDiceBearUrl(person, previewInEditor = false) {
@@ -251,18 +256,19 @@ function buildDiceBearUrl(person, previewInEditor = false) {
   // Cor da pele (sem '#')
   params.set("skinColor", normalizeHexNoHash(custom.skinTone, "#f2c29b"));
 
-  // Cor do cabelo (sem '#')
-  params.set("hairColor", normalizeHexNoHash(custom.hairColor, "#3b2618"));
+  // Cor do cabelo / barba (sem '#')
+  const hairSourceColor = custom.hairColor || custom.facialHairColor || "#3b2618";
+  params.set("hairColor", normalizeHexNoHash(hairSourceColor, "#3b2618"));
 
   // Cor da roupa (sem '#')
   params.set("clothingColor", normalizeHexNoHash(custom.outfitColor, "#3b82f6"));
 
-  // Expressão dos olhos (parâmetro oficial: `eyes`)
+  // Expressão dos olhos (`eyes`)
   const validEyes = ["default", "happy", "wink", "squint"];
   const eyeVal = validEyes.includes(custom.eyeColor) ? custom.eyeColor : "default";
   params.set("eyes", eyeVal);
 
-  // Sobrancelhas (parâmetro oficial: `eyebrows`)
+  // Sobrancelhas (`eyebrows`)
   const validBrows = ["default", "raisedExcited", "frownNatural", "sadConcerned"];
   const browVal = validBrows.includes(custom.browStyle) ? custom.browStyle : "default";
   params.set("eyebrows", browVal);
@@ -321,12 +327,66 @@ function buildDiceBearUrl(person, previewInEditor = false) {
   return `https://api.dicebear.com/9.x/avataaars/svg?${params.toString()}`;
 }
 
+function buildColorOverlaySVG(custom, previewInEditor = false, ageNum = 0) {
+  const c = custom || createDefaultAvatarCustom("Masculino", currentAvatarIndex);
+  const eyeTint = normalizeHexWithHash(c.eyeTint, "#2563eb");
+  const browTint = normalizeHexWithHash(c.browTint, "#3b2618");
+  const accTint = normalizeHexWithHash(c.accessoryColor, "#334155");
+  const showAcc = Boolean(c.tattoo && c.tattoo !== "none") && (previewInEditor || ageNum >= 13);
+
+  const browOverlay = `
+    <rect x="33" y="34" width="12" height="3.2" rx="1.6" fill="${browTint}" opacity="0.65" />
+    <rect x="55" y="34" width="12" height="3.2" rx="1.6" fill="${browTint}" opacity="0.65" />
+  `;
+
+  const eyeOverlay = `
+    <circle cx="39" cy="40" r="3.4" fill="${eyeTint}" opacity="0.55" />
+    <circle cx="61" cy="40" r="3.4" fill="${eyeTint}" opacity="0.55" />
+  `;
+
+  let accOverlay = "";
+  if (showAcc && c.tattoo === "star") {
+    accOverlay = `
+      <circle cx="39" cy="40" r="6.5" fill="none" stroke="${accTint}" stroke-width="2.4" opacity="0.85" />
+      <circle cx="61" cy="40" r="6.5" fill="none" stroke="${accTint}" stroke-width="2.4" opacity="0.85" />
+      <line x1="45.5" y1="40" x2="54.5" y2="40" stroke="${accTint}" stroke-width="2.4" opacity="0.85" />
+    `;
+  } else if (showAcc && c.tattoo === "sleeve") {
+    accOverlay = `
+      <rect x="32" y="36" width="14" height="8" rx="1.5" fill="none" stroke="${accTint}" stroke-width="2.4" opacity="0.85" />
+      <rect x="54" y="36" width="14" height="8" rx="1.5" fill="none" stroke="${accTint}" stroke-width="2.4" opacity="0.85" />
+      <line x1="46" y1="40" x2="54" y2="40" stroke="${accTint}" stroke-width="2.4" opacity="0.85" />
+    `;
+  } else if (showAcc && c.tattoo === "tribal") {
+    accOverlay = `
+      <rect x="31" y="35.5" width="15" height="9" rx="2.5" fill="${accTint}" stroke="${accTint}" stroke-width="2" opacity="0.72" />
+      <rect x="54" y="35.5" width="15" height="9" rx="2.5" fill="${accTint}" stroke="${accTint}" stroke-width="2" opacity="0.72" />
+      <line x1="46" y1="39.5" x2="54" y2="39.5" stroke="${accTint}" stroke-width="2.4" opacity="0.85" />
+    `;
+  }
+
+  return `
+    <svg viewBox="0 0 100 100" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;">
+      ${browOverlay}
+      ${eyeOverlay}
+      ${accOverlay}
+    </svg>
+  `;
+}
+
 function renderAvatarImgHTML(person, previewInEditor = false, altText = "Avatar") {
   const url = buildDiceBearUrl(person, previewInEditor);
+  const custom = person?.avatarCustom || createDefaultAvatarCustom(person?.sex || "Masculino", currentAvatarIndex);
+  const ageNum = Number(person?.age) || 0;
   const fallbackSvg = encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e3a8a"/><circle cx="50" cy="40" r="18" fill="#f2c29b"/><path d="M20,92 C22,68 35,62 50,62 C65,62 78,68 80,92 Z" fill="#3b82f6"/></svg>`
   );
-  return `<img src="${escapeHTML(url)}" alt="${escapeHTML(altText)}" loading="eager" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${fallbackSvg}';">`;
+  return `
+    <div class="avatar-composite-wrap" style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+      <img src="${escapeHTML(url)}" alt="${escapeHTML(altText)}" loading="eager" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;display:block;position:relative;z-index:1;" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${fallbackSvg}';">
+      ${buildColorOverlaySVG(custom, previewInEditor, ageNum)}
+    </div>
+  `;
 }
 
 function refreshAppearancePreviewOnly() {
@@ -453,17 +513,17 @@ function saveAppearanceDraft() {
     presetIndex: currentAvatarIndex,
     skinTone: draft.skinTone,
     eyeColor: draft.eyeColor,
-    eyeTint: draft.eyeTint || "#2563eb",
+    eyeTint: normalizeHexWithHash(draft.eyeTint, "#2563eb"),
     browStyle: draft.browStyle,
-    browTint: draft.browTint || "#3b2618",
+    browTint: normalizeHexWithHash(draft.browTint, "#3b2618"),
     facialHair: draft.facialHair,
-    facialHairColor: draft.facialHairColor || "#3b2618",
+    facialHairColor: normalizeHexWithHash(draft.facialHairColor, "#3b2618"),
     hairStyle: draft.hairStyle,
-    hairColor: draft.hairColor,
+    hairColor: normalizeHexWithHash(draft.hairColor, "#3b2618"),
     outfit: draft.outfit,
-    outfitColor: draft.outfitColor,
+    outfitColor: normalizeHexWithHash(draft.outfitColor, "#3b82f6"),
     tattoo: draft.tattoo,
-    accessoryColor: draft.accessoryColor || "#334155"
+    accessoryColor: normalizeHexWithHash(draft.accessoryColor, "#334155")
   };
 
   if (appearanceModalState.target === "setup") {

@@ -76,9 +76,7 @@ function createDefaultAvatarCustom(sex = "Masculino", presetIndex = 1) {
     presetIndex,
     skinTone: "#f2c29b",
     eyeColor: "default",
-    eyeTint: "#2563eb",
     browStyle: "default",
-    browTint: "#3b2618",
     facialHair: "none",
     facialHairColor: "#3b2618",
     hairStyle: sex === "Feminino" ? "long" : "short",
@@ -86,7 +84,7 @@ function createDefaultAvatarCustom(sex = "Masculino", presetIndex = 1) {
     outfit: "casual",
     outfitColor: sex === "Feminino" ? "#ec4899" : "#3b82f6",
     tattoo: "none",
-    accessoryColor: "#334155"
+    accessoryColor: "#262e33"
   };
 }
 
@@ -211,7 +209,7 @@ function showToast(message) {
 }
 
 /* =========================================
-   AVATAR DICEBEAR (9.x / AVATAAARS) + CORES
+   AVATAR DICEBEAR (9.x / AVATAAARS) OFICIAL
 ========================================= */
 
 function normalizeHexWithHash(colorValue, fallbackHex) {
@@ -223,40 +221,15 @@ function normalizeHexNoHash(colorValue, fallbackHex) {
   return normalizeHexWithHash(colorValue, fallbackHex).slice(1);
 }
 
-function hexToHueDegrees(hexColor) {
-  const hex = normalizeHexNoHash(hexColor, "#3b82f6");
-  const r = parseInt(hex.slice(0, 2), 16) / 255;
-  const g = parseInt(hex.slice(2, 4), 16) / 255;
-  const b = parseInt(hex.slice(4, 6), 16) / 255;
-
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const delta = max - min;
-
-  if (delta === 0) return 0;
-
-  let hue = 0;
-  if (max === r) {
-    hue = ((g - b) / delta) % 6;
-  } else if (max === g) {
-    hue = (b - r) / delta + 2;
-  } else {
-    hue = (r - g) / delta + 4;
-  }
-
-  return Math.round((hue * 60 + 360) % 360);
-}
-
+// Apenas categorias com parâmetro real de cor no DiceBear avataaars
 function getCategoryColorConfig(draft, category) {
-  if (!draft || category === "skin") return null;
+  if (!draft) return null;
 
   const configs = {
-    eyes: { prop: "eyeTint", label: "Cor dos Olhos", fallback: "#2563eb" },
-    brows: { prop: "browTint", label: "Cor das Sobrancelhas", fallback: "#3b2618" },
     facialHair: { prop: "facialHairColor", label: "Cor da Barba", fallback: "#3b2618" },
     hair: { prop: "hairColor", label: "Cor do Cabelo", fallback: "#3b2618" },
     outfit: { prop: "outfitColor", label: "Cor da Roupa", fallback: "#3b82f6" },
-    tattoo: { prop: "accessoryColor", label: "Cor do Acessório", fallback: "#334155" }
+    tattoo: { prop: "accessoryColor", label: "Cor do Acessório", fallback: "#262e33" }
   };
 
   const cfg = configs[category];
@@ -268,32 +241,6 @@ function getCategoryColorConfig(draft, category) {
   };
 }
 
-function getAvatarCssFilter(custom, activeCategory = null) {
-  const c = custom || createDefaultAvatarCustom("Masculino", currentAvatarIndex);
-  const defaultOutfit = normalizeHexWithHash(c.outfitColor, "#3b82f6");
-
-  // Quando o utilizador está a ajustar a cor numa categoria específica dentro do modal,
-  // aplicamos um ajuste visual imediato na imagem para que a mudança de cor seja sempre visível.
-  if (activeCategory === "eyes") {
-    const hue = hexToHueDegrees(c.eyeTint || "#2563eb");
-    return `hue-rotate(${hue}deg) saturate(1.25)`;
-  }
-  if (activeCategory === "brows") {
-    const hue = hexToHueDegrees(c.browTint || "#3b2618");
-    return `hue-rotate(${hue}deg) contrast(1.15)`;
-  }
-  if (activeCategory === "tattoo") {
-    const hue = hexToHueDegrees(c.accessoryColor || "#334155");
-    return `hue-rotate(${hue}deg) saturate(1.3)`;
-  }
-  if (activeCategory === "outfit") {
-    const hue = hexToHueDegrees(defaultOutfit);
-    return `hue-rotate(${hue}deg) saturate(1.15)`;
-  }
-
-  return "none";
-}
-
 function buildDiceBearUrl(person, previewInEditor = false) {
   const custom = person?.avatarCustom || createDefaultAvatarCustom(person?.sex || "Masculino", currentAvatarIndex);
   const preset = Number(custom.presetIndex) || 1;
@@ -303,15 +250,20 @@ function buildDiceBearUrl(person, previewInEditor = false) {
   const params = new URLSearchParams();
   params.set("seed", baseSeed);
 
-  // Cor da pele (sem '#')
+  // 1. Cor da pele (skinColor)
   params.set("skinColor", normalizeHexNoHash(custom.skinTone, "#f2c29b"));
 
-  // Cor do cabelo / barba (sem '#')
-  const hairSourceColor = custom.hairColor || custom.facialHairColor || "#3b2618";
-  params.set("hairColor", normalizeHexNoHash(hairSourceColor, "#3b2618"));
+  // 2. Cor do cabelo (hairColor)
+  params.set("hairColor", normalizeHexNoHash(custom.hairColor, "#3b2618"));
 
-  // Cor da roupa (sem '#')
-  params.set("clothingColor", normalizeHexNoHash(custom.outfitColor, "#3b82f6"));
+  // 3. Cor da barba (facialHairColor - parâmetro oficial!)
+  params.set("facialHairColor", normalizeHexNoHash(custom.facialHairColor || custom.hairColor, "#3b2618"));
+
+  // 4. Cor da roupa (clothesColor - no avataaars é `clothesColor`, NÃO `clothingColor`!)
+  params.set("clothesColor", normalizeHexNoHash(custom.outfitColor, "#3b82f6"));
+
+  // 5. Cor dos acessórios (accessoriesColor - parâmetro oficial!)
+  params.set("accessoriesColor", normalizeHexNoHash(custom.accessoryColor, "#262e33"));
 
   // Expressão dos olhos (`eyes`)
   const validEyes = ["default", "happy", "wink", "squint"];
@@ -349,7 +301,7 @@ function buildDiceBearUrl(person, previewInEditor = false) {
     params.set("facialHairProbability", "0");
   }
 
-  // Roupa (`clothing`)
+  // Roupa (`clothes` - parâmetro oficial no avataaars)
   const outfitMap = {
     casual: "graphicShirt",
     smart: "blazerAndShirt",
@@ -357,7 +309,7 @@ function buildDiceBearUrl(person, previewInEditor = false) {
     hoodie: "hoodie"
   };
   if (outfitMap[custom.outfit]) {
-    params.set("clothing", outfitMap[custom.outfit]);
+    params.set("clothes", outfitMap[custom.outfit]);
   }
 
   // Acessórios / Óculos (`accessories` a partir dos 13 anos ou no editor)
@@ -377,14 +329,9 @@ function buildDiceBearUrl(person, previewInEditor = false) {
   return `https://api.dicebear.com/9.x/avataaars/svg?${params.toString()}`;
 }
 
-function renderAvatarImgHTML(person, previewInEditor = false, altText = "Avatar", activeCategory = null) {
+function renderAvatarImgHTML(person, previewInEditor = false, altText = "Avatar") {
   const url = buildDiceBearUrl(person, previewInEditor);
-  const custom = person?.avatarCustom || createDefaultAvatarCustom(person?.sex || "Masculino", currentAvatarIndex);
-  const cssFilter = getAvatarCssFilter(custom, activeCategory);
-  const fallbackSvg = encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e3a8a"/><circle cx="50" cy="40" r="18" fill="#f2c29b"/><path d="M20,92 C22,68 35,62 50,62 C65,62 78,68 80,92 Z" fill="#3b82f6"/></svg>`
-  );
-  return `<img src="${escapeHTML(url)}" alt="${escapeHTML(altText)}" loading="eager" referrerpolicy="no-referrer" style="filter:${escapeHTML(cssFilter)};transition:filter 0.12s ease;" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${fallbackSvg}';">`;
+  return `<img src="${escapeHTML(url)}" alt="${escapeHTML(altText)}" loading="eager" referrerpolicy="no-referrer">`;
 }
 
 function refreshAppearancePreviewOnly() {
@@ -399,8 +346,7 @@ function refreshAppearancePreviewOnly() {
       avatarCustom: draft
     },
     true,
-    "Pré-visualização do Avatar",
-    appearanceModalState.category
+    "Pré-visualização do Avatar"
   );
 }
 
@@ -417,8 +363,7 @@ function updateSetupAvatarUI() {
     stageEl.innerHTML = renderAvatarImgHTML(
       { name: $("playerName")?.value.trim() || "Avatar", sex, age: 0, avatarCustom: setupAvatarCustom },
       false,
-      "Avatar",
-      null
+      "Avatar"
     );
   }
   if (indexEl) indexEl.textContent = `#${currentAvatarIndex}`;
@@ -444,11 +389,9 @@ window.onSetupGenderChange = function() {
     facialHair: setupAvatarCustom.facialHair || "none",
     facialHairColor: setupAvatarCustom.facialHairColor || "#3b2618",
     tattoo: setupAvatarCustom.tattoo || "none",
-    accessoryColor: setupAvatarCustom.accessoryColor || "#334155",
+    accessoryColor: setupAvatarCustom.accessoryColor || "#262e33",
     eyeColor: setupAvatarCustom.eyeColor || "default",
-    eyeTint: setupAvatarCustom.eyeTint || "#2563eb",
-    browStyle: setupAvatarCustom.browStyle || "default",
-    browTint: setupAvatarCustom.browTint || "#3b2618"
+    browStyle: setupAvatarCustom.browStyle || "default"
   };
   updateSetupAvatarUI();
 };
@@ -513,9 +456,7 @@ function saveAppearanceDraft() {
     presetIndex: currentAvatarIndex,
     skinTone: draft.skinTone,
     eyeColor: draft.eyeColor,
-    eyeTint: normalizeHexWithHash(draft.eyeTint, "#2563eb"),
     browStyle: draft.browStyle,
-    browTint: normalizeHexWithHash(draft.browTint, "#3b2618"),
     facialHair: draft.facialHair,
     facialHairColor: normalizeHexWithHash(draft.facialHairColor, "#3b2618"),
     hairStyle: draft.hairStyle,
@@ -523,7 +464,7 @@ function saveAppearanceDraft() {
     outfit: draft.outfit,
     outfitColor: normalizeHexWithHash(draft.outfitColor, "#3b82f6"),
     tattoo: draft.tattoo,
-    accessoryColor: normalizeHexWithHash(draft.accessoryColor, "#334155")
+    accessoryColor: normalizeHexWithHash(draft.accessoryColor, "#262e33")
   };
 
   if (appearanceModalState.target === "setup") {
@@ -553,8 +494,7 @@ function renderAppearanceModal() {
       avatarCustom: draft
     },
     true,
-    "Pré-visualização do Avatar",
-    appearanceModalState.category
+    "Pré-visualização do Avatar"
   );
 
   const label = getDraftOptionLabel(draft, appearanceModalState.category);
@@ -1854,7 +1794,7 @@ function renderHome() {
   $("illnessValue").textContent = player.illness ? player.illness.name : "Nenhuma";
 
   if ($("headerAvatarContainer")) {
-    $("headerAvatarContainer").innerHTML = renderAvatarImgHTML(player, false, "Avatar", null);
+    $("headerAvatarContainer").innerHTML = renderAvatarImgHTML(player, false, "Avatar");
   }
 
   const primaryProp = game.properties.find(p => p.status === "primary");

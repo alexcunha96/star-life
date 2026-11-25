@@ -14,11 +14,10 @@ let currentAvatarIndex = 1;
 
 const APPEARANCE_OPTIONS = {
   eyes: [
-    { id: "#2563eb", label: "Olhos Azuis" },
-    { id: "#15803d", label: "Olhos Verdes" },
-    { id: "#5c3a21", label: "Olhos Castanhos" },
-    { id: "#475569", label: "Olhos Cinzentos" },
-    { id: "#92400e", label: "Olhos Âmbar / Mel" }
+    { id: "default", label: "Olhos Normais" },
+    { id: "happy", label: "Olhos Alegres" },
+    { id: "wink", label: "Olhos Piscar" },
+    { id: "squint", label: "Olhos Sérios" }
   ],
   skin: [
     { id: "#fbe3cf", label: "Pele Clara" },
@@ -28,10 +27,10 @@ const APPEARANCE_OPTIONS = {
     { id: "#7c4722", label: "Pele Escura" }
   ],
   brows: [
-    { id: "arch", label: "Sobrancelhas Arqueadas" },
-    { id: "straight", label: "Sobrancelhas Retas" },
-    { id: "thick", label: "Sobrancelhas Densas" },
-    { id: "soft", label: "Sobrancelhas Suaves" }
+    { id: "default", label: "Sobrancelhas Clássicas" },
+    { id: "raisedExcited", label: "Sobrancelhas Erguidas" },
+    { id: "frownNatural", label: "Sobrancelhas Franzidas" },
+    { id: "sadConcerned", label: "Sobrancelhas Suaves" }
   ],
   facialHair: [
     { id: "none", label: "Sem Barba" },
@@ -83,8 +82,8 @@ function createDefaultAvatarCustom(sex = "Masculino", presetIndex = 1) {
     mouthStyle: "default",
     presetIndex,
     skinTone: "#f2c29b",
-    eyeColor: "#2563eb",
-    browStyle: "arch",
+    eyeColor: "default",
+    browStyle: "default",
     facialHair: "none",
     hairStyle: sex === "Feminino" ? "long" : "short",
     hairColor: "#3b2618",
@@ -215,27 +214,43 @@ function showToast(message) {
 }
 
 /* =========================================
-   AVATAR DICEBEAR (AVATAAARS) + BARBA AOS 18 ANOS
+   AVATAR DICEBEAR (9.x / AVATAAARS) CORRIGIDO
 ========================================= */
+
+function normalizeHexNoHash(colorValue, fallbackHex) {
+  const cleaned = String(colorValue || fallbackHex).replace(/^#/, "").trim();
+  return /^[0-9a-fA-F]{6}$/.test(cleaned) ? cleaned : fallbackHex.replace(/^#/, "");
+}
 
 function buildDiceBearUrl(person, previewInEditor = false) {
   const custom = person?.avatarCustom || createDefaultAvatarCustom(person?.sex || "Masculino", currentAvatarIndex);
   const preset = Number(custom.presetIndex) || 1;
   const ageNum = Number(person?.age) || 0;
-  const seedBase = person?.id || `${person?.name || "starlife"}-${person?.sex || "Masculino"}-${preset}`;
+  const baseSeed = person?.id || `starlife-${person?.sex || "Masculino"}-preset-${preset}`;
 
   const params = new URLSearchParams();
-  params.set("seed", `${seedBase}-${custom.skinTone || ""}-${custom.hairColor || ""}-${custom.outfitColor || ""}`);
+  params.set("seed", baseSeed);
 
-  const skinHex = String(custom.skinTone || "#f2c29b").replace("#", "");
-  if (skinHex) params.set("skinColor", skinHex);
+  // Cor da pele (sem '#')
+  params.set("skinColor", normalizeHexNoHash(custom.skinTone, "#f2c29b"));
 
-  const hairHex = String(custom.hairColor || "#3b2618").replace("#", "");
-  if (hairHex) params.set("hairColor", hairHex);
+  // Cor do cabelo (sem '#')
+  params.set("hairColor", normalizeHexNoHash(custom.hairColor, "#3b2618"));
 
-  const clothHex = String(custom.outfitColor || "#3b82f6").replace("#", "");
-  if (clothHex) params.set("clothingColor", clothHex);
+  // Cor da roupa (sem '#')
+  params.set("clothingColor", normalizeHexNoHash(custom.outfitColor, "#3b82f6"));
 
+  // Expressão dos olhos (parâmetro oficial: `eyes`)
+  const validEyes = ["default", "happy", "wink", "squint"];
+  const eyeVal = validEyes.includes(custom.eyeColor) ? custom.eyeColor : "default";
+  params.set("eyes", eyeVal);
+
+  // Sobrancelhas (parâmetro oficial: `eyebrows`)
+  const validBrows = ["default", "raisedExcited", "frownNatural", "sadConcerned"];
+  const browVal = validBrows.includes(custom.browStyle) ? custom.browStyle : "default";
+  params.set("eyebrows", browVal);
+
+  // Cabelo (`top`)
   const hairMap = {
     short: "shortFlat",
     medium: "shortWaved",
@@ -247,7 +262,8 @@ function buildDiceBearUrl(person, previewInEditor = false) {
     params.set("top", hairMap[custom.hairStyle]);
   }
 
-  const showBeard = custom.facialHair && custom.facialHair !== "none" && (previewInEditor || ageNum >= 18);
+  // Barba apenas a partir dos 18 anos no jogo (ou ao vivo no modal Editar Avatar)
+  const showBeard = Boolean(custom.facialHair && custom.facialHair !== "none") && (previewInEditor || ageNum >= 18);
   const beardMap = {
     stubble: "beardLight",
     goatee: "moustacheFancy",
@@ -260,6 +276,7 @@ function buildDiceBearUrl(person, previewInEditor = false) {
     params.set("facialHairProbability", "0");
   }
 
+  // Roupa (`clothing`)
   const outfitMap = {
     casual: "graphicShirt",
     smart: "blazerAndShirt",
@@ -270,7 +287,8 @@ function buildDiceBearUrl(person, previewInEditor = false) {
     params.set("clothing", outfitMap[custom.outfit]);
   }
 
-  const showAcc = custom.tattoo && custom.tattoo !== "none" && (previewInEditor || ageNum >= 13);
+  // Acessórios / Óculos (`accessories` a partir dos 13 anos ou no editor)
+  const showAcc = Boolean(custom.tattoo && custom.tattoo !== "none") && (previewInEditor || ageNum >= 13);
   const accMap = {
     star: "round",
     sleeve: "prescription02",
@@ -291,7 +309,23 @@ function renderAvatarImgHTML(person, previewInEditor = false, altText = "Avatar"
   const fallbackSvg = encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1e3a8a"/><circle cx="50" cy="40" r="18" fill="#f2c29b"/><path d="M20,92 C22,68 35,62 50,62 C65,62 78,68 80,92 Z" fill="#3b82f6"/></svg>`
   );
-  return `<img src="${escapeHTML(url)}" alt="${escapeHTML(altText)}" loading="eager" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${fallbackSvg}';">`;
+  return `<img src="${escapeHTML(url)}" alt="${escapeHTML(altText)}" loading="eager" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,${fallbackSvg}';">`;
+}
+
+function refreshAppearancePreviewOnly() {
+  const draft = appearanceModalState.draft;
+  const box = document.querySelector(".appearance-portrait-box");
+  if (!draft || !box) return;
+  box.innerHTML = renderAvatarImgHTML(
+    {
+      name: appearanceModalState.target === "game" ? game.player.name : ($("playerName")?.value.trim() || "Avatar"),
+      sex: draft.sex || "Masculino",
+      age: 18,
+      avatarCustom: draft
+    },
+    true,
+    "Pré-visualização do Avatar"
+  );
 }
 
 function updateSetupAvatarUI() {
@@ -326,8 +360,15 @@ window.changeSetupAvatar = function(dir) {
 };
 
 window.onSetupGenderChange = function() {
+  const sex = $("playerSex")?.value || "Masculino";
   currentAvatarIndex = 1;
-  setupAvatarCustom = createDefaultAvatarCustom($("playerSex")?.value || "Masculino", currentAvatarIndex);
+  setupAvatarCustom = {
+    ...createDefaultAvatarCustom(sex, currentAvatarIndex),
+    facialHair: setupAvatarCustom.facialHair || "none",
+    tattoo: setupAvatarCustom.tattoo || "none",
+    eyeColor: setupAvatarCustom.eyeColor || "default",
+    browStyle: setupAvatarCustom.browStyle || "default"
+  };
   updateSetupAvatarUI();
 };
 
@@ -376,7 +417,9 @@ function cycleAppearanceDraft(delta) {
   if (cat === "outfit") draft.outfit = nextVal;
   if (cat === "tattoo") draft.tattoo = nextVal;
 
-  renderAppearanceModal();
+  const labelEl = document.querySelector(".appearance-option-label");
+  if (labelEl) labelEl.textContent = getDraftOptionLabel(draft, cat);
+  refreshAppearancePreviewOnly();
 }
 
 function saveAppearanceDraft() {
@@ -490,17 +533,17 @@ function renderAppearanceModal() {
 
   $("modalDiceStyleSelect")?.addEventListener("change", e => {
     appearanceModalState.draft.diceStyle = e.target.value;
-    renderAppearanceModal();
+    refreshAppearancePreviewOnly();
   });
 
   $("modalHairColorInput")?.addEventListener("input", e => {
     appearanceModalState.draft.hairColor = e.target.value;
-    renderAppearanceModal();
+    refreshAppearancePreviewOnly();
   });
 
   $("modalOutfitColorInput")?.addEventListener("input", e => {
     appearanceModalState.draft.outfitColor = e.target.value;
-    renderAppearanceModal();
+    refreshAppearancePreviewOnly();
   });
 
   $("saveAppearanceBtn")?.addEventListener("click", saveAppearanceDraft);
@@ -1734,7 +1777,7 @@ function renderHome() {
   $("healthValue").textContent = `${Math.round(player.health)}%`;
   $("happinessValue").textContent = `${Math.round(player.happiness)}%`;
   $("healthBar").style.width = `${player.health}%`;
-  $("happinessBar").style.width = `${player.health}%`;
+  $("happinessBar").style.width = `${player.happiness}%`;
   $("educationValue").textContent = player.education;
   $("jobValue").textContent = player.job || "Sem profissão";
   $("illnessValue").textContent = player.illness ? player.illness.name : "Nenhuma";

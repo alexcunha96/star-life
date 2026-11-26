@@ -4,65 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StarLife</title>
-  <link rel="stylesheet" href="style.css?v=20261124_4">
-  <style>
-    .avatar-stage-circle {
-      width: 130px;
-      height: 130px;
-      margin: 8px auto;
-      border-radius: 50%;
-      background: var(--bg-color, #152238);
-      border: 3px solid var(--accent-color, #3b82f6);
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 22px rgba(0,0,0,0.4);
-    }
-    .avatar-stage-circle svg,
-    .avatar-stage-circle img {
-      width: 100%;
-      height: 100%;
-      display: block;
-      object-fit: cover;
-    }
-    .avatar-nav-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      margin-top: 8px;
-    }
-    .avatar-arrow-btn {
-      background: var(--panel-light, #2b446e);
-      color: var(--text-main, #f8fafc);
-      border: 1px solid var(--border-color, #334e7b);
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-    .avatar-arrow-btn:active {
-      background: var(--accent-color, #3b82f6);
-      color: #fff;
-    }
-    .avatar-index-label {
-      font-weight: bold;
-      color: var(--accent-color, #3b82f6);
-      min-width: 45px;
-      text-align: center;
-    }
-    #headerAvatarContainer svg,
-    #headerAvatarContainer img {
-      width: 100%;
-      height: 100%;
-      display: block;
-      border-radius: 50%;
-      object-fit: cover;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css?v=20261126_1">
 </head>
 <body>
 
@@ -135,6 +77,7 @@
         <!-- Secção para Adicionar Família Manualmente -->
         <div class="panel" style="margin-top: 15px; background: rgba(0,0,0,0.18);">
           <h3>👨‍👩‍👧 Adicionar Familiar (Opcional)</h3>
+          <p class="muted" style="margin-bottom: 8px;">Se não adicionares nenhum pai ou mãe, serão criados automaticamente.</p>
           <div class="input-group">
             <label>Nome do Familiar</label>
             <input type="text" id="famName" placeholder="Ex: Maria">
@@ -371,12 +314,11 @@
 
       <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 20px;">
         <button id="newLifeBtn" class="primary-btn full-width">✨ Iniciar Nova Vida</button>
-        <button id="continueChildBtn" class="secondary-btn full-width hidden">👶 Continuar com Filho/a</button>
       </div>
     </div>
   </div>
 
   <div id="toast" class="toast"></div>
-  <script src="script.js?v=20261124_4"></script>
+  <script src="script.js?v=20261126_1"></script>
 </body>
 </html>

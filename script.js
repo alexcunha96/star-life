@@ -69,20 +69,42 @@ const APPEARANCE_CATEGORIES = [
   { key: "tattoo", label: "Acessório" }
 ];
 
+// Paletas usadas para que cada "#N" do seletor de avatar seja realmente diferente.
+const AVATAR_PRESET_PALETTE = {
+  maleHair: ["short", "medium", "buzz", "ponytail"],
+  femaleHair: ["long", "ponytail", "medium", "long"],
+  hairColors: ["#3b2618", "#1c1c1c", "#7a4a2a", "#c9a14a", "#5a3a22", "#2c1b10"],
+  skins: ["#f2c29b", "#fbe3cf", "#d89b6c", "#b06d3b", "#7c4722"],
+  mouths: ["default", "smile", "serious"],
+  maleOutfit: ["#3b82f6", "#ef4444", "#22c55e", "#a855f7", "#f59e0b"],
+  femaleOutfit: ["#ec4899", "#a855f7", "#3b82f6", "#f59e0b", "#14b8a6"]
+};
+
+const VALID_MOUTHS = ["default", "smile", "twinkle", "serious", "concerned", "sad", "eating", "grimace", "disbelief", "screamFace", "tongue", "vomit"];
+
+function pickFromPalette(list, index) {
+  return list[index % list.length];
+}
+
 function createDefaultAvatarCustom(sex = "Masculino", presetIndex = 1) {
+  const preset = Math.max(1, Number(presetIndex) || 1);
+  const idx = preset - 1;
+  const P = AVATAR_PRESET_PALETTE;
+  const isFemale = sex === "Feminino";
+
   return {
     enabled: true,
-    mouthStyle: "default",
-    presetIndex,
-    skinTone: "#f2c29b",
+    mouthStyle: pickFromPalette(P.mouths, idx),
+    presetIndex: preset,
+    skinTone: pickFromPalette(P.skins, idx),
     eyeColor: "default",
     browStyle: "default",
     facialHair: "none",
     facialHairColor: "#3b2618",
-    hairStyle: sex === "Feminino" ? "long" : "short",
-    hairColor: "#3b2618",
+    hairStyle: pickFromPalette(isFemale ? P.femaleHair : P.maleHair, idx),
+    hairColor: pickFromPalette(P.hairColors, idx),
     outfit: "casual",
-    outfitColor: sex === "Feminino" ? "#ec4899" : "#3b82f6",
+    outfitColor: pickFromPalette(isFemale ? P.femaleOutfit : P.maleOutfit, idx),
     tattoo: "none",
     accessoryColor: "#262e33"
   };
@@ -97,9 +119,10 @@ let appearanceModalState = {
 };
 
 // Base de Países Mundiais com Moeda, Bancos e Cidades
+// priceFactor: quanto vale 1 € (valor base do jogo) na moeda local, para os preços fazerem sentido.
 const worldCountriesDatabase = {
   "Portugal": {
-    currency: "EUR", symbol: "€",
+    currency: "EUR", symbol: "€", priceFactor: 1,
     banks: [
       { id: "atlantico", name: "Banco Atlântico", interestRate: 0.045, desc: "Taxas competitivas para crédito habitação." },
       { id: "caixa", name: "Caixa Popular", interestRate: 0.052, desc: "Aprovação facilitada para jovens." },
@@ -108,7 +131,7 @@ const worldCountriesDatabase = {
     cities: ["Lisboa", "Porto", "Coimbra", "Braga", "Faro", "Funchal", "Aveiro", "Viseu"]
   },
   "Brasil": {
-    currency: "BRL", symbol: "R$",
+    currency: "BRL", symbol: "R$", priceFactor: 6,
     banks: [
       { id: "nubank", name: "NuBank Brasil", interestRate: 0.095, desc: "Cartão sem anuidade e conta digital." },
       { id: "itau", name: "Itaú Unibanco", interestRate: 0.110, desc: "Tradição e solidez no crédito imobiliário." },
@@ -117,7 +140,7 @@ const worldCountriesDatabase = {
     cities: ["São Paulo", "Rio de Janeiro", "Belo Horizonte", "Salvador", "Curitiba", "Brasília", "Fortaleza", "Manaus"]
   },
   "Espanha": {
-    currency: "EUR", symbol: "€",
+    currency: "EUR", symbol: "€", priceFactor: 1,
     banks: [
       { id: "santander", name: "Banco Santander", interestRate: 0.042, desc: "Líder ibérico em financiamento." },
       { id: "bbva", name: "BBVA España", interestRate: 0.046, desc: "Inovação e crédito habitação." }
@@ -125,7 +148,7 @@ const worldCountriesDatabase = {
     cities: ["Madrid", "Barcelona", "Valência", "Sevilha", "Málaga", "Bilbau", "Saragoça"]
   },
   "França": {
-    currency: "EUR", symbol: "€",
+    currency: "EUR", symbol: "€", priceFactor: 1,
     banks: [
       { id: "bnp", name: "BNP Paribas", interestRate: 0.039, desc: "Soluções bancárias de alto nível." },
       { id: "societegenerale", name: "Société Générale", interestRate: 0.041, desc: "Crédito eficiente." }
@@ -133,26 +156,26 @@ const worldCountriesDatabase = {
     cities: ["Paris", "Lyon", "Marselha", "Nice", "Toulouse", "Bordéus", "Nantes"]
   },
   "Reino Unido": {
-    currency: "GBP", symbol: "£",
+    currency: "GBP", symbol: "£", priceFactor: 0.85,
     banks: [
-      { id: "barclays", name: "Barclays UK", interestRate: 0.048, desc: "Traditional British banking." },
-      { id: "hsbc", name: "HSBC London", interestRate: 0.045, desc: "Global financial services." }
+      { id: "barclays", name: "Barclays UK", interestRate: 0.048, desc: "Banca tradicional britânica." },
+      { id: "hsbc", name: "HSBC London", interestRate: 0.045, desc: "Serviços financeiros globais." }
     ],
     cities: ["Londres", "Manchester", "Birmingham", "Edimburgo", "Glasgow", "Liverpool", "Bristol"]
   },
   "Estados Unidos": {
-    currency: "USD", symbol: "$",
+    currency: "USD", symbol: "$", priceFactor: 1.1,
     banks: [
-      { id: "chase", name: "Chase Bank USA", interestRate: 0.055, desc: "Nationwide standard financial services." },
-      { id: "bofa", name: "Bank of America", interestRate: 0.058, desc: "Secure loans and investment accounts." }
+      { id: "chase", name: "Chase Bank USA", interestRate: 0.055, desc: "Serviços financeiros a nível nacional." },
+      { id: "bofa", name: "Bank of America", interestRate: 0.058, desc: "Crédito seguro e contas de investimento." }
     ],
     cities: ["Nova Iorque", "Los Angeles", "Chicago", "Miami", "San Francisco", "Las Vegas", "Boston", "Seattle"]
   },
   "Japão": {
-    currency: "JPY", symbol: "¥",
+    currency: "JPY", symbol: "¥", priceFactor: 160,
     banks: [
-      { id: "mufg", name: "MUFG Bank Tokyo", interestRate: 0.015, desc: "Low interest national banking." },
-      { id: "smbc", name: "Sumitomo Mitsui", interestRate: 0.018, desc: "Trusted Japanese financial institution." }
+      { id: "mufg", name: "MUFG Bank Tokyo", interestRate: 0.015, desc: "Banca nacional com juros baixos." },
+      { id: "smbc", name: "Sumitomo Mitsui", interestRate: 0.018, desc: "Instituição financeira japonesa de confiança." }
     ],
     cities: ["Tóquio", "Osaka", "Quioto", "Yokohama", "Nagoya", "Sapporo", "Fukuoka"]
   }
@@ -175,6 +198,19 @@ function randomNumber(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// Todos os valores do jogo são guardados em euros (valor base) e convertidos só ao mostrar.
+function getPriceFactor() {
+  const country = game ? game.player.country : "Portugal";
+  const data = worldCountriesDatabase[country];
+  return data && data.priceFactor ? data.priceFactor : 1;
+}
+
+function getCurrencySymbol() {
+  const country = game ? game.player.country : "Portugal";
+  const data = worldCountriesDatabase[country];
+  return data ? data.symbol : "€";
+}
+
 function money(value) {
   const country = game ? game.player.country : "Portugal";
   const currData = worldCountriesDatabase[country] || { currency: "EUR", symbol: "€" };
@@ -182,7 +218,7 @@ function money(value) {
     style: "currency",
     currency: currData.currency,
     maximumFractionDigits: 0
-  }).format(Number(value) || 0);
+  }).format((Number(value) || 0) * getPriceFactor());
 }
 
 function clamp(value, min = 0, max = 100) {
@@ -206,6 +242,13 @@ function showToast(message) {
   toast.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
+}
+
+function getTotalWealth() {
+  const player = game.player;
+  const propsVal = game.properties.reduce((sum, p) => sum + p.value, 0);
+  const vehVal = game.vehicles.reduce((sum, v) => sum + v.value, 0);
+  return player.bank + propsVal + vehVal - player.debt;
 }
 
 /* =========================================
@@ -241,10 +284,13 @@ function getCategoryColorConfig(draft, category) {
 }
 
 function buildDiceBearUrl(person, previewInEditor = false) {
-  const custom = person?.avatarCustom || createDefaultAvatarCustom(person?.sex || "Masculino", currentAvatarIndex);
+  const sex = person?.sex || "Masculino";
+  const custom = person?.avatarCustom || createDefaultAvatarCustom(sex, currentAvatarIndex);
   const preset = Number(custom.presetIndex) || 1;
   const ageNum = Number(person?.age) || 0;
-  const baseSeed = person?.id || `starlife-${person?.sex || "Masculino"}-preset-${preset}`;
+  // Seed estável: depende só do género e do preset, nunca do id do jogador.
+  // Assim o avatar escolhido no ecrã inicial é igual ao que aparece durante o jogo.
+  const baseSeed = `starlife-${sex}-preset-${preset}`;
 
   const params = new URLSearchParams();
   params.set("seed", baseSeed);
@@ -262,12 +308,15 @@ function buildDiceBearUrl(person, previewInEditor = false) {
   const browVal = validBrows.includes(custom.browStyle) ? custom.browStyle : "default";
   params.set("eyebrows", browVal);
 
+  const mouthVal = VALID_MOUTHS.includes(custom.mouthStyle) ? custom.mouthStyle : "default";
+  params.set("mouth", mouthVal);
+
   const hairMap = {
     short: "shortFlat",
     medium: "shortWaved",
     long: "straight01",
     ponytail: "bun",
-    buzz: "shaggy"
+    buzz: "theCaesar"
   };
   if (hairMap[custom.hairStyle]) {
     params.set("top", hairMap[custom.hairStyle]);
@@ -293,6 +342,8 @@ function buildDiceBearUrl(person, previewInEditor = false) {
     hoodie: "hoodie"
   };
   if (outfitMap[custom.outfit]) {
+    // A DiceBear 9.x usa "clothing"; "clothes" fica por compatibilidade com versões antigas.
+    params.set("clothing", outfitMap[custom.outfit]);
     params.set("clothes", outfitMap[custom.outfit]);
   }
 
@@ -312,9 +363,17 @@ function buildDiceBearUrl(person, previewInEditor = false) {
   return `https://api.dicebear.com/9.x/avataaars/svg?${params.toString()}`;
 }
 
+// Avatar de reserva (sem internet): círculo com a inicial do nome.
+function avatarFallbackDataUri(person) {
+  const initial = String(person?.name || "?").trim().charAt(0).toUpperCase() || "?";
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='#2b446e'/><text x='50' y='65' font-size='46' text-anchor='middle' fill='#f8fafc' font-family='sans-serif'>${escapeHTML(initial)}</text></svg>`;
+  return "data:image/svg+xml," + encodeURIComponent(svg).replace(/'/g, "%27");
+}
+
 function renderAvatarImgHTML(person, previewInEditor = false, altText = "Avatar") {
   const url = buildDiceBearUrl(person, previewInEditor);
-  return `<img src="${escapeHTML(url)}" alt="${escapeHTML(altText)}" loading="eager" referrerpolicy="no-referrer">`;
+  const fallback = avatarFallbackDataUri(person);
+  return `<img src="${escapeHTML(url)}" alt="${escapeHTML(altText)}" loading="eager" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${fallback}'">`;
 }
 
 function refreshAppearancePreviewOnly() {
@@ -331,6 +390,14 @@ function refreshAppearancePreviewOnly() {
     true,
     "Pré-visualização do Avatar"
   );
+}
+
+function updateNameHint() {
+  const nameHint = $("nameHint");
+  if (!nameHint) return;
+  const sex = $("playerSex")?.value || "Masculino";
+  const suggestedName = sex === "Feminino" ? randomFrom(sampleFemaleNames) : randomFrom(sampleMaleNames);
+  nameHint.textContent = `(Ex: ${suggestedName})`;
 }
 
 function updateSetupAvatarUI() {
@@ -350,12 +417,6 @@ function updateSetupAvatarUI() {
     );
   }
   if (indexEl) indexEl.textContent = `#${currentAvatarIndex}`;
-
-  const nameHint = $("nameHint");
-  if (nameHint) {
-    const suggestedName = sex === "Feminino" ? randomFrom(sampleFemaleNames) : randomFrom(sampleMaleNames);
-    nameHint.textContent = `(Ex: ${suggestedName})`;
-  }
 }
 
 window.changeSetupAvatar = function(dir) {
@@ -377,6 +438,7 @@ window.onSetupGenderChange = function() {
     browStyle: setupAvatarCustom.browStyle || "default"
   };
   updateSetupAvatarUI();
+  updateNameHint();
 };
 
 function getDraftOptionLabel(draft, category) {
@@ -436,7 +498,8 @@ function saveAppearanceDraft() {
   const cleaned = {
     enabled: true,
     mouthStyle: draft.mouthStyle || "default",
-    presetIndex: currentAvatarIndex,
+    // Mantém o preset do próprio avatar (antes usava o índice global e mudava a boca ao guardar).
+    presetIndex: Number(draft.presetIndex) || currentAvatarIndex,
     skinTone: draft.skinTone,
     eyeColor: draft.eyeColor,
     browStyle: draft.browStyle,
@@ -653,21 +716,33 @@ function loadGame() {
     if (!saved) return null;
     const loaded = JSON.parse(saved);
     if (!loaded || !loaded.player || !Array.isArray(loaded.family)) return null;
+    // Saves de personagens já falecidos não são carregáveis.
+    if (loaded.player.alive === false) {
+      localStorage.removeItem(SAVE_KEY);
+      return null;
+    }
     loaded.player.avatarCustom ??= createDefaultAvatarCustom(loaded.player.sex || "Masculino", 1);
     loaded.player.avatarCustom.enabled = true;
+    loaded.player.avatarCustom.presetIndex ??= 1;
+    loaded.player.avatarCustom.mouthStyle ??= "default";
     loaded.player.licenses ??= { carB: false, bikeAM: false, bikeA1: false, bikeA2: false, bikeA: false };
     loaded.player.bankAccount ??= null;
     loaded.player.activeRental ??= null;
+    loaded.player.personalDebt ??= 0;
     loaded.properties ??= [];
     loaded.marketListings ??= [];
     loaded.vehicles ??= [];
     loaded.businesses ??= [];
+    loaded.events ??= [];
+    loaded.financeHistory ??= [];
     loaded.player.illness ??= null;
     loaded.player.maxAge ??= randomNumber(78, 108);
+    initializeEducation(loaded.player);
     loaded.family.forEach(f => {
       f.relationship ??= randomNumber(65, 95);
       f.alive ??= true;
       f.maxAge ??= randomNumber(78, 102);
+      f.maritalStatus ??= "";
     });
     return loaded;
   } catch (error) {
@@ -731,6 +806,7 @@ function getActiveCountryBanks() {
 }
 
 function openBankAccount(bankId) {
+  if (game.player.age < 18) { showToast("Precisas de ter 18 anos para abrir conta."); return; }
   const banks = getActiveCountryBanks();
   const bank = banks.find(b => b.id === bankId);
   if (!bank) return;
@@ -747,13 +823,13 @@ function renderBankSection() {
   const banks = getActiveCountryBanks();
 
   if (!player.bankAccount) {
-    let html = `<div class="panel"><h3>🏦 Abrir Conta Bancária (${player.country})</h3><p class="muted">Escolhe um banco local para gerir dinheiro e crédito habitação:</p><div class="button-list">`;
+    let html = `<div class="panel"><h3>🏦 Abrir Conta Bancária (${escapeHTML(player.country)})</h3><p class="muted">Escolhe um banco local para gerir dinheiro e crédito habitação${player.age < 18 ? " (a partir dos 18 anos)" : ""}:</p><div class="button-list">`;
     banks.forEach(b => {
       html += `
         <div class="person-card" style="flex-direction: column; align-items: flex-start; gap: 6px;">
           <strong>${escapeHTML(b.name)}</strong>
           <small>${escapeHTML(b.desc)} (Taxa Crédito: ${(b.interestRate * 100).toFixed(1)}%)</small>
-          <button class="primary-btn full-width" onclick="openBankAccount('${b.id}')">Abrir Conta</button>
+          <button class="primary-btn full-width" ${player.age < 18 ? "disabled" : ""} onclick="openBankAccount('${b.id}')">Abrir Conta</button>
         </div>
       `;
     });
@@ -856,6 +932,7 @@ function rentProperty(listingId, months) {
 function buyPropertyTransfer(listingId) {
   const house = game.marketListings.find(h => h.id === listingId);
   if (!house) return;
+  if (game.player.age < 18) { showToast("Precisas de ter 18 anos."); return; }
   if (!game.player.bankAccount) { showToast("Abre primeiro uma conta bancária!"); return; }
   if (game.player.bank < house.buyPrice) { showToast("Saldo insuficiente."); return; }
 
@@ -972,14 +1049,21 @@ function sellProperty(propId) {
   const idx = game.properties.findIndex(p => p.id === propId);
   if (idx === -1) return;
   const prop = game.properties[idx];
-  if (!confirm(`Tens a certeza de que queres vender "${prop.title}" por ${money(prop.value)}?`)) return;
+  const mortgage = prop.mortgageRemaining || 0;
+  const net = prop.value - mortgage;
 
-  game.player.bank += prop.value;
-  if (prop.mortgageRemaining > 0) {
-    game.player.debt = Math.max(0, game.player.debt - prop.mortgageRemaining);
+  const msg = mortgage > 0
+    ? `Vender "${prop.title}" por ${money(prop.value)}? O crédito em dívida (${money(mortgage)}) é pago com a venda e recebes ${money(net)}.`
+    : `Tens a certeza de que queres vender "${prop.title}" por ${money(prop.value)}?`;
+  if (!confirm(msg)) return;
+
+  // O crédito habitação é liquidado com o valor da venda (antes ficava dinheiro grátis).
+  game.player.bank += net;
+  if (mortgage > 0) {
+    game.player.debt = Math.max(0, game.player.debt - mortgage);
   }
   game.properties.splice(idx, 1);
-  addEvent(`Vendeste o imóvel "${prop.title}" por ${money(prop.value)}.`, "positive");
+  addEvent(`Vendeste o imóvel "${prop.title}" e recebeste ${money(net)}.`, "positive");
   saveGame();
   renderGame();
 }
@@ -1013,7 +1097,7 @@ function renderMyAssets() {
       <div class="person-card" style="flex-direction: column; align-items: flex-start; margin-bottom: 8px;">
         <div style="display:flex; align-items:center; gap:10px; width:100%;">
           <div style="width:55px;">${getHouseSVG(p.type)}</div>
-          <div style="flex:1;"><strong>${escapeHTML(p.title)}</strong><small style="display:block;">${escapeHTML(p.address)}</small><small style="color: var(--success-color);">${statusLbl}</small></div>
+          <div style="flex:1;"><strong>${escapeHTML(p.title)}</strong><small style="display:block;">${escapeHTML(p.address)}</small><small style="color: var(--success-color);">${statusLbl}</small>${p.mortgageRemaining > 0 ? `<small style="display:block; color: var(--danger-color);">Crédito em dívida: ${money(p.mortgageRemaining)}</small>` : ""}</div>
         </div>
         <div style="display: flex; gap: 6px; width: 100%; margin-top: 6px;">
           <button class="small-btn" style="flex: 1;" onclick="togglePropertyStatus('${p.id}')">${p.status === "primary" ? "Arrendar" : "Tornar Principal"}</button>
@@ -1028,7 +1112,7 @@ function renderMyAssets() {
     game.vehicles.forEach(v => {
       html += `
         <div class="person-card" style="margin-bottom: 6px;">
-          <div><strong>${escapeHTML(v.name)}</strong><small style="display:block;">Valor: ${money(v.value)}</small></div>
+          <div><strong>${escapeHTML(v.name)}</strong><small style="display:block;">Valor: ${money(v.value)} · Custo anual: ${money(v.annualCost)}</small></div>
           <button class="small-btn danger-btn" onclick="sellVehicle('${v.id}')">Vender</button>
         </div>
       `;
@@ -1070,10 +1154,6 @@ function takeLicense(licenseKey) {
   const rule = licenseRules[licenseKey];
   if (!rule) return;
 
-  if (licenseKey === "bikeA" && player.age < 24) {
-    showToast("Para a Carta A precisas de 24 anos.");
-    return;
-  }
   if (player.age < rule.minAge) {
     showToast(`Precisas de ter pelo menos ${rule.minAge} anos.`);
     return;
@@ -1085,7 +1165,7 @@ function takeLicense(licenseKey) {
 
   player.bank -= rule.cost;
   player.licenses[licenseKey] = true;
-  addEvent(`Obtiviste a ${rule.name}! 🚗🏍️`, "positive");
+  addEvent(`Obtiveste a ${rule.name}! 🚗🏍️`, "positive");
   saveGame();
   renderGame();
 }
@@ -1107,6 +1187,15 @@ function buyVehicle(type, idx) {
   addEvent(`Compraste o veículo ${vehicle.brand} ${vehicle.name}! 🚘🏍️`, "positive");
   saveGame();
   renderGame();
+}
+
+// Custos anuais dos veículos (seguro, manutenção, imposto) — antes nunca eram cobrados.
+function processVehiclesYear() {
+  if (!game || !game.vehicles.length) return;
+  const total = game.vehicles.reduce((sum, v) => sum + (v.annualCost || 0), 0);
+  if (total <= 0) return;
+  game.player.bank -= total;
+  addFinanceEvent(`Gastaste ${money(total)} em seguro e manutenção de veículos.`);
 }
 
 function renderVehiclesSection() {
@@ -1149,15 +1238,45 @@ function renderVehiclesSection() {
    NEGÓCIOS E ESCOLA
 ========================================= */
 
-function createBusiness() {
+function openBusinessModal() {
   if (game.player.age < 18) { showToast("Precisas de ter 18 anos."); return; }
-  const name = prompt("Nome do negócio:");
-  if (!name) return;
-  const inv = Number(prompt("Investimento inicial:"));
-  if (!inv || inv < 500 || game.player.bank < inv) { showToast("Investimento inválido ou sem saldo."); return; }
+  const minLocal = Math.round(500 * getPriceFactor());
+  const modal = $("customModal");
+  modal.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Criar Negócio">
+      <h3>🏢 Criar Novo Negócio</h3>
+      <div class="input-group" style="margin-top: 10px;">
+        <label>Nome do negócio</label>
+        <input type="text" id="bizNameInput" maxlength="30" placeholder="Ex: Café Estrela">
+      </div>
+      <div class="input-group">
+        <label>Investimento inicial (${escapeHTML(getCurrencySymbol())}) — mínimo ${money(500)}</label>
+        <input type="number" id="bizInvestInput" min="${minLocal}" step="100" placeholder="${minLocal}">
+      </div>
+      <p class="muted">Saldo disponível: ${money(game.player.bank)}</p>
+      <div class="modal-buttons">
+        <button type="button" class="primary-btn full-width" onclick="confirmCreateBusiness()">Criar Negócio</button>
+        <button type="button" class="secondary-btn full-width" onclick="closeCustomModal()">Cancelar</button>
+      </div>
+    </div>
+  `;
+  modal.classList.remove("hidden");
+  setTimeout(() => $("bizNameInput")?.focus(), 50);
+}
+
+function confirmCreateBusiness() {
+  const name = ($("bizNameInput")?.value || "").trim().slice(0, 30);
+  const localAmount = Number($("bizInvestInput")?.value);
+  if (!name) { showToast("Escreve o nome do negócio."); return; }
+  // O jogador escreve na moeda local; internamente guardamos em valor base.
+  const inv = Math.round((localAmount || 0) / getPriceFactor());
+  if (!inv || inv < 500) { showToast(`Investimento mínimo: ${money(500)}.`); return; }
+  if (game.player.bank < inv) { showToast("Sem saldo suficiente."); return; }
+
   game.player.bank -= inv;
   game.businesses.push({ id: createId("biz"), name, investment: inv, yearlyProfit: Math.round(inv * 0.25) });
   addEvent(`Criaste o negócio "${name}"! 🏢`, "positive");
+  closeCustomModal();
   saveGame();
   renderGame();
 }
@@ -1200,10 +1319,10 @@ const educationStages = [
 ];
 
 const universityCourses = [
-  { name: "Medicina", cost: 3500, duration: 6, salary: 42000 },
-  { name: "Direito", cost: 2500, duration: 4, salary: 35000 },
-  { name: "Engenharia", cost: 2800, duration: 5, salary: 32000 },
-  { name: "Gestão", cost: 2300, duration: 3, salary: 30000 }
+  { name: "Medicina", cost: 3500, duration: 6, salary: 42000, job: "Médico/a" },
+  { name: "Direito", cost: 2500, duration: 4, salary: 35000, job: "Advogado/a" },
+  { name: "Engenharia", cost: 2800, duration: 5, salary: 32000, job: "Engenheiro/a" },
+  { name: "Gestão", cost: 2300, duration: 3, salary: 30000, job: "Gestor/a" }
 ];
 
 function getCurrentEducationStage(age) {
@@ -1217,19 +1336,24 @@ function initializeEducation(player) {
   player.educationLevel ??= 0;
   player.universityCourse ??= null;
   player.universityProgress ??= 0;
+  player.studiedThisYear ??= false;
 }
 
 function processSchoolYear() {
   const player = game.player;
   const stage = getCurrentEducationStage(player.age);
   if (!stage || player.age > 17) return;
-  player.schoolGrade = clamp(Math.round(12 + randomNumber(-2, 3)), 5, 20);
+  // A média agora depende da inteligência (estudar mais faz diferença).
+  const base = (player.intelligence / 100) * 12 + 6;
+  player.schoolGrade = clamp(Math.round(base + randomNumber(-2, 2)), 5, 20);
   if (player.age === 14) { player.education = "Ensino básico"; player.educationLevel = 1; }
   if (player.age === 17) { player.education = "Ensino secundário"; player.educationLevel = 2; }
 }
 
 function studyHarder() {
   const player = game.player;
+  if (player.studiedThisYear) { showToast("Já estudaste bastante este ano."); return; }
+  player.studiedThisYear = true;
   player.intelligence = clamp(player.intelligence + 2);
   player.schoolGrade = clamp(player.schoolGrade + 1, 0, 20);
   addEvent("Estudaste com afinco. 📖");
@@ -1240,9 +1364,15 @@ function studyHarder() {
 function enrollUniversity(index) {
   const player = game.player;
   const course = universityCourses[index];
+  if (!course) return;
+  if (player.age < 18 || player.educationLevel < 2) { showToast("Precisas do ensino secundário."); return; }
   if (player.universityCourse) { showToast("Já estás na universidade."); return; }
+  if (player.bank < course.cost) { showToast(`Precisas de ${money(course.cost)} para pagar o 1.º ano.`); return; }
+
+  player.bank -= course.cost;
   player.universityCourse = course.name;
   player.universityProgress = 0;
+  addFinanceEvent(`Propinas de ${course.name}: ${money(course.cost)}.`);
   addEvent(`Entraste na Universidade para estudar ${course.name}! 🎓`);
   saveGame();
   renderGame();
@@ -1250,16 +1380,24 @@ function enrollUniversity(index) {
 
 function processFurtherEducation() {
   const player = game.player;
-  if (player.universityCourse) {
-    player.universityProgress++;
-    const course = universityCourses.find(c => c.name === player.universityCourse);
-    if (player.universityProgress >= (course?.duration || 4)) {
-      player.education = `Licenciatura em ${player.universityCourse}`;
-      player.educationLevel = 3;
-      player.salary = course?.salary || 30000;
-      player.universityCourse = null;
-      addEvent(`🎓 Licenciatura concluída em ${course?.name}!`);
+  if (!player.universityCourse) return;
+  const course = universityCourses.find(c => c.name === player.universityCourse);
+  player.universityProgress++;
+  const duration = course?.duration || 4;
+
+  if (player.universityProgress >= duration) {
+    player.education = `Licenciatura em ${player.universityCourse}`;
+    player.educationLevel = 3;
+    if (course) {
+      player.job = course.job;
+      player.salary = Math.max(player.salary, course.salary);
     }
+    player.universityCourse = null;
+    addEvent(`🎓 Licenciatura concluída em ${course?.name}! Começaste a trabalhar como ${course?.job || "licenciado/a"}.`, "positive");
+  } else if (course) {
+    // Propina do ano seguinte (o 1.º ano é pago na inscrição).
+    player.bank -= course.cost;
+    addFinanceEvent(`Propinas de ${course.name}: ${money(course.cost)}.`);
   }
 }
 
@@ -1279,17 +1417,17 @@ function renderSchoolAndUniversitySubmenu() {
   `;
 
   if (player.age >= 6 && player.age <= 18) {
-    html += `<div class="panel"><h3>Atividades de Estudante</h3><button class="primary-btn full-width" id="studyBtn">📖 Estudar Mais</button></div>`;
+    html += `<div class="panel"><h3>Atividades de Estudante</h3><button class="primary-btn full-width" id="studyBtn" ${player.studiedThisYear ? "disabled" : ""}>${player.studiedThisYear ? "📖 Já estudaste este ano" : "📖 Estudar Mais"}</button></div>`;
   }
 
   if (player.age >= 18 && player.educationLevel >= 2) {
     html += `
       <div class="panel">
         <h3>🏛️ Ensino Superior</h3>
-        ${player.universityCourse ? `<p>Curso atual: <strong>${player.universityCourse}</strong> (${player.universityProgress} anos)</p>` : `<p class="muted">Escolhe um curso:</p>`}
+        ${player.universityCourse ? `<p>Curso atual: <strong>${escapeHTML(player.universityCourse)}</strong> (${player.universityProgress} anos)</p>` : `<p class="muted">Escolhe um curso:</p>`}
         ${universityCourses.map((c, idx) => `
           <div style="margin-top: 8px; padding: 8px; background: var(--panel-light); border-radius: 8px;">
-            <strong>${escapeHTML(c.name)}</strong> (${money(c.cost)}/ano)
+            <strong>${escapeHTML(c.name)}</strong> (${money(c.cost)}/ano · ${c.duration} anos)
             ${!player.universityCourse ? `<button class="small-btn full-width" style="margin-top:6px;" data-uni-idx="${idx}">Inscrever-se</button>` : ""}
           </div>
         `).join("")}
@@ -1322,17 +1460,26 @@ function generateName(sex) {
   return randomFrom([...sampleFemaleNames, ...sampleMaleNames]);
 }
 
+function sexFromRelation(relation) {
+  if (relation === "Mãe" || relation === "Avó") return "Feminino";
+  if (relation === "Pai" || relation === "Avô") return "Masculino";
+  return "Outro";
+}
+
 function createFamilyMember(data) {
+  const age = Number(data.age) || 0;
   return {
     id: data.id || createId("person"),
     name: data.name || "Sem nome",
     surname: data.surname || "",
     relation: data.relation || "Outro",
-    age: Number(data.age) || 0,
-    sex: data.sex || "Outro",
+    age,
+    sex: data.sex || sexFromRelation(data.relation),
+    maritalStatus: data.maritalStatus || data.relationshipStatus || "",
     alive: true,
     relationship: data.relationship ?? randomNumber(70, 95),
-    maxAge: randomNumber(78, 102),
+    // A idade máxima nunca fica abaixo da idade atual (ex.: avô com 95 anos).
+    maxAge: Math.max(randomNumber(78, 102), age + randomNumber(1, 8)),
     job: "",
     salary: 0
   };
@@ -1366,7 +1513,7 @@ function openFamilyInteractionModal(memberId) {
   modal.innerHTML = `
     <div class="modal-card">
       <h3>${escapeHTML(member.name)} ${escapeHTML(member.surname)}</h3>
-      <p class="muted">${escapeHTML(member.relation)} · ${member.age} anos</p>
+      <p class="muted">${escapeHTML(member.relation)} · ${member.age} anos${member.maritalStatus ? " · " + escapeHTML(member.maritalStatus) : ""}</p>
       
       <div class="stat-bar" style="margin-top: 12px;">
         <span>Relação Familiar: <strong>${member.relationship}%</strong></span>
@@ -1457,7 +1604,7 @@ function renderFamilyTree() {
   if (parents.length > 0) {
     html += `<div style="margin-bottom: 8px;"><small class="muted" style="display:block; margin-bottom: 4px;">Pais</small>`;
     parents.forEach(p => {
-      html += `<span style="display:inline-block; background:var(--bg-color); border:1px solid var(--border-color); padding:4px 8px; border-radius:6px; margin:2px; font-size:0.85rem;">${p.alive ? '🟢' : '🕯️'} ${escapeHTML(p.name)} (${p.relation}, ${p.age}a)</span>`;
+      html += `<span style="display:inline-block; background:var(--bg-color); border:1px solid var(--border-color); padding:4px 8px; border-radius:6px; margin:2px; font-size:0.85rem;">${p.alive ? '🟢' : '🕯️'} ${escapeHTML(p.name)} (${escapeHTML(p.relation)}, ${p.age}a)</span>`;
     });
     html += `</div><div style="color:var(--accent-color); font-weight:bold;">│</div>`;
   }
@@ -1473,7 +1620,7 @@ function renderFamilyTree() {
   if (others.length > 0) {
     html += `<div style="color:var(--accent-color); font-weight:bold;">│</div><div style="margin-top: 6px;"><small class="muted" style="display:block; margin-bottom: 4px;">Outros Familiares</small>`;
     others.forEach(o => {
-      html += `<span style="display:inline-block; background:var(--bg-color); border:1px solid var(--border-color); padding:4px 8px; border-radius:6px; margin:2px; font-size:0.85rem;">${o.alive ? '🟢' : '🕯️'} ${escapeHTML(o.name)} (${o.relation}, ${o.age}a)</span>`;
+      html += `<span style="display:inline-block; background:var(--bg-color); border:1px solid var(--border-color); padding:4px 8px; border-radius:6px; margin:2px; font-size:0.85rem;">${o.alive ? '🟢' : '🕯️'} ${escapeHTML(o.name)} (${escapeHTML(o.relation)}, ${o.age}a)</span>`;
     });
     html += `</div>`;
   }
@@ -1492,13 +1639,14 @@ function renderPeople() {
   } else {
     game.family.forEach(f => {
       const aliveBadge = f.alive ? `${f.age} anos` : `🕯️ Falecido/a (${f.age} anos)`;
+      const marital = f.maritalStatus ? ` · ${escapeHTML(f.maritalStatus)}` : "";
       const barColor = f.relationship > 40 ? "var(--success-color)" : "var(--danger-color)";
       container.innerHTML += `
         <div class="person-card house-card" onclick="openFamilyInteractionModal('${f.id}')" style="flex-direction: column; align-items: stretch; gap: 6px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
               <strong>${escapeHTML(f.name)} ${escapeHTML(f.surname)}</strong>
-              <small style="display:block; color: var(--text-muted);">${escapeHTML(f.relation)} · ${aliveBadge}</small>
+              <small style="display:block; color: var(--text-muted);">${escapeHTML(f.relation)} · ${aliveBadge}${marital}</small>
             </div>
             ${f.alive ? `<span class="small-btn">Interagir ›</span>` : ""}
           </div>
@@ -1528,6 +1676,14 @@ const commonIllnesses = [
   { name: "Depressão Crónica", severity: "Média", cost: 500, healthImpact: 12, specialty: "psychiatry" },
   { name: "Cancro em Estádio Inicial", severity: "Alta", cost: 6000, healthImpact: 30, specialty: "oncology" }
 ];
+
+const specialtyLabels = {
+  familyDoctor: "Médico de Família",
+  cardiology: "Cardiologia",
+  orthopedics: "Ortopedia",
+  psychiatry: "Psiquiatria",
+  oncology: "Oncologia"
+};
 
 const lifeEventsPool = [
   { minAge: 0, maxAge: 3, text: "Deste os teus primeiros passos na sala de estar.", options: [{ text: "Sorrir", effect: () => { game.player.happiness = clamp(game.player.happiness + 5); addEvent("Os pais celebraram.", "positive"); } }] },
@@ -1597,51 +1753,103 @@ function setMedicalCenterOpen(isOpen) {
 
 function openHealthSpecialty(specialty) {
   const container = $("healthActionContainer");
-  let title = "Centro Clínico";
-  let desc = "Serviços médicos especializados.";
-  let cost = 100;
-  let actionType = "specialist";
+  if (!container || !game) return;
+  const ill = game.player.illness;
+  const matches = Boolean(ill && ill.specialty === specialty);
 
-  if (specialty === "familyDoctor") { title = "👨‍⚕️ Médico de Família"; desc = "Consulta de rotina."; cost = 40; actionType = "checkup"; }
-  else if (specialty === "urgency") { title = "🚑 Urgências Hospitalares"; desc = "Atendimento imediato."; cost = 100; actionType = "urgency"; }
-  else if (specialty === "cardiology") { title = "❤️ Cardiologia"; desc = "Tratamento cardiovascular."; cost = 250; actionType = "treatment"; }
-  else if (specialty === "orthopedics") { title = "🦴 Ortopedia"; desc = "Tratamento de lesões."; cost = 180; actionType = "treatment"; }
-  else if (specialty === "psychiatry") { title = "🧠 Psiquiatria"; desc = "Saúde mental."; cost = 200; actionType = "treatment"; }
-  else if (specialty === "oncology") { title = "🎗️ Oncologia"; desc = "Tratamento oncológico."; cost = 1500; actionType = "oncology"; }
+  const base = {
+    familyDoctor: { title: "👨‍⚕️ Médico de Família", desc: "Consulta de rotina e doenças comuns.", cost: 40 },
+    urgency: { title: "🚑 Urgências Hospitalares", desc: "Atendimento imediato.", cost: 100 },
+    cardiology: { title: "❤️ Cardiologia", desc: "Tratamento cardiovascular.", cost: 250 },
+    orthopedics: { title: "🦴 Ortopedia", desc: "Tratamento de lesões.", cost: 180 },
+    psychiatry: { title: "🧠 Psiquiatria", desc: "Saúde mental.", cost: 200 },
+    oncology: { title: "🎗️ Oncologia", desc: "Rastreio e tratamento oncológico.", cost: 150 }
+  }[specialty] || { title: "Centro Clínico", desc: "Serviços médicos especializados.", cost: 100 };
+
+  let mode = "visit";
+  let cost = base.cost;
+  let label = `Efetuar Consulta (${money(cost)})`;
+  let extra = "";
+
+  if (specialty === "urgency") {
+    mode = "urgency";
+    label = `Ir às Urgências (${money(cost)})`;
+  } else if (matches) {
+    // Só se paga o tratamento completo quando há mesmo uma doença desta especialidade.
+    mode = "treat";
+    cost = Math.max(base.cost, ill.cost || base.cost);
+    label = `Iniciar Tratamento (${money(cost)})`;
+    extra = `<p style="margin-top: 6px;">Diagnóstico atual: <strong style="color: var(--danger-color);">${escapeHTML(ill.name)}</strong></p>`;
+  } else if (specialty === "oncology") {
+    label = `Fazer Rastreio (${money(cost)})`;
+  }
 
   container.innerHTML = `
     <div class="panel" style="margin-top: 12px;">
-      <h3>${title}</h3>
-      <p class="muted">${desc}</p>
-      <button class="primary-btn full-width" style="margin-top: 10px;" id="execHealthBtn">Efetuar Consulta (${money(cost)})</button>
+      <h3>${base.title}</h3>
+      <p class="muted">${base.desc}</p>
+      ${extra}
+      <button class="primary-btn full-width" style="margin-top: 10px;" id="execHealthBtn">${label}</button>
     </div>
   `;
-  $("execHealthBtn").onclick = () => executeHealthAction(actionType, cost, specialty);
+  $("execHealthBtn").onclick = () => executeHealthAction(mode, cost, specialty);
 }
 
-function executeHealthAction(type, cost, specialty) {
+function executeHealthAction(mode, cost, specialty) {
   const player = game.player;
   if (player.bank < cost) { showToast("Saldo insuficiente."); return; }
   player.bank -= cost;
-  if (type === "checkup") {
-    player.health = clamp(player.health + 3);
-    showToast(player.illness ? `Atenção: Tens ${player.illness.name}!` : "Check-up limpo!");
-  } else if (type === "urgency") {
+
+  const ill = player.illness;
+
+  if (mode === "urgency") {
     player.health = clamp(player.health + 12);
     showToast("Urgência efetuada.");
-  } else {
-    if (player.illness && (player.illness.specialty === specialty || specialty === "oncology")) {
-      addEvent(`Curaste com sucesso: ${player.illness.name}! 🎉`, "positive");
-      player.illness = null;
-      player.health = clamp(player.health + 25);
-      showToast("Tratamento bem-sucedido!");
+  } else if (mode === "treat" && ill && ill.specialty === specialty) {
+    addEvent(`Curaste com sucesso: ${ill.name}! 🎉`, "positive");
+    player.illness = null;
+    player.health = clamp(player.health + 25);
+    showToast("Tratamento bem-sucedido!");
+  } else if (specialty === "familyDoctor") {
+    player.health = clamp(player.health + 3);
+    if (ill) {
+      showToast(`Atenção: tens ${ill.name}. Procura ${specialtyLabels[ill.specialty] || "um especialista"}.`);
     } else {
-      player.health = clamp(player.health + 10);
-      showToast("Consulta concluída.");
+      showToast("Check-up limpo!");
     }
+  } else {
+    player.health = clamp(player.health + 2);
+    showToast(specialty === "oncology" ? "Rastreio concluído: nada de preocupante." : "Consulta concluída: nada a tratar nesta especialidade.");
   }
+
   saveGame();
   renderGame();
+  openHealthSpecialty(specialty);
+}
+
+/* =========================================
+   FINANÇAS ANUAIS (DÍVIDA PESSOAL)
+========================================= */
+
+// Saldo negativo vira dívida pessoal; saldo positivo vai pagando essa dívida.
+function settleFinances() {
+  const player = game.player;
+  player.personalDebt ??= 0;
+
+  if (player.bank < 0) {
+    const owed = Math.abs(player.bank);
+    player.bank = 0;
+    player.personalDebt += owed;
+    player.debt += owed;
+    player.happiness = clamp(player.happiness - 5);
+    addEvent(`Ficaste sem saldo e contraíste ${money(owed)} em dívidas. 📉`, "negative");
+  } else if (player.bank > 0 && player.personalDebt > 0) {
+    const pay = Math.min(player.bank, player.personalDebt);
+    player.bank -= pay;
+    player.personalDebt -= pay;
+    player.debt = Math.max(0, player.debt - pay);
+    addEvent(`Pagaste ${money(pay)} das tuas dívidas pessoais.`, "positive");
+  }
 }
 
 /* =========================================
@@ -1651,7 +1859,8 @@ function executeHealthAction(type, cost, specialty) {
 function triggerDeath() {
   const player = game.player;
   player.alive = false;
-  saveGame();
+  // Um personagem falecido não deve ficar guardado (senão "Continuar Jogo" abria um jogo bloqueado).
+  localStorage.removeItem(SAVE_KEY);
 
   $("gameScreen").classList.add("hidden");
   $("deathScreen").classList.remove("hidden");
@@ -1661,7 +1870,7 @@ function triggerDeath() {
   $("tombstoneQuote").textContent = `"${randomFrom(tombstoneQuotes)}"`;
 
   $("deathReportStats").innerHTML = `
-    <div class="info-row"><span>Património Final</span><strong>${money(player.bank)}</strong></div>
+    <div class="info-row"><span>Património Final</span><strong>${money(getTotalWealth())}</strong></div>
     <div class="info-row"><span>Profissão</span><strong>${escapeHTML(player.job || "Nenhuma")}</strong></div>
     <div class="info-row"><span>Escolaridade</span><strong>${escapeHTML(player.education)}</strong></div>
   `;
@@ -1680,6 +1889,7 @@ function advanceYear() {
   player.age += 1;
   game.year += 1;
   player.bank += player.salary;
+  player.studiedThisYear = false;
 
   if (prevAge < 18 && player.age >= 18 && player.avatarCustom?.facialHair !== "none") {
     addEvent("Completaste 18 anos e a barba cresceu! 🧔", "positive");
@@ -1689,7 +1899,9 @@ function advanceYear() {
   processSchoolYear();
   processFurtherEducation();
   processHousingYear();
+  processVehiclesYear();
   processBusinessesYear();
+  settleFinances();
   checkRandomIllness();
   generateYearlyMarket();
 
@@ -1737,7 +1949,7 @@ function startGame() {
     age: 0, alive: true,
     health: 100, happiness: 80,
     education: "Sem escolaridade", educationLevel: 0,
-    job: "", salary: 0, bank: 1000, debt: 0, expenses: 0,
+    job: "", salary: 0, bank: 1000, debt: 0, personalDebt: 0, expenses: 0,
     licenses: { carB: false, bikeAM: false, bikeA1: false, bikeA2: false, bikeA: false },
     bankAccount: null, activeRental: null,
     illness: null,
@@ -1753,12 +1965,17 @@ function startGame() {
   initializeEducation(player);
   generateYearlyMarket();
 
-  if (initialFamily.length === 0) {
+  // Familiares adicionados manualmente herdam o apelido do jogador se ficou em branco.
+  const manualFamily = initialFamily.map(f => createFamilyMember({ ...f, surname: f.surname || surname }));
+  const hasParent = manualFamily.some(f => f.relation === "Mãe" || f.relation === "Pai");
+
+  if (hasParent) {
+    game.family = manualFamily;
+  } else {
+    // Sem pais indicados (mesmo que haja outros familiares), criam-se os pais por defeito.
     const mother = createFamilyMember({ name: generateName("Feminino"), surname, relation: "Mãe", age: 30, sex: "Feminino" });
     const father = createFamilyMember({ name: generateName("Masculino"), surname, relation: "Pai", age: 33, sex: "Masculino" });
-    game.family.push(mother, father);
-  } else {
-    game.family = initialFamily.map(f => createFamilyMember(f));
+    game.family = [mother, father, ...manualFamily];
   }
 
   saveGame();
@@ -1813,9 +2030,7 @@ function renderHome() {
 
 function renderPatrimony() {
   const player = game.player;
-  const propsVal = game.properties.reduce((sum, p) => sum + p.value, 0);
-  const vehVal = game.vehicles.reduce((sum, v) => sum + v.value, 0);
-  $("totalWealth").textContent = money(player.bank + propsVal + vehVal - player.debt);
+  $("totalWealth").textContent = money(getTotalWealth());
   $("bankBalance").textContent = money(player.bank);
   $("currentBankName").textContent = player.bankAccount ? player.bankAccount.bankName : "Sem conta aberta";
   $("annualSalary").textContent = money(player.salary);
@@ -1849,6 +2064,7 @@ function renderCareer() {
 }
 
 function applyJob(name, salary) {
+  if (game.player.age < 16) { showToast("Precisas de ter 16 anos."); return; }
   game.player.job = name;
   game.player.salary = salary;
   addEvent(`Começaste a trabalhar como ${name}!`);
@@ -1894,7 +2110,7 @@ function updateSetupFamilyUI() {
   if (!container) return;
   container.innerHTML = "";
   initialFamily.forEach((f, idx) => {
-    container.innerHTML += `<div class="person-card"><strong>${escapeHTML(f.name)}</strong> <small>${f.relation}</small> <button type="button" class="small-btn danger-btn" onclick="initialFamily.splice(${idx},1);updateSetupFamilyUI()">X</button></div>`;
+    container.innerHTML += `<div class="person-card"><strong>${escapeHTML(f.name)}</strong> <small>${escapeHTML(f.relation)}${f.maritalStatus ? " · " + escapeHTML(f.maritalStatus) : ""}</small> <button type="button" class="small-btn danger-btn" onclick="initialFamily.splice(${idx},1);updateSetupFamilyUI()">X</button></div>`;
   });
 }
 
@@ -1908,9 +2124,11 @@ function boot() {
     const name = $("famName").value.trim();
     if (!name) return;
     initialFamily.push({
-      name, surname: $("playerSurname").value.trim() || "Silva",
-      relation: $("famRelation").value, age: Number($("famAge").value) || 30,
-      relationshipStatus: $("famMaritalStatus").value
+      name,
+      surname: "", // preenchido com o apelido do jogador ao começar o jogo
+      relation: $("famRelation").value,
+      age: Number($("famAge").value) || 30,
+      maritalStatus: $("famMaritalStatus").value
     });
     $("famName").value = "";
     updateSetupFamilyUI();
@@ -1927,7 +2145,7 @@ function boot() {
     btn.onclick = () => showSubTab(btn.dataset.sub);
   });
 
-  $("createBusinessBtn")?.addEventListener("click", createBusiness);
+  $("createBusinessBtn")?.addEventListener("click", openBusinessModal);
   $("continueGameBtn")?.addEventListener("click", () => {
     const saved = loadGame();
     if (saved) { game = saved; showGame(); renderGame(); }
@@ -1944,6 +2162,7 @@ function boot() {
   updateContinuePanel();
   updateSetupFamilyUI();
   updateSetupAvatarUI();
+  updateNameHint();
 }
 
 document.addEventListener("DOMContentLoaded", boot);
